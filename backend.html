@@ -21,9 +21,30 @@
             }
         </style>
         <script type="text/javascript">
-            $(".accordion-header").click(function() {
-                console.log($(this));
-                $(this).nextUntil("accordion-header").each("accordion-content").first().slideToggle();
+            $(function() {
+                $(".accordion").each(function() {
+                    var accordion = $(this);
+                    var current = null;
+                    $(".accordion-header").click(function() {
+                        if (current) {
+                            if (!$(this).data("open")) {
+                                current.nextUntil(".accordion-header").filter(".accordion-content").slideUp("fast");
+                                $(this).nextUntil(".accordion-header").filter(".accordion-content").slideDown("fast");
+                                current.data("open", false);
+                                current = $(this)
+                                current.data("open", true);
+                            } else {
+                                current.nextUntil(".accordion-header").filter(".accordion-content").slideUp("fast");
+                                current.data("open", false);
+                                current = null;
+                            }
+                        } else {
+                            $(this).nextUntil(".accordion-header").filter(".accordion-content").slideDown("fast");
+                            current = $(this);
+                            current.data("open", true);
+                        }
+                    });
+                });
             });
         </script>
     </head>
