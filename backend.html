@@ -57,6 +57,10 @@
                 background: #e5e5e5;
             }
 
+            .propertyoption {
+                text-indent: 10px;
+            }
+
             .propertyoption:hover {
                 background: #333333;
                 color: #e5e5e5;
@@ -174,6 +178,20 @@
                     });
                 });
             }
+
+            function populateEntitiesBox(targetJQ, properties) {
+                var selector = targetJQ.html('<div class="propertyselector entity"></div>').children(".propertyselector");
+                selector.selected = null;
+                properties.forEach(function(element, index, array) {
+                    var option = selector.append(supplant(
+                            '<div class="propertyoption" data-uri="{uri}">{label} ...</div>',
+                            element)).children().last();
+                    selector.data("rdfsummary", element);
+                    option.click(function() {
+                        selection.select($(this));
+                    });
+                });
+            }
         </script>
         <script type="text/javascript">
             $(function() {
@@ -211,7 +229,9 @@
                 $(".accordion-content").each(function() {
                     console.log($(this));
                     var p = $(this).data("properties");
-                    if (properties[p] != null) {
+                    if (p == "types") {
+                        populateEntitiesBox($(this), properties[p]);
+                    } else if (properties[p] != null) {
                         populatePropertiesBox($(this), properties[p]);
                     } else {
                         console.log("Unable to find properties: " + p + " in " + properties);
@@ -222,10 +242,6 @@
     </head>
     <body>
         <div class="container top">
-            <div class="span-8 ">
-                <h1>Define Term 1</h1>
-                <div></div>
-            </div>
             <div class="span-8 ">
                 <h1>Define Relationship</h1>
                 <div>
@@ -258,6 +274,10 @@
                         </div>
                     </div>
                 </div>
+            </div>
+            <div class="span-8 ">
+                <h1>Define Term 1</h1>
+                <div></div>
             </div>
             <div class="span-8 last showgrid">
                 <h1>Define Term 2</h1>
