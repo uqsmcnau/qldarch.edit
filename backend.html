@@ -16,6 +16,8 @@
             h1 {
                 background: #333333;
                 color: #e5e5e5;
+                padding-top:10px;
+                padding-bottom:10px;
             }
 
             .accordion-header {
@@ -71,30 +73,41 @@
                 background: #555555;
                 color: #e5e5e5;
             }
+
+            input {
+                margin: 0px;
+            }
+
+            .entity {
+                margin-bottom: 30px;
+            }
         </style>
         <script type="text/javascript">
             var properties = {
                 animates : [
                   {
-                      uri: "http://qldarch.net/rdf#workedFor",
-                      label: "worked for",
-                      definition: "The subject was an employee of the indicated entity",
+                      uri: "http://qldarch.net/rdf#employeeOf",
+                      label: "employee of",
+                      definition: "The subject was an employee of the indicated firm",
                       domain: [ "http://qldarch.net/rdf#Architect" ],
-                      range: [ "http://qldarch.net/rdf#Relationship" ]
+                      range: [ "http://qldarch.net/rdf#Firm" ],
+                      relationship: True
                   },
                   {
                       uri: "http://qldarch.net/rdf#wasPartnerAt",
                       label: "was a partner at",
                       definition: "The subject was an partner at the indicated firm",
                       domain: [ "http://qldarch.net/rdf#Architect" ],
-                      range: [ "http://qldarch.net/rdf#Relationship" ]
+                      range: [ "http://qldarch.net/rdf#Firm" ],
+                      relationship: True
                   },
                   {
                       uri: "http://qldarch.net/rdf#collaboratedWith",
                       label: "collaborated with",
                       definition: "The subject collaborated with the indicated architect",
                       domain: [ "http://qldarch.net/rdf#Architect" ],
-                      range: [ "http://qldarch.net/rdf#Architect" ]
+                      range: [ "http://qldarch.net/rdf#Architect" ],
+                      relationship: False
                   },
               ],
                 betweens : [
@@ -103,14 +116,16 @@
                       label: "designed",
                       definition: "The subject was involved in designing the indicated structure",
                       domain: [ "http://qldarch.net/rdf#Architect" ],
-                      range: [ "http://qldarch.net/rdf#Structure" ]
+                      range: [ "http://qldarch.net/rdf#Structure" ],
+                      relationship: False
                   },
                   {
                       uri: "http://qldarch.net/rdf#receivedAward",
                       label: "received award",
                       definition: "The subject received the indicated award.",
                       domain: [ "http://qldarch.net/rdf#Architect", "http://qldarch.net/rdf#Structure" ],
-                      range: [ "http://qldarch.net/rdf#Award" ]
+                      range: [ "http://qldarch.net/rdf#Award" ],
+                      relationship: False
                   },
               ],
                 types : [
@@ -195,6 +210,9 @@
         </script>
         <script type="text/javascript">
             $(function() {
+                var propertyDivs = $(".propertydiv").detach();
+                var entityDivs = $(".entitydiv").detach();
+
                 $(".accordion").each(function() {
                     var accordion = $(this);
                     var current = null;
@@ -223,6 +241,12 @@
                             current = $(this);
                             current.data("open", true);
                         }
+
+                        if (t.data("content") == "property") {
+                            $("#content").html(propertyDivs);
+                        } else {
+                            $("#content").html(entityDivs);
+                        }
                     });
                 });
 
@@ -243,9 +267,9 @@
     <body>
         <div class="container top">
             <div class="span-8 ">
-                <h1>Define Relationship</h1>
+                <h1>Relationship</h1>
                 <div>
-                    <div class="definitionbox" style="margin-top:100px;height:5em">
+                    <div class="definitionbox" style="margin-top:30px;height:5em">
                         <div class="definition" id="animate-defn">
                             A relationship between two things capable of independent action.
                         </div>
@@ -257,17 +281,17 @@
                         </div>
                     </div>
                     <div class="accordion">
-                        <div class="accordion-header large" data-definition="#animate-defn">
+                        <div class="accordion-header large" data-definition="#animate-defn" data-content="property">
                             <div>Between Animate Objects</div>
                         </div>
                         <div class="accordion-content" data-properties="animates">
                         </div>
-                        <div class="accordion-header large" data-definition="#between-defn">
+                        <div class="accordion-header large" data-definition="#between-defn" data-content="property">
                             <div>Between Animate and Inanimate Objects</div>
                         </div>
                         <div class="accordion-content" data-properties="betweens">
                         </div>
-                        <div class="accordion-header large" data-definition="#define-defn">
+                        <div class="accordion-header large" data-definition="#define-defn" data-content="entity">
                             <div>Define</div>
                         </div>
                         <div class="accordion-content" data-properties="types">
@@ -275,13 +299,36 @@
                     </div>
                 </div>
             </div>
-            <div class="span-8 ">
-                <h1>Define Term 1</h1>
-                <div></div>
-            </div>
-            <div class="span-8 last showgrid">
-                <h1>Define Term 2</h1>
-                <div></div>
+            <div id="content" class="span-16 last">
+                <div class="propertydiv span-8">
+                    <h1>Subject</h1>
+                    <div class="entity" style="margin-top:30px">
+                        <input class="searchbox span-3" type="text" placeHolder="Find Architect" style="float:left"/>
+                        <img class="span-8 last" src="img/wordcram.png" alt="Architects"/>
+                    </div>
+                    <div class="entity">
+                        <input class="searchbox span-3" type="text" placeHolder="Find Firm" style="float:left"/>
+                        <img class="span-8 last" src="img/wordcram.png" alt="Architects"/>
+                    </div>
+                    <div class="entity">
+                        <input class="searchbox span-3" type="text" placeHolder="Find Client" style="float:left"/>
+                        <img class="span-8 last" src="img/wordcram.png" alt="Architects"/>
+                    </div>
+                    <div class="entity">
+                        <input class="searchbox span-3" type="text" placeHolder="Find Structure" style="float:left"/>
+                        <img class="span-8 last" src="img/wordcram.png" alt="Architects"/>
+                    </div>
+                </div>
+                <div class="propertydiv span-8 last">
+                    <h1>Object</h1>
+                    <div>
+                    </div>
+                </div>
+                <div class="entitydiv span-16 last">
+                    <h1>Entity</h1>
+                    <div>
+                    </div>
+                </div>
             </div>
         </div>
     </body>
