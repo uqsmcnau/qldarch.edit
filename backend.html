@@ -9,77 +9,253 @@
         <![endif]-->
         <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
         <style>
+            .top {
+                text-align: center;
+            }
+
+            h1 {
+                background: #333333;
+                color: #e5e5e5;
+            }
+
             .accordion-header {
-                background:lightgrey;
+                background: #999999;
+                color: #1a1a1a;
                 border-radius:20px;
                 margin-bottom:5px;
+                margin-top:5px;
             }
 
             .accordion-content {
                 display:none;
-                margin-bottom:10px;
+            }
+
+            .definition {
+                display:none;
+                position:relative;
+                top: 1em;
+            }
+
+            .definitionbox {
+                border:1px solid lightgrey;
+                margin-top: 50px;
+                margin-bottom: 25px;
+            }
+
+            .propertyselector {
+                overflow-y: scroll;
+                padding-top: 5px;
+                padding-bottom: 5px;
+                padding-left: 20px;
+                padding-right: 10px;
+                margin-right:20px;
+                text-align: left;
+                max-height: 5em;
+            }
+
+            .propertyselector :nth-child(2n-1) {
+                background: #e5e5e5;
+            }
+
+            .propertyoption:hover {
+                background: #333333;
+                color: #e5e5e5;
+                cursor: default;
+            }
+
+            .propertyoption.selected {
+                background: #555555;
+                color: #e5e5e5;
             }
         </style>
+        <script type="text/javascript">
+            var properties = {
+                animates : [
+                  {
+                      uri: "http://qldarch.net/rdf#workedFor",
+                      label: "worked for",
+                      definition: "The subject was an employee of the indicated entity",
+                      domain: [ "http://qldarch.net/rdf#Architect" ],
+                      range: [ "http://qldarch.net/rdf#Relationship" ]
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#wasPartnerAt",
+                      label: "was a partner at",
+                      definition: "The subject was an partner at the indicated firm",
+                      domain: [ "http://qldarch.net/rdf#Architect" ],
+                      range: [ "http://qldarch.net/rdf#Relationship" ]
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#collaboratedWith",
+                      label: "collaborated with",
+                      definition: "The subject collaborated with the indicated architect",
+                      domain: [ "http://qldarch.net/rdf#Architect" ],
+                      range: [ "http://qldarch.net/rdf#Architect" ]
+                  },
+              ],
+                betweens : [
+                  {
+                      uri: "http://qldarch.net/rdf#designed",
+                      label: "designed",
+                      definition: "The subject was involved in designing the indicated structure",
+                      domain: [ "http://qldarch.net/rdf#Architect" ],
+                      range: [ "http://qldarch.net/rdf#Structure" ]
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#receivedAward",
+                      label: "received award",
+                      definition: "The subject received the indicated award.",
+                      domain: [ "http://qldarch.net/rdf#Architect", "http://qldarch.net/rdf#Structure" ],
+                      range: [ "http://qldarch.net/rdf#Award" ]
+                  },
+              ],
+                types : [
+                  {
+                      uri: "http://qldarch.net/rdf#Architect",
+                      label: "Architect",
+                      definition: "The subject was an employee of the indicated entity"
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#Firm",
+                      label: "Firm",
+                      definition: "The subject was an partner at the indicated firm"
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#Client",
+                      label: "Client",
+                      definition: "The subject was commissioned by the indicated entity"
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#Structure",
+                      label: "collaborated with",
+                      definition: "The subject collaborated with the indicated architect"
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#Relationship",
+                      label: "related to",
+                      definition: "The subject has a non-trivial relationship with the indicated entity"
+                  },
+              ]
+            };
+        </script>
+        <script type="text/javascript">
+            function supplant(s, o) {
+                return s.replace(
+                    /\{([^{}]*)\}/g,
+                    function (a, b) {
+                        var r = o[b];
+                        return r == null ? a : String(r);
+                    }
+                );
+            };
+
+            var selection = new Object();
+            selection.selection = null;
+            selection.select = function(selected) {
+                if (selected != null) {
+                    selected.addClass("selected");
+                }
+                if (this.selection != null) {
+                    this.selection.removeClass("selected");
+                }
+                this.selection = selected;
+            };
+
+            function populatePropertiesBox(targetJQ, properties) {
+                var selector = targetJQ.html('<div class="propertyselector"></div>').children(".propertyselector");
+                selector.selected = null;
+                properties.forEach(function(element, index, array) {
+                    var option = selector.append(supplant(
+                            '<div class="propertyoption" data-uri="{uri}">... {label} ...</div>',
+                            element)).children().last();
+                    selector.data("rdfsummary", element);
+                    option.click(function() {
+                        selection.select($(this));
+                    });
+                });
+            }
+        </script>
         <script type="text/javascript">
             $(function() {
                 $(".accordion").each(function() {
                     var accordion = $(this);
                     var current = null;
                     $(".accordion-header").click(function() {
+                        var t = $(this);
                         if (current) {
-                            if (!$(this).data("open")) {
+                            if (!t.data("open")) {
                                 current.nextUntil(".accordion-header").filter(".accordion-content").slideUp("fast");
-                                $(this).nextUntil(".accordion-header").filter(".accordion-content").slideDown("fast");
+                                t.nextUntil(".accordion-header").filter(".accordion-content").slideDown("fast");
+                                $(current.data("definition")).fadeOut("fast", function() {
+                                    selection.select(null);
+                                    $(t.data("definition")).fadeIn("fast");
+                                });
                                 current.data("open", false);
-                                current = $(this)
+                                current = t;
                                 current.data("open", true);
                             } else {
                                 current.nextUntil(".accordion-header").filter(".accordion-content").slideUp("fast");
+                                $(current.data("definition")).fadeOut("fast");
                                 current.data("open", false);
                                 current = null;
                             }
                         } else {
-                            $(this).nextUntil(".accordion-header").filter(".accordion-content").slideDown("fast");
+                            t.nextUntil(".accordion-header").filter(".accordion-content").slideDown("fast");
+                            $(t.data("definition")).fadeIn("fast");
                             current = $(this);
                             current.data("open", true);
                         }
                     });
                 });
+
+                $(".accordion-content").each(function() {
+                    console.log($(this));
+                    var p = $(this).data("properties");
+                    if (properties[p] != null) {
+                        populatePropertiesBox($(this), properties[p]);
+                    } else {
+                        console.log("Unable to find properties: " + p + " in " + properties);
+                    }
+                });
             });
         </script>
     </head>
     <body>
-        <div class="container showgrid" style="text-align:center">
-            <div class="span-8 border showgrid">
+        <div class="container top">
+            <div class="span-8 ">
                 <h1>Define Term 1</h1>
                 <div></div>
             </div>
-            <div class="span-8 border showgrid">
+            <div class="span-8 ">
                 <h1>Define Relationship</h1>
-                <div class="accordion">
-                    <div class="accordion-header" style="margin-top:100px">
-                        <div>Between Animate Objects</div>
+                <div>
+                    <div class="definitionbox" style="margin-top:100px;height:5em">
+                        <div class="definition" id="animate-defn">
+                            A relationship between two things capable of independent action.
+                        </div>
+                        <div class="definition" id="between-defn">
+                            A relationship between an agent and an object it has interacted with.
+                        </div>
+                        <div class="definition" id="define-defn">
+                            Define a new object of some type.
+                        </div>
                     </div>
-                    <div class="accordion-content">
-                        Anim pariatur cliche....
-                    </div>
-                    <div class="accordion-header">
-                        <div>Between Inanimate Objects</div>
-                    </div>
-                    <div class="accordion-content">
-                        Anim pariatur cliche....
-                    </div>
-                    <div class="accordion-header">
-                        <div>Between Animate and Inanimate Objects</div>
-                    </div>
-                    <div class="accordion-content">
-                        Anim pariatur cliche....
-                    </div>
-                    <div class="accordion-header">
-                        <div>Define</div>
-                    </div>
-                    <div class="accordion-content">
-                        Anim pariatur cliche....
+                    <div class="accordion">
+                        <div class="accordion-header large" data-definition="#animate-defn">
+                            <div>Between Animate Objects</div>
+                        </div>
+                        <div class="accordion-content" data-properties="animates">
+                        </div>
+                        <div class="accordion-header large" data-definition="#between-defn">
+                            <div>Between Animate and Inanimate Objects</div>
+                        </div>
+                        <div class="accordion-content" data-properties="betweens">
+                        </div>
+                        <div class="accordion-header large" data-definition="#define-defn">
+                            <div>Define</div>
+                        </div>
+                        <div class="accordion-content" data-properties="types">
+                        </div>
                     </div>
                 </div>
             </div>
