@@ -83,11 +83,18 @@ function populateEntitiesBox(targetJQ, properties) {
 }
 
 function populateEntitySelection(targetJQ, type) {
-    targetJQ.append(supplant(
+    var entity = $(supplant(
         '<div class="entity">' +
         '    <input class="searchbox span-3" type="text" placeHolder="Find {label}" style="float:left"/>' +
         '    <img class="span-8 last" src="img/wordcram.png" alt="{label} Wordcram"/>' +
         '</div>', type));
+
+    targetJQ.append(entity);
+    entity.focusin(function() {
+        entity.siblings().fadeOut("fast");
+    }).focusout(function() {
+        entity.siblings().fadeIn("fast");
+    });
 }
 
 function backendOnReady() {
