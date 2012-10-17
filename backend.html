@@ -39,7 +39,7 @@
 
             .definitionbox {
                 border:1px solid lightgrey;
-                margin-bottom: 25px;
+                margin-bottom: 30px;
             }
 
             .propertyselector {
@@ -160,6 +160,13 @@
                   }
               ]
             };
+            var entityLists = {
+                "http://qldarch.net/rdf#Architect" : [ "Graham Bligh", "James Birrell", "Ian Charlton", "Jon Voller", "Blair Wilson" ],
+                "http://qldarch.net/rdf#Firm" : [ "Hayes and Scott", "Bligh, Jessup, Bretnall and Partners", "Colin and Fulton" ],
+                "http://qldarch.net/rdf#Client" : [ "The University of Queensland", "", "Bward 3" ],
+                "http://qldarch.net/rdf#Structure" : [ "International House UQ", "Schonel Theatre UQ", "Cutt House" ],
+                "http://qldarch.net/rdf#Award" : [ "Award 1", "Award 2", "Bward 3" ],
+            };
         </script>
         <script type="text/javascript" src="js/backend.js"></script>
         <script type="text/javascript">
@@ -212,8 +219,13 @@
                     <div class="target">
                     </div>
                 </div>
-                <div class="entitydiv span-16 last">
-                    <h1>Entity</h1>
+                <div class="entitydiv span-8">
+                    <h1>Find</h1>
+                    <div class="target">
+                    </div>
+                </div>
+                <div class="entitydiv span-8 last">
+                    <h1>Define</h1>
                     <div class="target">
                     </div>
                 </div>
@@ -221,5 +233,3 @@
         </div>
     </body>
 </html>
-        
-

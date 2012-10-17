@@ -78,15 +78,20 @@ function populateEntitiesBox(targetJQ, properties) {
         option.click(function() {
             selection.select($(this));
             setDefinition(element.definition);
+            var target = $(".entitydiv>.target:first");
+            target.empty();
+            populateEntitySelection($(".entitydiv>.target:first"), element);
         });
     });
 }
 
 function populateEntitySelection(targetJQ, type) {
+    console.log(type);
     var entity = $(supplant(
         '<div class="entity">' +
         '    <input class="searchbox span-3" type="text" placeHolder="Find {label}" style="float:left"/>' +
         '    <img class="span-8 last" src="img/wordcram.png" alt="{label} Wordcram"/>' +
+        '    <div class="entitylist"></div>' +
         '</div>', type));
 
     targetJQ.append(entity);
@@ -94,6 +99,16 @@ function populateEntitySelection(targetJQ, type) {
         entity.siblings().fadeOut("fast");
     }).focusout(function() {
         entity.siblings().fadeIn("fast");
+    });
+    entity.find("input").keyup(function() {
+        var val = $(this).val();
+        $(this).siblings(".entitylist").empty();
+        if (val != "") {
+            var list = $(this).siblings(".entitylist");
+            entityLists[type.uri].forEach(function(entity) {
+                list.append('<div class="entityentry">' + entity + '</div>');
+            });
+        }
     });
 }
 
