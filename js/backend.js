@@ -89,9 +89,9 @@ function populateEntitySelection(targetJQ, type) {
     console.log(type);
     var entity = $(supplant(
         '<div class="entity">' +
-        '    <input class="searchbox span-3" type="text" placeHolder="Find {label}" style="float:left"/>' +
+        '    <input class="searchbox span-3 last" type="text" placeHolder="Find {label}"/>' +
         '    <img class="span-8 last" src="img/wordcram.png" alt="{label} Wordcram"/>' +
-        '    <div class="entitylist"></div>' +
+        '    <div class="entitylist span-8"></div>' +
         '</div>', type));
 
     targetJQ.append(entity);
@@ -106,7 +106,15 @@ function populateEntitySelection(targetJQ, type) {
         if (val != "") {
             var list = $(this).siblings(".entitylist");
             entityLists[type.uri].forEach(function(entity) {
-                list.append('<div class="entityentry">' + entity + '</div>');
+                var found = false;
+                val.split(" ").forEach(function(word) {
+                    if (entity.indexOf(word) != -1) {
+                        found = true;
+                    }
+                });
+                if (found != -1) {
+                    list.append('<div class="entityentry">' + entity + '</div>');
+                }
             });
         }
     });
