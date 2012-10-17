@@ -7,7 +7,6 @@
         <!--[if lt IE 8]>
             <link rel="stylesheet" href="css/blueprint/ie.css" type="text/css" media="screen, projection">
         <![endif]-->
-        <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
         <style>
             .top {
                 text-align: center;
@@ -18,6 +17,7 @@
                 color: #e5e5e5;
                 padding-top:10px;
                 padding-bottom:10px;
+                margin-bottom:30px;
             }
 
             .accordion-header {
@@ -33,14 +33,12 @@
             }
 
             .definition {
-                display:none;
                 position:relative;
                 top: 1em;
             }
 
             .definitionbox {
                 border:1px solid lightgrey;
-                margin-top: 50px;
                 margin-bottom: 25px;
             }
 
@@ -74,14 +72,20 @@
                 color: #e5e5e5;
             }
 
-            input {
+            #content input {
                 margin: 0px;
             }
+
+            #content img {
+                margin-bottom: 30px;
+            }
+
 
             .entity {
                 margin-bottom: 30px;
             }
         </style>
+        <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
         <script type="text/javascript">
             var properties = {
                 animates : [
@@ -91,7 +95,7 @@
                       definition: "The subject was an employee of the indicated firm",
                       domain: [ "http://qldarch.net/rdf#Architect" ],
                       range: [ "http://qldarch.net/rdf#Firm" ],
-                      relationship: True
+                      relationship: true
                   },
                   {
                       uri: "http://qldarch.net/rdf#wasPartnerAt",
@@ -99,7 +103,7 @@
                       definition: "The subject was an partner at the indicated firm",
                       domain: [ "http://qldarch.net/rdf#Architect" ],
                       range: [ "http://qldarch.net/rdf#Firm" ],
-                      relationship: True
+                      relationship: true
                   },
                   {
                       uri: "http://qldarch.net/rdf#collaboratedWith",
@@ -107,7 +111,7 @@
                       definition: "The subject collaborated with the indicated architect",
                       domain: [ "http://qldarch.net/rdf#Architect" ],
                       range: [ "http://qldarch.net/rdf#Architect" ],
-                      relationship: False
+                      relationship: false
                   },
               ],
                 betweens : [
@@ -117,7 +121,7 @@
                       definition: "The subject was involved in designing the indicated structure",
                       domain: [ "http://qldarch.net/rdf#Architect" ],
                       range: [ "http://qldarch.net/rdf#Structure" ],
-                      relationship: False
+                      relationship: false
                   },
                   {
                       uri: "http://qldarch.net/rdf#receivedAward",
@@ -125,142 +129,42 @@
                       definition: "The subject received the indicated award.",
                       domain: [ "http://qldarch.net/rdf#Architect", "http://qldarch.net/rdf#Structure" ],
                       range: [ "http://qldarch.net/rdf#Award" ],
-                      relationship: False
+                      relationship: false
                   },
               ],
                 types : [
                   {
                       uri: "http://qldarch.net/rdf#Architect",
                       label: "Architect",
-                      definition: "The subject was an employee of the indicated entity"
+                      definition: "A person who is or has been an Architect"
                   },
                   {
                       uri: "http://qldarch.net/rdf#Firm",
                       label: "Firm",
-                      definition: "The subject was an partner at the indicated firm"
+                      definition: "A business with a recognised continuity of identity"
                   },
                   {
                       uri: "http://qldarch.net/rdf#Client",
                       label: "Client",
-                      definition: "The subject was commissioned by the indicated entity"
+                      definition: "An agent who has engaged an Architect or Firm on a project"
                   },
                   {
                       uri: "http://qldarch.net/rdf#Structure",
-                      label: "collaborated with",
-                      definition: "The subject collaborated with the indicated architect"
+                      label: "Structure",
+                      definition: "A building, or other distinguishable part of our built environment"
                   },
                   {
-                      uri: "http://qldarch.net/rdf#Relationship",
-                      label: "related to",
-                      definition: "The subject has a non-trivial relationship with the indicated entity"
-                  },
+                      uri: "http://qldarch.net/rdf#Award",
+                      label: "Award",
+                      definition: "An recognition of meritorious conduct or achivement"
+                  }
               ]
             };
         </script>
-        <script type="text/javascript">
-            function supplant(s, o) {
-                return s.replace(
-                    /\{([^{}]*)\}/g,
-                    function (a, b) {
-                        var r = o[b];
-                        return r == null ? a : String(r);
-                    }
-                );
-            };
-
-            var selection = new Object();
-            selection.selection = null;
-            selection.select = function(selected) {
-                if (selected != null) {
-                    selected.addClass("selected");
-                }
-                if (this.selection != null) {
-                    this.selection.removeClass("selected");
-                }
-                this.selection = selected;
-            };
-
-            function populatePropertiesBox(targetJQ, properties) {
-                var selector = targetJQ.html('<div class="propertyselector"></div>').children(".propertyselector");
-                selector.selected = null;
-                properties.forEach(function(element, index, array) {
-                    var option = selector.append(supplant(
-                            '<div class="propertyoption" data-uri="{uri}">... {label} ...</div>',
-                            element)).children().last();
-                    selector.data("rdfsummary", element);
-                    option.click(function() {
-                        selection.select($(this));
-                    });
-                });
-            }
-
-            function populateEntitiesBox(targetJQ, properties) {
-                var selector = targetJQ.html('<div class="propertyselector entity"></div>').children(".propertyselector");
-                selector.selected = null;
-                properties.forEach(function(element, index, array) {
-                    var option = selector.append(supplant(
-                            '<div class="propertyoption" data-uri="{uri}">{label} ...</div>',
-                            element)).children().last();
-                    selector.data("rdfsummary", element);
-                    option.click(function() {
-                        selection.select($(this));
-                    });
-                });
-            }
-        </script>
+        <script type="text/javascript" src="js/backend.js"></script>
         <script type="text/javascript">
             $(function() {
-                var propertyDivs = $(".propertydiv").detach();
-                var entityDivs = $(".entitydiv").detach();
-
-                $(".accordion").each(function() {
-                    var accordion = $(this);
-                    var current = null;
-                    $(".accordion-header").click(function() {
-                        var t = $(this);
-                        if (current) {
-                            if (!t.data("open")) {
-                                current.nextUntil(".accordion-header").filter(".accordion-content").slideUp("fast");
-                                t.nextUntil(".accordion-header").filter(".accordion-content").slideDown("fast");
-                                $(current.data("definition")).fadeOut("fast", function() {
-                                    selection.select(null);
-                                    $(t.data("definition")).fadeIn("fast");
-                                });
-                                current.data("open", false);
-                                current = t;
-                                current.data("open", true);
-                            } else {
-                                current.nextUntil(".accordion-header").filter(".accordion-content").slideUp("fast");
-                                $(current.data("definition")).fadeOut("fast");
-                                current.data("open", false);
-                                current = null;
-                            }
-                        } else {
-                            t.nextUntil(".accordion-header").filter(".accordion-content").slideDown("fast");
-                            $(t.data("definition")).fadeIn("fast");
-                            current = $(this);
-                            current.data("open", true);
-                        }
-
-                        if (t.data("content") == "property") {
-                            $("#content").html(propertyDivs);
-                        } else {
-                            $("#content").html(entityDivs);
-                        }
-                    });
-                });
-
-                $(".accordion-content").each(function() {
-                    console.log($(this));
-                    var p = $(this).data("properties");
-                    if (p == "types") {
-                        populateEntitiesBox($(this), properties[p]);
-                    } else if (properties[p] != null) {
-                        populatePropertiesBox($(this), properties[p]);
-                    } else {
-                        console.log("Unable to find properties: " + p + " in " + properties);
-                    }
-                });
+                backendOnReady();
             });
         </script>
     </head>
@@ -269,29 +173,27 @@
             <div class="span-8 ">
                 <h1>Relationship</h1>
                 <div>
-                    <div class="definitionbox" style="margin-top:30px;height:5em">
-                        <div class="definition" id="animate-defn">
-                            A relationship between two things capable of independent action.
-                        </div>
-                        <div class="definition" id="between-defn">
-                            A relationship between an agent and an object it has interacted with.
-                        </div>
-                        <div class="definition" id="define-defn">
-                            Define a new object of some type.
-                        </div>
+                    <div class="definitionbox" style="height:5em">
+                        <div class="definition"></div>
                     </div>
                     <div class="accordion">
-                        <div class="accordion-header large" data-definition="#animate-defn" data-content="property">
+                        <div class="accordion-header large"
+                            data-definition="A relationship between two things capable of independent action."
+                            data-content="property">
                             <div>Between Animate Objects</div>
                         </div>
                         <div class="accordion-content" data-properties="animates">
                         </div>
-                        <div class="accordion-header large" data-definition="#between-defn" data-content="property">
+                        <div class="accordion-header large"
+                            data-definition="A relationship between an agent and an object it has interacted with."
+                            data-content="property">
                             <div>Between Animate and Inanimate Objects</div>
                         </div>
                         <div class="accordion-content" data-properties="betweens">
                         </div>
-                        <div class="accordion-header large" data-definition="#define-defn" data-content="entity">
+                        <div class="accordion-header large"
+                            data-definition="Define a new object of some type."
+                            data-content="entity">
                             <div>Define</div>
                         </div>
                         <div class="accordion-content" data-properties="types">
@@ -302,31 +204,17 @@
             <div id="content" class="span-16 last">
                 <div class="propertydiv span-8">
                     <h1>Subject</h1>
-                    <div class="entity" style="margin-top:30px">
-                        <input class="searchbox span-3" type="text" placeHolder="Find Architect" style="float:left"/>
-                        <img class="span-8 last" src="img/wordcram.png" alt="Architects"/>
-                    </div>
-                    <div class="entity">
-                        <input class="searchbox span-3" type="text" placeHolder="Find Firm" style="float:left"/>
-                        <img class="span-8 last" src="img/wordcram.png" alt="Architects"/>
-                    </div>
-                    <div class="entity">
-                        <input class="searchbox span-3" type="text" placeHolder="Find Client" style="float:left"/>
-                        <img class="span-8 last" src="img/wordcram.png" alt="Architects"/>
-                    </div>
-                    <div class="entity">
-                        <input class="searchbox span-3" type="text" placeHolder="Find Structure" style="float:left"/>
-                        <img class="span-8 last" src="img/wordcram.png" alt="Architects"/>
+                    <div class="target">
                     </div>
                 </div>
                 <div class="propertydiv span-8 last">
                     <h1>Object</h1>
-                    <div>
+                    <div class="target">
                     </div>
                 </div>
                 <div class="entitydiv span-16 last">
                     <h1>Entity</h1>
-                    <div>
+                    <div class="target">
                     </div>
                 </div>
             </div>
