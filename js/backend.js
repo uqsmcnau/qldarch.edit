@@ -122,7 +122,7 @@ function selectForEntity(workingDiv, entityDiv, resource, entry) {
 
 function selectForRelationship(workingDiv, entityDiv, resource, entry) {
     return function() {
-        entityDiv.find(".searchbox").val(resource.label);
+        entityDiv.find(".searchbox").val(resource.label).keyup();
     };
 }
 
