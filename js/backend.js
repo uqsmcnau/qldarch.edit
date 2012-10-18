@@ -8,25 +8,33 @@ function supplant(s, o) {
     );
 };
 
-var selection = new Object();
-selection.selection = null;
-selection.select = function(selected) {
-    if (selected != null) {
-        selected.addClass("selected");
+function selectionMethod(selected) {
+    if (!selected.hasClass("selected")) {
+        if (selected != null) {
+            selected.addClass("selected");
+        }
+        if (this.selection != null) {
+            this.selection.removeClass("selected");
+        }
+        this.selection = selected;
+
+        return true;
+    } else {
+        return false;
     }
-    if (this.selection != null) {
-        this.selection.removeClass("selected");
-    }
-    this.selection = selected;
 };
 
-function setDefinition(definition, f) {
+var selection = new Object();
+selection.selection = null;
+selection.select = selectionMethod;
+
+function setDefinition(definition, k) {
     $(".definitionbox>*:visible").fadeOut("fast", function() {
         $(".definitionbox").html('<div class="definition" style="display:none">' + definition + '</div>');
         $(".definitionbox .definition").fadeIn("fast");
 
-        if (f) {
-            f();
+        if (k) {
+            k();
         }
     });
 }
@@ -40,29 +48,30 @@ function populatePropertiesBox(targetJQ, properties, types) {
                 element)).children().last();
         selector.data("rdfsummary", element);
         option.click(function() {
-            selection.select($(this));
+            if (selection.select($(this))) {
 
-            var sub = $(".propertydiv .target:first");
-            sub.empty();
-            element.domain.forEach(function(uri) {
-                types.forEach(function(type) {
-                    if (type.uri == uri) {
-                        populateEntitySelection(sub, type, uri);
-                    }
+                var sub = $(".propertydiv .target:first");
+                sub.empty();
+                element.domain.forEach(function(uri) {
+                    types.forEach(function(type) {
+                        if (type.uri == uri) {
+                            populateEntitySelection(sub, type, selectForRelationship);
+                        }
+                    });
                 });
-            });
 
-            var obj = $(".propertydiv .target:last");
-            obj.empty();
-            element.range.forEach(function(uri) {
-                types.forEach(function(type) {
-                    if (type.uri == uri) {
-                        populateEntitySelection(obj, type, uri);
-                    }
+                var obj = $(".propertydiv .target:last");
+                obj.empty();
+                element.range.forEach(function(uri) {
+                    types.forEach(function(type) {
+                        if (type.uri == uri) {
+                            populateEntitySelection(obj, type, selectForRelationship);
+                        }
+                    });
                 });
-            });
 
-            setDefinition(element.definition);
+                setDefinition(element.definition);
+            }
         });
     });
 }
@@ -76,44 +85,78 @@ function populateEntitiesBox(targetJQ, properties) {
                 element)).children().last();
         selector.data("rdfsummary", element);
         option.click(function() {
-            selection.select($(this));
-            setDefinition(element.definition);
-            var target = $(".entitydiv>.target:first");
-            target.empty();
-            populateEntitySelection($(".entitydiv>.target:first"), element);
+            if (!$(this).hasClass("selected")) {
+                selection.select($(this));
+                setDefinition(element.definition);
+                var target = $(".entitydiv>.target:first");
+                target.empty();
+                populateEntitySelection($(".entitydiv>.target:first"), element, selectForEntity);
+            }
         });
     });
 }
 
-function populateEntitySelection(targetJQ, type) {
-    console.log(type);
-    var entity = $(supplant(
+
+function selectForEntity(workingDiv, entityDiv, resource, entry) {
+    return function() {
+        workingDiv.empty();
+        if (!entities[resource.uri]) {
+            workingDiv.append('<div class="alert span-8 last">Demo mode data not found</div>');
+        } else {
+            for (uri in entities[resource.uri]) {
+                if (properties[uri].editable) {
+                    var arg = {
+                            "label" : properties[uri].label,
+                            "value" : entities[resource.uri][uri]
+                    };
+                    workingDiv.append(supplant('<div class="propertypair span-8 last">' +
+                        '<label class="propertylabel span-3">{label}</label>' +
+                        '<input class="propertyvalue span-5 last" type="text" value="{value}"/></div>', arg));
+                }
+            }
+            workingDiv.append('<div class="button span-5 push-3">Update</div>');
+        }
+    };
+}
+
+
+function selectForRelationship(workingDiv, entityDiv, resource, entry) {
+    return function() {
+        entityDiv.find(".searchbox").val(resource.label);
+    };
+}
+
+function populateEntitySelection(targetJQ, type, onSelectGenerator) {
+    var entityDiv = $(supplant(
         '<div class="entity">' +
-        '    <input class="searchbox span-3 last" type="text" placeHolder="Find {label}"/>' +
-        '    <img class="span-8 last" src="img/wordcram.png" alt="{label} Wordcram"/>' +
-        '    <div class="entitylist span-8"></div>' +
+        '    <input class="searchbox" type="text" placeHolder="Find {label}"/>' +
+        '    <img class="first span-8 last" src="img/wordcram.png" alt="{label} Wordcram"/>' +
+        '    <div class="entityworking span-8 last"><div class="entitylist"></div></div>' +
         '</div>', type));
 
-    targetJQ.append(entity);
-    entity.focusin(function() {
-        entity.siblings().fadeOut("fast");
+    targetJQ.append(entityDiv);
+    entityDiv.focusin(function() {
+        entityDiv.siblings().fadeOut("fast");
     }).focusout(function() {
-        entity.siblings().fadeIn("fast");
+        entityDiv.siblings().fadeIn("fast");
     });
-    entity.find("input").keyup(function() {
+    entityDiv.find("input").keyup(function() {
         var val = $(this).val();
-        $(this).siblings(".entitylist").empty();
+        var workingDiv = $(this).parent().find(".entityworking");
+        var list = workingDiv.find(".entitylist");
+        list.empty();
         if (val != "") {
-            var list = $(this).siblings(".entitylist");
-            entityLists[type.uri].forEach(function(entity) {
+            resourcesByRdfType[type.uri].forEach(function(resource) {
                 var found = false;
                 val.split(" ").forEach(function(word) {
-                    if (entity.indexOf(word) != -1) {
+                    if (word != "" && resource.label.indexOf(word) != -1) {
                         found = true;
                     }
                 });
-                if (found != -1) {
-                    list.append('<div class="entityentry">' + entity + '</div>');
+                if (found) {
+                    var entry = $('<div class="entityentry">' + resource.label + '</div>');
+                    list.append(entry);
+                    entry.click(onSelectGenerator(workingDiv, entityDiv, resource, entry, selection));
                 }
             });
         }
@@ -166,11 +209,11 @@ function backendOnReady() {
     $(".accordion-content").each(function() {
         var p = $(this).data("properties");
         if (p == "types") {
-            populateEntitiesBox($(this), properties[p]);
-        } else if (properties[p] != null) {
-            populatePropertiesBox($(this), properties[p], properties.types);
+            populateEntitiesBox($(this), menuProperties[p]);
+        } else if (menuProperties[p] != null) {
+            populatePropertiesBox($(this), menuProperties[p], menuProperties.types);
         } else {
-            console.log("Unable to find properties: " + p + " in " + properties);
+            console.log("Unable to find properties: " + p + " in " + menuProperties);
         }
     });
 }
