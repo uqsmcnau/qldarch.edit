@@ -1,3 +1,5 @@
+var successDelay = 2000;
+
 function supplant(s, o) {
     return s.replace(
         /\{([^{}]*)\}/g,
@@ -42,17 +44,16 @@ function setDefinition(definition, k) {
 function populatePropertiesBox(targetJQ, properties, types) {
     var selector = targetJQ.html('<div class="propertyselector"></div>').children(".propertyselector");
     selector.selected = null;
-    properties.forEach(function(element) {
+    properties.forEach(function(property) {
         var option = selector.append(supplant(
                 '<div class="propertyoption" data-uri="{uri}">... {label} ...</div>',
-                element)).children().last();
-        selector.data("rdfsummary", element);
+                property)).children().last();
+        option.data("rdfsummary", property);
         option.click(function() {
             if (selection.select($(this))) {
-
                 var sub = $(".propertydiv .target:first");
                 sub.empty();
-                element.domain.forEach(function(uri) {
+                property.domain.forEach(function(uri) {
                     types.forEach(function(type) {
                         if (type.uri == uri) {
                             populateEntitySelection(sub, type, selectForRelationship);
@@ -62,7 +63,7 @@ function populatePropertiesBox(targetJQ, properties, types) {
 
                 var obj = $(".propertydiv .target:last");
                 obj.empty();
-                element.range.forEach(function(uri) {
+                property.range.forEach(function(uri) {
                     types.forEach(function(type) {
                         if (type.uri == uri) {
                             populateEntitySelection(obj, type, selectForRelationship);
@@ -70,7 +71,7 @@ function populatePropertiesBox(targetJQ, properties, types) {
                     });
                 });
 
-                setDefinition(element.definition);
+                setDefinition(property.definition);
             }
         });
     });
@@ -79,18 +80,18 @@ function populatePropertiesBox(targetJQ, properties, types) {
 function populateEntitiesBox(targetJQ, properties) {
     var selector = targetJQ.html('<div class="propertyselector entity"></div>').children(".propertyselector");
     selector.selected = null;
-    properties.forEach(function(element, index, array) {
+    properties.forEach(function(entity) {
         var option = selector.append(supplant(
                 '<div class="propertyoption" data-uri="{uri}">{label} ...</div>',
-                element)).children().last();
-        selector.data("rdfsummary", element);
+                entity)).children().last();
+        option.data("rdfsummary", entity);
         option.click(function() {
             if (!$(this).hasClass("selected")) {
                 selection.select($(this));
-                setDefinition(element.definition);
+                setDefinition(entity.definition);
                 var target = $(".entitydiv>.target:first");
                 target.empty();
-                populateEntitySelection($(".entitydiv>.target:first"), element, selectForEntity);
+                populateEntitySelection($(".entitydiv>.target:first"), entity, selectForEntity);
             }
         });
     });
@@ -99,22 +100,35 @@ function populateEntitiesBox(targetJQ, properties) {
 
 function selectForEntity(workingDiv, entityDiv, resource, entry) {
     return function() {
-        workingDiv.empty();
+        entityDiv.find(".searchbox").val(resource.label);
+        $(this).addClass("selected").siblings().fadeOut("fast", function() { $(this).remove(); });
+        var targetDiv = $("#definediv .target");
         if (!entities[resource.uri]) {
-            workingDiv.append('<div class="alert span-8 last">Demo mode data not found</div>');
+            targetDiv.append('<div class="alert">Demo mode data not found</div>');
         } else {
+            targetDiv.append('<div class="detailsbox"></div>');
+            var detailsDiv = targetDiv.find(".detailsbox");
             for (uri in entities[resource.uri]) {
                 if (properties[uri].editable) {
                     var arg = {
                             "label" : properties[uri].label,
                             "value" : entities[resource.uri][uri]
                     };
-                    workingDiv.append(supplant('<div class="propertypair span-8 last">' +
+                    detailsDiv.append(supplant('<div class="propertypair span-8 last">' +
                         '<label class="propertylabel span-3">{label}</label>' +
-                        '<input class="propertyvalue span-5 last" type="text" value="{value}"/></div>', arg));
+                        '<input class="propertyvalue span-4 last" type="text" value="{value}"/></div>', arg));
                 }
             }
-            workingDiv.append('<div class="button span-5 push-3">Update</div>');
+            targetDiv.append('<div class="button span-8 last">Update/Create Entity</div>')
+                .find(".button")
+                .click(function() {
+                    $(this).fadeOut("fast", function() {
+                        $(this).replaceWith('<div class="success span-8 last">Entity Updated</div>');
+                        targetDiv.children().delay(successDelay).fadeOut("slow", function() {
+                            $(this).remove();
+                        });
+                    });
+                });
         }
     };
 }
@@ -122,7 +136,42 @@ function selectForEntity(workingDiv, entityDiv, resource, entry) {
 
 function selectForRelationship(workingDiv, entityDiv, resource, entry) {
     return function() {
-        entityDiv.find(".searchbox").val(resource.label).keyup();
+        entityDiv.find(".searchbox").val(resource.label);
+        $(this).addClass("selected").siblings().fadeOut("fast", function() { $(this).remove(); });
+        if ($(".entitylist .selected").length == 2 &&
+                $(".confirmrelationship.button").length == 0) {
+            var reificationType = $("#relationshipdiv .selected").data("rdfsummary").reification;
+            $("#relationshipdiv").append('<div class="relationshipbox"></div>');
+            var relationshipDiv = $("#relationshipdiv .relationshipbox");
+
+            if (reificationType) {
+                relationshipDiv.append('<div class="detailsbox"></div>');
+                var detailsDiv = $("#relationshipdiv .detailsbox");
+                $.each(properties, function(i, property) {
+                    // If the domain contains the relatinship
+                    if (property.editable && property.domain && property.domain.indexOf(reificationType) != -1) {
+                        var arg = {
+                                "label" : property.label,
+                                "value" : ""
+                        };
+                        detailsDiv.append(supplant('<div class="propertypair span-8 last">' +
+                            '<label class="propertylabel span-3">{label}</label>' +
+                            '<input class="propertyvalue span-4 last" type="text" value="{value}"/></div>', arg));
+                    }
+                });
+            }
+            relationshipDiv.append(
+                '<div class="confirmrelationship button span-8 last">Confirm Relationship</div>')
+                .find(".button")
+                .click(function() {
+                    $(this).fadeOut("fast", function() {
+                        $(this).replaceWith('<div class="success span-8 last">Relationship Added</div>');
+                        relationshipDiv.delay(successDelay).fadeOut("slow", function() {
+                            $(this).remove();
+                        });
+                    });
+                });
+        }
     };
 }
 
@@ -135,29 +184,44 @@ function populateEntitySelection(targetJQ, type, onSelectGenerator) {
         '</div>', type));
 
     targetJQ.append(entityDiv);
-    entityDiv.focusin(function() {
-        entityDiv.siblings().fadeOut("fast");
-    }).focusout(function() {
-        entityDiv.siblings().fadeIn("fast");
-    });
-    entityDiv.find("input").keyup(function() {
+    entityDiv.find(".searchbox").keyup(function() {
         var val = $(this).val();
+
+        // Handle sibling entity types.
+        if (val == "") {
+            entityDiv.siblings().fadeIn("fast");
+        } else {
+            entityDiv.siblings().hide();
+        }
+
+        // Handle entity list
         var workingDiv = $(this).parent().find(".entityworking");
         var list = workingDiv.find(".entitylist");
         list.empty();
         if (val != "") {
+            var resources = [];
             resourcesByRdfType[type.uri].forEach(function(resource) {
-                var found = false;
-                val.split(" ").forEach(function(word) {
-                    if (word != "" && resource.label.indexOf(word) != -1) {
-                        found = true;
+                if (val == resource.label) {
+                    resources.push(resource);
+                }
+            });
+            if (resources.length == 0) {
+                resourcesByRdfType[type.uri].forEach(function(resource) {
+                    var found = false;
+                    val.split(" ").forEach(function(word) {
+                        if (word != "" && resource.label.indexOf(word) != -1) {
+                            found = true;
+                        }
+                    });
+                    if (found) {
+                        resources.push(resource);
                     }
                 });
-                if (found) {
-                    var entry = $('<div class="entityentry">' + resource.label + '</div>');
-                    list.append(entry);
-                    entry.click(onSelectGenerator(workingDiv, entityDiv, resource, entry, selection));
-                }
+            }
+            resources.forEach(function(resource) {
+                var entry = $('<div class="entityentry">' + resource.label + '</div>');
+                list.append(entry);
+                entry.click(onSelectGenerator(workingDiv, entityDiv, resource, entry, selection));
             });
         }
     });
