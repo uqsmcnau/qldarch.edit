@@ -229,7 +229,7 @@ function populateEntitySelection(targetJQ, type, onSelectGenerator) {
 
 function frontendOnReady() {
     var primaryDiv = $("#primary");
-    var entityDiv = $(".entities");
+    var entityDiv = $(".rightbar");
 
     displaySearchDiv(primaryDiv);
     displayEntities(entityDiv);
@@ -237,13 +237,67 @@ function frontendOnReady() {
 }
 
 function displaySearchDiv(parentDiv) {
-    displayContentDiv(contentDiv);
     parentDiv.html('<div class="contentsearch span-8"/><div class="search span-8"><input class="mainsearch span-6 last" type="text" value="" placeHolder="Search"/></div>');
+    displayContentDiv(parentDiv.find(".contentsearch"));
+    updateContentDiv("");
     parentDiv.find(".mainsearch").keyup(function () {
         updateEntities($(this).val());
     });
 }
 
+function displayContentDiv(parentDiv) {
+    types.artifacts.forEach(function(type) {
+        var typeDiv = $(supplant(
+            '<div class="contenttype" data-uri="{uri}">' +
+            '    <div class="contentworking span-8 last"><div class="contentlisttitle span-8">{label}</div><div class="contentlist"></div></div>' +
+            '</div>', type));
+        typeDiv.data("type", type);
+        parentDiv.append(typeDiv)
+    });
+}
+
+function updateContentDiv(val) {
+    $(".contenttype").each(function (i, contentDiv) {
+        var type = $(contentDiv).data("type");
+        var list = $(contentDiv).find(".contentlist");
+        list.empty();
+        if (val != "") {
+            var resources = [];
+            contentByRdfType[type.uri].forEach(function(resource) {
+                if (val == resource.label) {
+                    resources.push(resource);
+                }
+            });
+            if (resources.length == 0) {
+                resourcesByRdfType[type.uri].forEach(function(resource) {
+                    var found = false;
+                    val.split(" ").forEach(function(word) {
+                        if (word != "" && resource.label.indexOf(word) != -1) {
+                            found = true;
+                        }
+                    });
+                    if (found) {
+                        resources.push(resource);
+                    }
+                });
+            }
+            if (resources.length == 0) {
+                $(contentDiv).removeClass("available");
+                $(contentDiv).fadeOut("fast");
+            } else {
+                $(contentDiv).addClass("available");
+                resources.forEach(function(resource) {
+                    var entry = $('<div class="contententry">' + resource.label + '</div>');
+                    list.append(entry);
+    //                entry.click(onSelectGenerator(workingDiv, entityDiv, resource, entry, selection));
+                });
+            }
+        } else {
+            // Search box is empty.
+            $(contentDiv).addClass("available");
+        }
+    });
+}
 function displayEntities(parentDiv) {
     menuProperties.types.forEach(function(type) {
         var typeDiv = $(supplant(
@@ -260,7 +314,7 @@ function displayEntities(parentDiv) {
 }
 
 function updateEntities(val) {
-    $(".entities .entity").each(function (i, entity) {
+    $(".entity").each(function (i, entity) {
         var type = $(entity).data("type");
         var list = $(entity).find(".entitylist");
         list.empty();
@@ -307,4 +361,3 @@ function updateEntities(val) {
         }
     });
 }
-

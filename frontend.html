@@ -26,60 +26,32 @@
                 margin-top: 100px;
             }
 
-            .entities {
+            .entities,
+            .contentsearch {
                 margin-top: 10px;
                 margin-bottom: 10px;
             }
 
-            .entities .entity {
+            .entities .entity,
+            .contentsearch .contenttype {
                 border-left: 1px solid lightgrey;
                 border-right: 1px solid lightgrey;
                 border-top: 1px solid lightgrey;
             }
 
-            .entities .entity.available {
+            .entities .entity.available,
+            .contentsearch .contenttype.available {
                 border-bottom: 1px solid lightgrey;
             }
 
-            .entity {
+            .entity,
+            .contenttype {
                 float: left;
                 padding: 1px;
             }
 
-            .accordion-header {
-                background: #999999;
-                color: #1a1a1a;
-                border-radius:20px;
-                margin-bottom:5px;
-                margin-top:5px;
-            }
-
-            .accordion-content {
-                display:none;
-            }
-
-            .accordion {
-                margin-bottom: 30px;
-            }
-
-            .definition {
-                position:relative;
-                top: 1em;
-            }
-
-            .definitionbox {
-                border:1px solid lightgrey;
-                margin-bottom: 30px;
-            }
-
-            .detailsbox {
-                border:1px solid lightgrey;
-                margin-bottom: 30px;
-                float:left;
-            }
-
-            .propertyselector,
-            .entitylist {
+            .entitylist,
+            .contentlist {
                 overflow-y: auto;
                 padding-top: 5px;
                 padding-bottom: 5px;
@@ -87,34 +59,22 @@
                 padding-right: 10px;
                 margin-right:20px;
                 text-align: left;
-            }
-
-
-            .propertyselector {
-                max-height: 5em;
-            }
-
-            .entitylist {
                 max-height: 200px;
             }
 
-            .propertyselector :nth-child(2n-1),
-            .entitylist :nth-child(2n-1) {
+            .entitylist :nth-child(2n-1),
+            .contentlist :nth-child(2n-1) {
                 background: #e5e5e5;
             }
 
-            .propertyoption.selected,
-            .entityentry.selected {
+            .entityentry.selected,
+            .contententry.selected {
                 background: #555555;
                 color: #e5e5e5;
             }
 
-            .propertyoption {
-                text-indent: 10px;
-            }
-
-            .propertyoption:hover,
-            .entityentry:hover {
+            .entityentry:hover,
+            .contententry:hover {
                 background: #333333;
                 color: #e5e5e5;
                 cursor: default;
@@ -384,6 +344,19 @@
             var types = {
                 artifacts : [
                   {
+                      uri: "http://qldarch.net/rdf#Interview",
+                      label: "Interview",
+                      definition: "An recorded directed discussion between two or more individuals"
+
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#Photograph",
+                      label: "Photograph",
+                      definition: "A Photograph"
+                  }
+                ],
+                proper : [
+                  {
                       uri: "http://qldarch.net/rdf#Architect",
                       label: "Architect",
                       definition: "A person who is or has been an Architect"
@@ -409,23 +382,10 @@
                       label: "Award",
                       definition: "An recognition of meritorious conduct or achivement"
                   }
-                ],
-                proper : [
-                  {
-                      uri: "http://qldarch.net/rdf#Interview",
-                      label: "Interview",
-                      definition: "An recorded directed discussion between two or more individuals"
-
-                  },
-                  {
-                      uri: "http://qldarch.net/rdf#Photograph",
-                      label: "Photograph",
-                      definition: "A Photograph"
-                  }
                 ]
             };
 
-            var content {
+            var contentByRdfType = {
                 "http://qldarch.net/rdf#Interview" : [
                     {
                         uri: "http://qldarch.net/rdf/resources#00013",
@@ -460,7 +420,7 @@
             <div id="logo" class="span-24"><h1 class="logo">Digital Archive of Queensland Architecture</h1></div>
             <div id="primary" class="span-16">
             </div>
-            <div class="entities span-8 last">
+            <div class="rightbar span-8 last">
             </div>
         </div>
     </body>
