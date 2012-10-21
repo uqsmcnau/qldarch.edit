@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Digital Archive of Queensland Architecture</title>
+        <link rel="stylesheet" href="css/blueprint/screen.css" type="text/css" media="screen, projection">
+        <link rel="stylesheet" href="css/blueprint/print.css" type="text/css" media="print"> 
+        <!--[if lt IE 8]>
+            <link rel="stylesheet" href="css/blueprint/ie.css" type="text/css" media="screen, projection">
+        <![endif]-->
+        <style>
+            body * {
+                font-family: Helvetica, Arial, Geneva, sans-serif;
+            }
+
+            #logo h1 {
+                color: #000000;
+                display: inline-block;
+                font-family: Helvetica, Arial, Geneva, sans-serif;
+                font-size: 27px;
+                font-weight: 200;
+                margin-bottom: 0px;
+                margin-top: 10px;
+            }
+
+            .search {
+                margin-top: 100px;
+            }
+
+            .entities {
+                margin-top: 10px;
+                margin-bottom: 10px;
+            }
+
+            .entities .entity {
+                border-left: 1px solid lightgrey;
+                border-right: 1px solid lightgrey;
+                border-top: 1px solid lightgrey;
+            }
+
+            .entities .entity.available {
+                border-bottom: 1px solid lightgrey;
+            }
+
+            .entity {
+                float: left;
+                padding: 1px;
+            }
+
+            .accordion-header {
+                background: #999999;
+                color: #1a1a1a;
+                border-radius:20px;
+                margin-bottom:5px;
+                margin-top:5px;
+            }
+
+            .accordion-content {
+                display:none;
+            }
+
+            .accordion {
+                margin-bottom: 30px;
+            }
+
+            .definition {
+                position:relative;
+                top: 1em;
+            }
+
+            .definitionbox {
+                border:1px solid lightgrey;
+                margin-bottom: 30px;
+            }
+
+            .detailsbox {
+                border:1px solid lightgrey;
+                margin-bottom: 30px;
+                float:left;
+            }
+
+            .propertyselector,
+            .entitylist {
+                overflow-y: auto;
+                padding-top: 5px;
+                padding-bottom: 5px;
+                padding-left: 20px;
+                padding-right: 10px;
+                margin-right:20px;
+                text-align: left;
+            }
+
+
+            .propertyselector {
+                max-height: 5em;
+            }
+
+            .entitylist {
+                max-height: 200px;
+            }
+
+            .propertyselector :nth-child(2n-1),
+            .entitylist :nth-child(2n-1) {
+                background: #e5e5e5;
+            }
+
+            .propertyoption.selected,
+            .entityentry.selected {
+                background: #555555;
+                color: #e5e5e5;
+            }
+
+            .propertyoption {
+                text-indent: 10px;
+            }
+
+            .propertyoption:hover,
+            .entityentry:hover {
+                background: #333333;
+                color: #e5e5e5;
+                cursor: default;
+            }
+
+            input.searchbox {
+                float: left;
+                margin: 0px;
+                left: 0px;
+                width: 98px;
+            }
+
+            #content img {
+                margin-bottom: 30px;
+            }
+
+            .propertypair {
+                margin-bottom: 5px;
+            }
+
+            .propertypair:first-of-type {
+                margin-top: 10px;
+            }
+
+            .propertypair:last-of-type {
+                margin-bottom: 10px;
+            }
+
+            label.propertylabel {
+                text-align: left;
+                padding-left: 10px;
+            }
+
+            input.propertyvalue {
+                margin: 0px;
+                padding-right:10px;
+            }
+
+            div.button {
+                background: #999999;
+                color: #1a1a1a;
+                text-align: center;
+                border-radius:5px;
+                cursor: default;
+                padding-top: 10px;
+                padding-bottom: 10px;
+            }
+
+            .alert.span-8.last {
+                width:  288px;
+            }
+
+            .success.span-8.last {
+                width:  288px;
+            }
+
+        </style>
+        <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
+        <script type="text/javascript">
+            var menuProperties = {
+                animates : [
+                  {
+                      uri: "http://qldarch.net/rdf#employeeOf",
+                      label: "employee of",
+                      definition: "The subject was an employee of the indicated firm",
+                      domain: [ "http://qldarch.net/rdf#Architect" ],
+                      range: [ "http://qldarch.net/rdf#Firm" ],
+                      reification: "http://qldarch.net/rdf#EmployeeRelation"
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#wasPartnerAt",
+                      label: "was a partner at",
+                      definition: "The subject was an partner at the indicated firm",
+                      domain: [ "http://qldarch.net/rdf#Architect" ],
+                      range: [ "http://qldarch.net/rdf#Firm" ],
+                      reification: "http://qldarch.net/rdf#PartnerRelation"
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#collaboratedWith",
+                      label: "collaborated with",
+                      definition: "The subject collaborated with the indicated architect",
+                      domain: [ "http://qldarch.net/rdf#Architect" ],
+                      range: [ "http://qldarch.net/rdf#Architect" ],
+                  },
+              ],
+                betweens : [
+                  {
+                      uri: "http://qldarch.net/rdf#designed",
+                      label: "designed",
+                      definition: "The subject was involved in designing the indicated structure",
+                      domain: [ "http://qldarch.net/rdf#Architect" ],
+                      range: [ "http://qldarch.net/rdf#Structure" ],
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#receivedAward",
+                      label: "received award",
+                      definition: "The subject received the indicated award.",
+                      domain: [ "http://qldarch.net/rdf#Architect", "http://qldarch.net/rdf#Structure" ],
+                      range: [ "http://qldarch.net/rdf#Award" ],
+                  },
+              ],
+                types : [
+                  {
+                      uri: "http://qldarch.net/rdf#Architect",
+                      label: "Architect",
+                      definition: "A person who is or has been an Architect"
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#Firm",
+                      label: "Firm",
+                      definition: "A business with a recognised continuity of identity"
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#Client",
+                      label: "Client",
+                      definition: "An agent who has engaged an Architect or Firm on a project"
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#Structure",
+                      label: "Structure",
+                      definition: "A building, or other distinguishable part of our built environment"
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#Award",
+                      label: "Award",
+                      definition: "An recognition of meritorious conduct or achivement"
+                  }
+              ]
+            };
+            var properties = {
+                uri: {
+                    label: "URI",
+                    editable: false
+                },
+                label: {
+                    label: "Label",
+                    editable: true
+                },
+                "rdf:type" : {
+                    label: "RDF Type",
+                    editable: false
+                },
+                "foaf:firstName" : {
+                    label: "First Name",
+                    editable: true
+                },
+                "foaf:lastName" : {
+                    label: "Last Name",
+                    editable: true
+                },
+                "qldarch:beganEmployment" : {
+                    label: "Began Employment",
+                    editable: true,
+                    domain: [ "http://qldarch.net/rdf#EmployeeRelation", "http://qldarch.net/rdf#PartnerRelation" ],
+                    range: [ "xsd:date" ]
+                },
+                "qldarch:endedEmployment" : {
+                    label: "Ended Employment",
+                    editable: true,
+                    domain: [ "http://qldarch.net/rdf#EmployeeRelation", "http://qldarch.net/rdf#PartnerRelation" ],
+                    range: [ "xsd:date" ]
+                },
+                "qldarch:relationDescription" : {
+                    label: "Other Details",
+                    editable: true,
+                    domain: [ "http://qldarch.net/rdf#EmployeeRelation", "http://qldarch.net/rdf#PartnerRelation" ],
+                    range: [ "xsd:string" ]
+                },
+            };
+            var entities = {
+                "http://qldarch.net/rdf/resources#00001" : {
+                    uri: "http://qldarch.net/rdf/resources#00001",
+                    label: "Graham Bligh",
+                    "rdf:type" : "http://qldarch.net/rdf#Architect",
+                    "foaf:firstName" : "Graham",
+                    "foaf:lastName" : "Bligh"
+                },
+                "http://qldarch.net/rdf/resources#00002" : {
+                    uri: "http://qldarch.net/rdf/resources#00002",
+                    label: "James Birrell",
+                    "rdf:type" : "http://qldarch.net/rdf#Architect",
+                    "foaf:firstName" : "James",
+                    "foaf:lastName" : "Birrell"
+                },
+                "http://qldarch.net/rdf/resources#00003" : {
+                    uri: "http://qldarch.net/rdf/resources#00003",
+                    label: "Ian Chalton",
+                    "rdf:type" : "http://qldarch.net/rdf#Architect",
+                    "foaf:firstName" : "Ian",
+                    "foaf:lastName" : "Charlton"
+                },
+                "http://qldarch.net/rdf/resources#00004" : {
+                    uri: "http://qldarch.net/rdf/resources#00004",
+                    label: "Jon Voller",
+                    "rdf:type" : "http://qldarch.net/rdf#Architect",
+                    "foaf:firstName" : "Jon",
+                    "foaf:lastName" : "Voller"
+                },
+                "http://qldarch.net/rdf/resources#00005" : {
+                    uri: "http://qldarch.net/rdf/resources#00005",
+                    label: "Blair Wilson",
+                    "rdf:type" : "http://qldarch.net/rdf#Architect",
+                    "foaf:firstName" : "Blair",
+                    "foaf:lastName" : "Wilson"
+                },
+            };
+            var resourcesByRdfType = {
+                "http://qldarch.net/rdf#Architect" : [
+                {
+                    uri: "http://qldarch.net/rdf/resources#00001",
+                    label: "Graham Bligh"
+                },
+                {
+                    uri: "http://qldarch.net/rdf/resources#00002",
+                    label: "James Birrell"
+                },
+                {
+                    uri: "http://qldarch.net/rdf/resources#00003",
+                    label: "Ian Charlton"
+                },
+                {
+                    uri: "http://qldarch.net/rdf/resources#00004",
+                    label: "Jon Voller"
+                },
+                {
+                    uri: "http://qldarch.net/rdf/resources#00005",
+                    label: "Blair Wilson"
+                }
+                ],
+                "http://qldarch.net/rdf#Firm" : [
+                {
+                    uri: "http://qldarch.net/rdf/resources#00006",
+                    label: "Hayes and Scott"
+                },
+                {
+                    uri: "http://qldarch.net/rdf/resources#00007",
+                    label: "Bligh, Jessup, Bretnall and Partners"
+                },
+                {
+                    uri: "http://qldarch.net/rdf/resources#00008",
+                    label: "Colin and Fulton"
+                }
+                ],
+                "http://qldarch.net/rdf#Client" : [
+                {
+                    uri: "http://qldarch.net/rdf/resources#00009",
+                    label: "The University of Queensland"
+                }
+                ],
+                "http://qldarch.net/rdf#Structure" : [
+                {
+                    uri: "http://qldarch.net/rdf/resources#00010",
+                    label: "International House UQ"
+                },
+                {
+                    uri: "http://qldarch.net/rdf/resources#00011",
+                    label: "Schonel Theatre UQ"
+                },
+                {
+                    uri: "http://qldarch.net/rdf/resources#00012",
+                    label: "Cutt House"
+                }
+                ],
+                "http://qldarch.net/rdf#Award" : []
+            };
+
+            var types = {
+                artifacts : [
+                  {
+                      uri: "http://qldarch.net/rdf#Architect",
+                      label: "Architect",
+                      definition: "A person who is or has been an Architect"
+
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#Firm",
+                      label: "Firm",
+                      definition: "A business with a recognised continuity of identity"
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#Client",
+                      label: "Client",
+                      definition: "An agent who has engaged an Architect or Firm on a project"
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#Structure",
+                      label: "Structure",
+                      definition: "A building, or other distinguishable part of our built environment"
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#Award",
+                      label: "Award",
+                      definition: "An recognition of meritorious conduct or achivement"
+                  }
+                ],
+                proper : [
+                  {
+                      uri: "http://qldarch.net/rdf#Interview",
+                      label: "Interview",
+                      definition: "An recorded directed discussion between two or more individuals"
+
+                  },
+                  {
+                      uri: "http://qldarch.net/rdf#Photograph",
+                      label: "Photograph",
+                      definition: "A Photograph"
+                  }
+                ]
+            };
+
+            var content {
+                "http://qldarch.net/rdf#Interview" : [
+                    {
+                        uri: "http://qldarch.net/rdf/resources#00013",
+                        label: "Interview with James Birrell",
+                        audio: "audio/Birrell.ogg",
+                        transcript: "transcript/Birrell.json"
+                    },
+                    {
+                        uri: "http://qldarch.net/rdf/resources#00014",
+                        label: "Interview with Graham Bligh",
+                        audio: "audio/Bligh.ogg",
+                        transcript: "transcript/Bligh.json"
+                    },
+                    {
+                        uri: "http://qldarch.net/rdf/resources#00014",
+                        label: "Interview with Duncan McPhee",
+                        audio: "audio/Duncan.ogg",
+                        transcript: "transcript/Duncan.json"
+                    },
+                ]
+            };
+        </script>
+        <script type="text/javascript" src="js/frontend.js"></script>
+        <script type="text/javascript">
+            $(function() {
+                frontendOnReady();
+            });
+        </script>
+    </head>
+    <body>
+        <div class="container top">
+            <div id="logo" class="span-24"><h1 class="logo">Digital Archive of Queensland Architecture</h1></div>
+            <div id="primary" class="span-16">
+            </div>
+            <div class="entities span-8 last">
+            </div>
+        </div>
+    </body>
+</html>
