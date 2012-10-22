@@ -14,7 +14,7 @@
 
             #logo {
                 border-bottom: 1px solid lightgrey;
-                margin-bottom: 10px;
+                margin-bottom: 20px;
             }
 
             #logo h1 {
@@ -28,12 +28,6 @@
 
             h2.columntitle {
                 font-size: 20px;
-            }
-
-            #mainsearch,
-            #maincontent,
-            #mainentities {
-                margin-top: 10px;
             }
 
             #mainsearch input {
@@ -94,15 +88,36 @@
                 cursor: default;
             }
 
-            input.searchbox {
-                float: left;
-                margin: 0px;
-                left: 0px;
-                width: 98px;
+            #transcript {
+                border-left: 1px solid lightgrey;
+                border-right: 1px solid lightgrey;
+                border-bottom: 1px solid lightgrey;
+                height: 500px;
+                overflow:hidden;
             }
 
-            #content img {
-                margin-bottom: 30px;
+            audio {
+                border-left: 1px solid lightgrey;
+                border-right: 1px solid lightgrey;
+                border-top: 1px solid lightgrey;
+            }
+
+            .returnbutton {
+                background: #333333;
+                color: #e5e5e5;
+                padding-left:20px;
+                padding-top:10px;
+                padding-bottom:10px;
+                border-radius: 10px;
+                font-weight: 200;
+                font-size: 20px;
+                width: 210px;
+                cursor: default;
+            }
+
+            .returnbutton:hover {
+                color: #333333;
+                background: #e5e5e5;
             }
 
             .propertypair {
@@ -411,27 +426,31 @@
                     {
                         uri: "http://qldarch.net/rdf/resources#00013",
                         label: "Interview with James Birrell",
-                        audio: "audio/Birrell.ogg",
+                        audio: "audio/Birrell_JM_and_AW.ogg",
                         transcript: "transcript/Birrell.json",
-                        keywords: "James|Birrell|Interview"
+                        keywords: "James|Birrell|Interview",
+                        "rdf:type": "http://qldarch.net/rdf#Interview"
                     },
                     {
                         uri: "http://qldarch.net/rdf/resources#00014",
                         label: "Interview with Graham Bligh",
                         audio: "audio/Bligh.ogg",
                         transcript: "transcript/Bligh.json",
-                        keywords: "Graham|Bligh|Interview"
+                        keywords: "Graham|Bligh|Interview",
+                        "rdf:type": "http://qldarch.net/rdf#Interview"
                     },
                     {
                         uri: "http://qldarch.net/rdf/resources#00014",
                         label: "Interview with Duncan McPhee",
                         audio: "audio/Duncan.ogg",
                         transcript: "transcript/Duncan.json",
-                        keywords: "Duncan|McPhee|Interview"
+                        keywords: "Duncan|McPhee|Interview",
+                        "rdf:type": "http://qldarch.net/rdf#Interview"
                     },
                 ]
             };
         </script>
+        <script type="text/javascript" src="js/popcorn-complete.min.js"></script>
         <script type="text/javascript" src="js/frontend.js"></script>
         <script type="text/javascript">
             $(function() {

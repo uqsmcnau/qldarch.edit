@@ -274,7 +274,7 @@ function updateContentDiv(val) {
             resources.forEach(function(resource) {
                 var entry = $('<div class="contententry">' + resource.label + '</div>');
                 list.append(entry);
-//                entry.click(onSelectGenerator(workingDiv, entityDiv, resource, entry, selection));
+                entry.click(selectFunctions[resource["rdf:type"]](resource, entry));
             });
         }
     });
@@ -332,6 +332,7 @@ function updateEntities(val) {
                 $(entity).fadeOut("fast");
             } else {
                 $(entity).addClass("available");
+                $(entity).fadeIn("fast");
                 resources.forEach(function(resource) {
                     var entry = $('<div class="entityentry">' + resource.label + '</div>');
                     list.append(entry);
@@ -351,3 +352,91 @@ function updateEntities(val) {
     available.filter(":not(:last)").removeClass("final");
     available.filter(":last").addClass("final");
 }
+
+function displayInterview(resource) {
+    $.getJSON(resource.transcript, function(transcript) {
+        $("#primary").html(supplant(
+            '<div id="headerdiv" class="span-24">' +
+                '<div class="span-18">' +
+                    '<h2 class="columntitle">{title}</h2>' + 
+                    '<h3>Conducted on {date}</h3>' +
+                '</div>' +
+                '<div class="returnbutton span-6 last">Return to Search...</div>' +
+            '</div>' + 
+            '<div id="audiodiv" class="span-8"></div>', transcript));
+
+        $("#primary .returnbutton").click(function() {
+            displayFrontPage();
+        });
+
+        $("#audiodiv").append(supplant(
+            '<audio id="audiocontrol" class="span-8" controls="controls">' + 
+                '<source src="{audio}" type="audio/ogg">' +
+            '</audio>' +
+            '<div id="transcript" class="transcript span-8">', resource));
+
+        $("#primary").append(
+            '<div id="interviewcontentdiv" class="span-16 last">' +
+            '</div>');
+
+        linkAndPlayInterview(transcript, $("#transcript"));
+    });
+}
+
+function linkAndPlayInterview(transcript, transcriptdiv) {
+    function subtitleUpdater(jqElement, offset, show) {
+        var toppos = jqElement.position().top - offset;
+        return function(options) {
+            if (show) {
+                jqElement.animate({"opacity": "1.0"});
+                transcriptdiv.animate({"scrollTop": toppos - 50}, function() { jqElement.animate({"opacity": "1.0"}); });
+            } else {
+                transcriptdiv.stop();
+                jqElement.animate({"opacity": "0.5"});
+            }
+        };
+    }
+
+    var popcorn = Popcorn("#audiocontrol");
+    for (var i = 0; i < transcript.exchanges.length; i++) {
+        var curr = transcript.exchanges[i];
+        var next = transcript.exchanges[i+1];
+
+        var start = Math.max(0.5, Popcorn.util.toSeconds(curr.time)) - 0.5;
+        var end = next ? Popcorn.util.toSeconds(next.time) - 0.5 : popcorn.duration();
+
+        var speakerdiv = $('<div class="speaker" />').text(curr.speaker);
+        var speechdiv = $('<div class="speech" />').text(curr.transcript);
+
+        var subtitlediv = $('<div class="subtitle" style="display:block;opacity:0.5"/>');
+        subtitlediv.data("start", start).data("end", end);
+        subtitlediv.append(speakerdiv).append(speechdiv);
+        subtitlediv.click(function() {
+            popcorn.currentTime($(this).data("start"));
+        });
+
+        transcriptdiv.append(subtitlediv);
+
+        popcorn.code({
+            start: start,
+            end: end,
+            onStart: subtitleUpdater(subtitlediv, transcriptdiv.position().top, true),
+            onEnd: subtitleUpdater(subtitlediv, transcriptdiv.position().top, false)
+        });
+    }
+
+    popcorn.play();
+}
+
+function selectForInterview(resource, entry) {
+    return function() {
+        console.log("Displaying Interview");
+        displayInterview(resource);
+        console.log("Interview displayed");
+    };
+}
+
+var selectFunctions = {
+    "http://qldarch.net/rdf#Interview" : selectForInterview
+};
+
