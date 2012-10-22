@@ -196,7 +196,7 @@ function displayFrontPage() {
     displaySearchDiv($("#searchdiv"));
     displayContentDiv($("#contentdiv"));
     displayEntityDiv($("#entitydiv"));
-    updateEntities("");
+    updateEntities("", true);
     updateContentDiv("");
 }
 
@@ -204,9 +204,15 @@ function displaySearchDiv(parentDiv) {
     parentDiv.html('<input class="span-8 last" type="text" value="" placeHolder="Search Content, People and Things"/></div>');
 
     parentDiv.find("input").keyup(function () {
-        updateEntities($(this).val());
+        updateEntities($(this).val(), true);
         updateContentDiv($(this).val());
     });
+}
+
+function updateSearchDiv(val) {
+    if ($("#searchdiv")) {
+        $("#searchdiv input").val(val);
+    }
 }
 
 function displayContentDiv(parentDiv) {
@@ -228,7 +234,7 @@ function updateContentDiv(val) {
         list.empty();
         var resources = [];
         var contentRecords = contentByRdfType[type.uri];
-        if (val != "") {
+        if (contentRecords && val != "") {
             contentRecords.forEach(function(resource) {
                 if (val == resource.label) {
                     resources.push(resource);
@@ -287,18 +293,29 @@ function displayEntityDiv(parentDiv) {
     menuProperties.types.forEach(function(type) {
         var typeDiv = $(supplant(
             '<div class="entity" data-uri="{uri}">' +
-            '    <div class="wordgram span-8 last">' +
-            '    <input class="searchbox" type="text" placeHolder="Find {label}"/>' +
-            '    <img class="first span-8 last" src="img/wordcram.png" alt="{label} Wordcram"/>' +
-            '    </div>' +
-            '    <div class="entityworking span-8 last" style="display:none"><div class="entitylisttitle span-8">{label}</div><div class="entitylist"></div></div>' +
+                '<input class="searchbox span-5" type="text" placeHolder="Find {label}"/>' +
+                '<div class="wordgram span-8 last">' +
+                    '<img class="first span-8 last" src="img/wordcram.png" alt="{label} Wordcram"/>' +
+                '</div>' +
+                '<div class="entityworking span-8 last" style="display:none"><div class="entitylisttitle">{label}</div><div class="entitylist"></div></div>' +
             '</div>', type));
         typeDiv.data("type", type);
         parentDiv.append(typeDiv)
+
+        typeDiv.find("input").keyup(function() {
+            var val = $(this).val();
+            updateSearchDiv(val);
+            updateContentDiv(val);
+            updateEntities(val, false);
+            if (val != "") {
+                $(this).parents(".entity").siblings().removeClass("final").fadeOut("fast");
+                $(this).parents(".entity").addClass("final").fadeIn("fast");
+            }
+        });
     });
 }
 
-function updateEntities(val) {
+function updateEntities(val, show) {
     val = $.trim(val);
     $(".entity").each(function (i, entity) {
         var type = $(entity).data("type");
@@ -332,7 +349,9 @@ function updateEntities(val) {
                 $(entity).fadeOut("fast");
             } else {
                 $(entity).addClass("available");
-                $(entity).fadeIn("fast");
+                if (show) {
+                    $(entity).fadeIn("fast");
+                }
                 resources.forEach(function(resource) {
                     var entry = $('<div class="entityentry">' + resource.label + '</div>');
                     list.append(entry);
