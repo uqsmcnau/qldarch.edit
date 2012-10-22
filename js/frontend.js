@@ -30,53 +30,6 @@ var selection = new Object();
 selection.selection = null;
 selection.select = selectionMethod;
 
-function setDefinition(definition, k) {
-    $(".definitionbox>*:visible").fadeOut("fast", function() {
-        $(".definitionbox").html('<div class="definition" style="display:none">' + definition + '</div>');
-        $(".definitionbox .definition").fadeIn("fast");
-
-        if (k) {
-            k();
-        }
-    });
-}
-
-function populatePropertiesBox(targetJQ, properties, types) {
-    var selector = targetJQ.html('<div class="propertyselector"></div>').children(".propertyselector");
-    selector.selected = null;
-    properties.forEach(function(property) {
-        var option = selector.append(supplant(
-                '<div class="propertyoption" data-uri="{uri}">... {label} ...</div>',
-                property)).children().last();
-        option.data("rdfsummary", property);
-        option.click(function() {
-            if (selection.select($(this))) {
-                var sub = $(".propertydiv .target:first");
-                sub.empty();
-                property.domain.forEach(function(uri) {
-                    types.forEach(function(type) {
-                        if (type.uri == uri) {
-                            populateEntitySelection(sub, type, selectForRelationship);
-                        }
-                    });
-                });
-
-                var obj = $(".propertydiv .target:last");
-                obj.empty();
-                property.range.forEach(function(uri) {
-                    types.forEach(function(type) {
-                        if (type.uri == uri) {
-                            populateEntitySelection(obj, type, selectForRelationship);
-                        }
-                    });
-                });
-
-                setDefinition(property.definition);
-            }
-        });
-    });
-}
-
 function populateEntitiesBox(targetJQ, properties) {
     var selector = targetJQ.html('<div class="propertyselector entity"></div>').children(".propertyselector");
     selector.selected = null;
@@ -196,7 +149,7 @@ function displayFrontPage() {
     displaySearchDiv($("#searchdiv"));
     displayContentDiv($("#contentdiv"));
     displayEntityDiv($("#entitydiv"));
-    updateEntities("", true);
+    updateEntities(matchnone, matchall, true, true);
     updateContentDiv("");
 }
 
@@ -204,8 +157,10 @@ function displaySearchDiv(parentDiv) {
     parentDiv.html('<input class="span-8 last" type="text" value="" placeHolder="Search Content, People and Things"/></div>');
 
     parentDiv.find("input").keyup(function () {
-        updateEntities($(this).val(), true);
+        var val = $(this).val();
+        updateEntities(makeperfectstring(val), makepartialstring(val), true, (val == "") );
         updateContentDiv($(this).val());
+        $("#entitydiv .available input").val(val);
     });
 }
 
@@ -219,7 +174,7 @@ function displayContentDiv(parentDiv) {
     types.artifacts.forEach(function(type) {
         var typeDiv = $(supplant(
             '<div class="contenttype" data-uri="{uri}">' +
-            '    <div class="contentworking span-8 last"><div class="contentlisttitle span-8">{plural}</div><div class="contentlist"></div></div>' +
+            '    <div class="contentlisttitle span-8">{plural}</div><div class="contentlist"></div>' +
             '</div>', type));
         typeDiv.data("type", type);
         parentDiv.append(typeDiv)
@@ -290,10 +245,10 @@ function updateContentDiv(val) {
 }
 
 function displayEntityDiv(parentDiv) {
-    menuProperties.types.forEach(function(type) {
+    types.proper.forEach(function(type) {
         var typeDiv = $(supplant(
             '<div class="entity" data-uri="{uri}">' +
-                '<input class="searchbox span-5" type="text" placeHolder="Find {label}"/>' +
+                '<input class="searchbox span-5" type="text" placeHolder="Search {plural}"/>' +
                 '<div class="wordgram span-8 last">' +
                     '<img class="first span-8 last" src="img/wordcram.png" alt="{label} Wordcram"/>' +
                 '</div>' +
@@ -306,7 +261,7 @@ function displayEntityDiv(parentDiv) {
             var val = $(this).val();
             updateSearchDiv(val);
             updateContentDiv(val);
-            updateEntities(val, false);
+            updateEntities(makeperfectstring(val), makepartialstring(val), false, (val == ""));
             if (val != "") {
                 $(this).parents(".entity").siblings().removeClass("final").fadeOut("fast");
                 $(this).parents(".entity").addClass("final").fadeIn("fast");
@@ -315,31 +270,52 @@ function displayEntityDiv(parentDiv) {
     });
 }
 
-function updateEntities(val, show) {
-    val = $.trim(val);
+function matchall(resource) {
+    return true;
+}
+
+function matchnone(resource) {
+    return false;
+}
+
+function makepartialstring(string) {
+    return function(resource) {
+        var val = $.trim(string);
+        var found = false;
+        val.split(" ").forEach(function(word) {
+            if (word != "" && resource.label.indexOf(word) != -1) {
+                found = true;
+            }
+        });
+
+        return found;
+    };
+};
+
+function makeperfectstring(lhs) {
+    return function(rhs) {
+        return lhs == rhs;
+    };
+}
+
+function updateEntities(perfectmatch, partialmatch, show, isEmpty) {
     $(".entity").each(function (i, entity) {
         var type = $(entity).data("type");
         var list = $(entity).find(".entitylist");
         list.empty();
-        if (val != "") {
+        if (!isEmpty) {
             $(entity).find(".wordgram").fadeOut("fast", function() {
                 $(entity).find(".entityworking").fadeIn("fast");
             });
             var resources = [];
             resourcesByRdfType[type.uri].forEach(function(resource) {
-                if (val == resource.label) {
+                if (perfectmatch(resource.label)) {
                     resources.push(resource);
                 }
             });
             if (resources.length == 0) {
                 resourcesByRdfType[type.uri].forEach(function(resource) {
-                    var found = false;
-                    val.split(" ").forEach(function(word) {
-                        if (word != "" && resource.label.indexOf(word) != -1) {
-                            found = true;
-                        }
-                    });
-                    if (found) {
+                    if (partialmatch(resource)) {
                         resources.push(resource);
                     }
                 });
@@ -360,6 +336,7 @@ function updateEntities(val, show) {
             }
         } else {
             // Search box is empty.
+            $("input").val("");
             $(".entity").fadeIn("fast");
             $(entity).addClass("available");
             $(entity).find(".entityworking").fadeOut("fast", function() {
@@ -456,6 +433,8 @@ function selectForInterview(resource, entry) {
 }
 
 var selectFunctions = {
-    "http://qldarch.net/rdf#Interview" : selectForInterview
+    "http://qldarch.net/rdf#Interview" : selectForInterview,
+    "http://qldarch.net/rdf#Photograph" : selectForInterview,
+    "http://qldarch.net/rdf#LineDrawing" : selectForInterview,
 };
 
