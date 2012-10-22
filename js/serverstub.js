@@ -164,6 +164,21 @@ var entities = {
         "foaf:firstName" : "Duncan",
         "foaf:lastName" : "McPhee"
     },
+    "http://qldarch.net/rdf/resources#00006" : {
+        uri: "http://qldarch.net/rdf/resources#00006",
+        label: "Hayes and Scott",
+        "qldarch:firmName": "Hayes and Scott"
+    },
+    "http://qldarch.net/rdf/resources#00007" : {
+        uri: "http://qldarch.net/rdf/resources#00007",
+        label: "Bligh, Jessup, Bretnall and Partners",
+        "qldarch:firmName": "Bligh, Jessup, Bretnall and Partners"
+    },
+    "http://qldarch.net/rdf/resources#00008" : {
+        uri: "http://qldarch.net/rdf/resources#00008",
+        label: "Colin and Fulton",
+        "qldarch:firmName": "Colin and Fulton"
+    }
 };
 var resourcesByRdfType = {
     "http://qldarch.net/rdf#Architect" : [
@@ -197,17 +212,14 @@ var resourcesByRdfType = {
     {
         uri: "http://qldarch.net/rdf/resources#00006",
         label: "Hayes and Scott",
-        "qldarch:firmName": "Hayes and Scott"
     },
     {
         uri: "http://qldarch.net/rdf/resources#00007",
         label: "Bligh, Jessup, Bretnall and Partners",
-        "qldarch:firmName": "Bligh, Jessup, Bretnall and Partners"
     },
     {
         uri: "http://qldarch.net/rdf/resources#00008",
         label: "Colin and Fulton",
-        "qldarch:firmName": "Colin and Fulton"
     }
     ],
     "http://qldarch.net/rdf#Client" : [
@@ -301,7 +313,7 @@ var contentByRdfType = {
             transcript: "transcript/Birrell.json",
             keywords: "James|Birrell|Interview",
             "rdf:type": "http://qldarch.net/rdf#Interview",
-            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00002"
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00002",
         },
         {
             uri: "http://qldarch.net/rdf/content#00002",
@@ -310,7 +322,10 @@ var contentByRdfType = {
             transcript: "transcript/Bligh.json",
             keywords: "Graham|Bligh|Interview",
             "rdf:type": "http://qldarch.net/rdf#Interview",
-            "qldarch:relatedTo": "http://qldarch.net/rdf/resources#00001",
+            "qldarch:relatedTo": [
+                "http://qldarch.net/rdf/resources#00001",
+                "http://qldarch.net/rdf/resources#00007",
+            ]
         },
         {
             uri: "http://qldarch.net/rdf/content#00003",

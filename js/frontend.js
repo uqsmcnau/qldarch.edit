@@ -148,16 +148,22 @@ function displayEntityDiv(parentDiv) {
         typeDiv.data("type", type);
         parentDiv.append(typeDiv)
 
-        typeDiv.find("input").keyup(function() {
-            var val = $(this).val();
-            updateSearchDiv(val);
-            updateContentDiv(makeperfectlabel(val), makepartialkeywords(val), false, (val == ""));
-            updateEntities(makeperfectstring(val), makepartialstring(val), false, (val == ""));
-            if (val != "") {
-                $(this).parents(".entity").siblings().removeClass("final").fadeOut("fast");
-                $(this).parents(".entity").addClass("final").fadeIn("fast");
-            }
-        });
+        typeDiv.find("input")
+            .keyup(function() {
+                var val = $(this).val();
+                updateSearchDiv(val);
+                updateContentDiv(makeperfectlabel(val), makepartialkeywords(val), false, (val == ""));
+                updateEntities(makeperfectstring(val), makepartialstring(val), false, (val == ""));
+                if (val != "") {
+                    $(this).parents(".entity").siblings().removeClass("final").fadeOut("fast");
+                    $(this).parents(".entity").addClass("final").fadeIn("fast");
+                }
+            })
+            .focus(function() {
+                $(typeDiv).find(".wordgram").fadeOut("fast", function() {
+                    $(typeDiv).find(".entityworking").fadeIn("fast");
+                });
+            });
     });
 }
 
@@ -220,11 +226,12 @@ function makepartialkeywords(value) {
 
 function makeperfectrelatedTo(value) {
     function perfectrelatedTo(resource) {
+        var relatedTo = resource["qldarch:relatedTo"];
         return value &&
-            resource &&
-            resource["qldarch:relatedTo"] && 
-            value == resource["qldarch:relatedTo"];
+            $.isArray(relatedTo) ? (relatedTo.indexOf(value) != -1) :
+                value == relatedTo;
     }
+
     return perfectrelatedTo;
 }
 
@@ -319,7 +326,7 @@ function onClickEntity(resource) {
     $("#mainentities").append($("#maincontent").detach());
     $("#mainsearch").fadeOut("fast");
     $("#primary").prepend('<div id="contentpane" class="span-16"><h2 class="columntitle">Related Content</h2></div>');
-    updateContentDiv(makeperfectrelatedTo(resource.uri), matchnone, true, resource.uri);
+    updateContentDiv(makeperfectrelatedTo(resource.uri), matchnone, true, !resource.uri);
 }
 
 function restoreFromEntity() {
