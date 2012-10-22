@@ -53,7 +53,7 @@ function displayFrontPage(reload) {
     displayEntityDiv($("#entitydiv"));
     if (!reload) {
         updateEntities(matchnone, matchall, true, true);
-        updateContentDiv("");
+        updateContentDiv(matchnone, matchall, true, true);
     } else {
         reload();
     }
@@ -64,8 +64,8 @@ function displaySearchDiv(parentDiv) {
 
     parentDiv.find("input").keyup(function () {
         var val = $(this).val();
-        updateEntities(makeperfectstring(val), makepartialstring(val), true, (val == "") );
-        updateContentDiv($(this).val());
+        updateEntities(makeperfectstring(val), makepartialstring(val), true, (val == ""));
+        updateContentDiv(makeperfectlabel(val), makepartialkeywords(val), true, (val == ""));
         $("#entitydiv .available input").val(val);
     });
 }
@@ -87,38 +87,23 @@ function displayContentDiv(parentDiv) {
     });
 }
 
-function updateContentDiv(val) {
-    val = $.trim(val);
+function updateContentDiv(perfectmatch, partialmatch, show, isEmpty) {
+    var val = $.trim(val);
     $(".contenttype").each(function (i, contentDiv) {
         var type = $(contentDiv).data("type");
         var list = $(contentDiv).find(".contentlist");
         list.empty();
         var resources = [];
         var contentRecords = contentByRdfType[type.uri];
-        if (contentRecords && val != "") {
+        if (contentRecords && !isEmpty) {
             contentRecords.forEach(function(resource) {
-                if (val == resource.label) {
+                if (perfectmatch(resource)) {
                     resources.push(resource);
                 }
             });
             if (resources.length == 0) {
                 contentRecords.forEach(function(resource) {
-                    var keywords = resource.keywords.split("|");
-                    var somefound = false;
-                    var allfound = true;
-                    val.split(" ").forEach(function(word) {
-                        if (word != "") {
-                            var contained = false;
-                            keywords.forEach(function(keyword) {
-                                if (keyword.indexOf(word) != -1) {
-                                    contained = true;
-                                }
-                            });
-                            somefound = somefound || contained;
-                            allfound = allfound && contained;
-                        }
-                    });
-                    if (somefound && allfound) {
+                    if (partialmatch(resource)) {
                         resources.push(resource);
                     }
                 });
@@ -166,7 +151,7 @@ function displayEntityDiv(parentDiv) {
         typeDiv.find("input").keyup(function() {
             var val = $(this).val();
             updateSearchDiv(val);
-            updateContentDiv(val);
+            updateContentDiv(makeperfectlabel(val), makepartialkeywords(val), false, (val == ""));
             updateEntities(makeperfectstring(val), makepartialstring(val), false, (val == ""));
             if (val != "") {
                 $(this).parents(".entity").siblings().removeClass("final").fadeOut("fast");
@@ -184,9 +169,9 @@ function matchnone(resource) {
     return false;
 }
 
-function makepartialstring(string) {
+function makepartialstring(value) {
     return function(resource) {
-        var val = $.trim(string);
+        var val = $.trim(value);
         var found = false;
         val.split(" ").forEach(function(word) {
             if (word != "" && resource.label.indexOf(word) != -1) {
@@ -198,10 +183,49 @@ function makepartialstring(string) {
     };
 };
 
+function makeperfectlabel(value) {
+    return function(resource) {
+        return $.trim(value) == resource.label;
+    };
+}
+
 function makeperfectstring(lhs) {
     return function(rhs) {
         return lhs == rhs;
     };
+}
+
+function makepartialkeywords(value) {
+    return function(resource) {
+        var val = $.trim(value);
+        var keywords = resource.keywords.split("|");
+        var somefound = false;
+        var allfound = true;
+        val.split(" ").forEach(function(word) {
+            if (word != "") {
+                var contained = false;
+                keywords.forEach(function(keyword) {
+                    if (keyword.indexOf(word) != -1) {
+                        contained = true;
+                    }
+                });
+                somefound = somefound || contained;
+                allfound = allfound && contained;
+            }
+        });
+
+        return somefound && allfound;
+    };
+}
+
+function makeperfectrelatedTo(value) {
+    function perfectrelatedTo(resource) {
+        return value &&
+            resource &&
+            resource["qldarch:relatedTo"] && 
+            value == resource["qldarch:relatedTo"];
+    }
+    return perfectrelatedTo;
 }
 
 function updateEntities(perfectmatch, partialmatch, show, isEmpty) {
@@ -242,10 +266,13 @@ function updateEntities(perfectmatch, partialmatch, show, isEmpty) {
                             onClickEntity(resource);
                             entry.addClass("selected");
                             var input = entry.parents(".entity").find("input");
-                            input.val(resource.label).one("keyup", function() {
+                            var restore = function() {
                                 restoreFromEntity()
                                 input.keyup();
-                            });;
+                            };
+
+                            input.val(resource.label).one("keyup", restore);
+                            entry.one("click", restore);
                             entry.siblings(".entityentry").fadeOut("fast");
                         }
                     });
@@ -292,6 +319,7 @@ function onClickEntity(resource) {
     $("#mainentities").append($("#maincontent").detach());
     $("#mainsearch").fadeOut("fast");
     $("#primary").prepend('<div id="contentpane" class="span-16"><h2 class="columntitle">Related Content</h2></div>');
+    updateContentDiv(makeperfectrelatedTo(resource.uri), matchnone, true, resource.uri);
 }
 
 function restoreFromEntity() {

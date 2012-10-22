@@ -94,6 +94,11 @@ var properties = {
         display: true,
         editable: true
     },
+    "qldarch:firmName" : {
+        label: "Firm Name",
+        display: true,
+        editable: true
+    },
     "qldarch:beganEmployment" : {
         label: "Began Employment",
         display: true,
@@ -152,6 +157,13 @@ var entities = {
         "foaf:firstName" : "Blair",
         "foaf:lastName" : "Wilson"
     },
+    "http://qldarch.net/rdf/resources#00015" : {
+        uri: "http://qldarch.net/rdf/resources#00015",
+        label: "Duncan McPhee",
+        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "foaf:firstName" : "Duncan",
+        "foaf:lastName" : "McPhee"
+    },
 };
 var resourcesByRdfType = {
     "http://qldarch.net/rdf#Architect" : [
@@ -175,20 +187,27 @@ var resourcesByRdfType = {
     {
         uri: "http://qldarch.net/rdf/resources#00005",
         label: "Blair Wilson"
+    },
+    {
+        uri: "http://qldarch.net/rdf/resources#00015",
+        label: "Duncan McPhee"
     }
     ],
     "http://qldarch.net/rdf#Firm" : [
     {
         uri: "http://qldarch.net/rdf/resources#00006",
-        label: "Hayes and Scott"
+        label: "Hayes and Scott",
+        "qldarch:firmName": "Hayes and Scott"
     },
     {
         uri: "http://qldarch.net/rdf/resources#00007",
-        label: "Bligh, Jessup, Bretnall and Partners"
+        label: "Bligh, Jessup, Bretnall and Partners",
+        "qldarch:firmName": "Bligh, Jessup, Bretnall and Partners"
     },
     {
         uri: "http://qldarch.net/rdf/resources#00008",
-        label: "Colin and Fulton"
+        label: "Colin and Fulton",
+        "qldarch:firmName": "Colin and Fulton"
     }
     ],
     "http://qldarch.net/rdf#Client" : [
@@ -281,7 +300,8 @@ var contentByRdfType = {
             audio: "audio/Birrell_JM_and_AW.ogg",
             transcript: "transcript/Birrell.json",
             keywords: "James|Birrell|Interview",
-            "rdf:type": "http://qldarch.net/rdf#Interview"
+            "rdf:type": "http://qldarch.net/rdf#Interview",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00002"
         },
         {
             uri: "http://qldarch.net/rdf/content#00002",
@@ -289,7 +309,8 @@ var contentByRdfType = {
             audio: "audio/Bligh.ogg",
             transcript: "transcript/Bligh.json",
             keywords: "Graham|Bligh|Interview",
-            "rdf:type": "http://qldarch.net/rdf#Interview"
+            "rdf:type": "http://qldarch.net/rdf#Interview",
+            "qldarch:relatedTo": "http://qldarch.net/rdf/resources#00001",
         },
         {
             uri: "http://qldarch.net/rdf/content#00003",
@@ -297,7 +318,8 @@ var contentByRdfType = {
             audio: "audio/Duncan.ogg",
             transcript: "transcript/Duncan.json",
             keywords: "Duncan|McPhee|Interview",
-            "rdf:type": "http://qldarch.net/rdf#Interview"
+            "rdf:type": "http://qldarch.net/rdf#Interview",
+            "qldarch:relatedTo": "http://qldarch.net/rdf/resources#00015",
         },
     ],
     "http://qldarch.net/rdf#Photograph" : [
