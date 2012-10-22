@@ -12,42 +12,56 @@
                 font-family: Helvetica, Arial, Geneva, sans-serif;
             }
 
-            #logo h1 {
-                color: #000000;
-                display: inline-block;
-                font-family: Helvetica, Arial, Geneva, sans-serif;
-                font-size: 27px;
-                font-weight: 200;
-                margin-bottom: 0px;
-                margin-top: 10px;
-            }
-
-            .search {
-                margin-top: 100px;
-            }
-
-            .entities,
-            .contentsearch {
-                margin-top: 10px;
+            #logo {
+                border-bottom: 1px solid lightgrey;
                 margin-bottom: 10px;
             }
 
-            .entities .entity,
-            .contentsearch .contenttype {
-                border-left: 1px solid lightgrey;
-                border-right: 1px solid lightgrey;
-                border-top: 1px solid lightgrey;
+            #logo h1 {
+                color: #000000;
+                display: inline-block;
+                font-size: 27px;
+                font-weight: 200;
+                margin-bottom: 10px;
+                margin-top: 10px;
             }
 
-            .entities .entity.available,
-            .contentsearch .contenttype.available {
-                border-bottom: 1px solid lightgrey;
+            h2.columntitle {
+                font-size: 20px;
+            }
+
+            #mainsearch,
+            #maincontent,
+            #mainentities {
+                margin-top: 10px;
+            }
+
+            #mainsearch input {
+                margin-top: 0px;
+            }
+
+            .searchlabel {
+                font-size: 20px;
             }
 
             .entity,
             .contenttype {
+                border-left: 1px solid lightgrey;
+                border-right: 1px solid lightgrey;
+                border-top: 1px solid lightgrey;
                 float: left;
                 padding: 1px;
+                width: 306px;
+            }
+
+            .entity.final,
+            .contenttype.final {
+                border-bottom: 1px solid lightgrey;
+                margin-bottom: 10px;
+            }
+
+            .entity .span-8 {
+                width: 306px;
             }
 
             .entitylist,
@@ -346,12 +360,14 @@
                   {
                       uri: "http://qldarch.net/rdf#Interview",
                       label: "Interview",
+                      plural: "Interviews",
                       definition: "An recorded directed discussion between two or more individuals"
 
                   },
                   {
                       uri: "http://qldarch.net/rdf#Photograph",
                       label: "Photograph",
+                      plural: "Photographs",
                       definition: "A Photograph"
                   }
                 ],
@@ -359,27 +375,32 @@
                   {
                       uri: "http://qldarch.net/rdf#Architect",
                       label: "Architect",
+                      plural: "Architects",
                       definition: "A person who is or has been an Architect"
 
                   },
                   {
                       uri: "http://qldarch.net/rdf#Firm",
                       label: "Firm",
+                      plural: "Firms",
                       definition: "A business with a recognised continuity of identity"
                   },
                   {
                       uri: "http://qldarch.net/rdf#Client",
                       label: "Client",
+                      plural: "Clients",
                       definition: "An agent who has engaged an Architect or Firm on a project"
                   },
                   {
                       uri: "http://qldarch.net/rdf#Structure",
                       label: "Structure",
+                      plural: "Structures",
                       definition: "A building, or other distinguishable part of our built environment"
                   },
                   {
                       uri: "http://qldarch.net/rdf#Award",
                       label: "Award",
+                      plural: "Awards",
                       definition: "An recognition of meritorious conduct or achivement"
                   }
                 ]
@@ -391,19 +412,22 @@
                         uri: "http://qldarch.net/rdf/resources#00013",
                         label: "Interview with James Birrell",
                         audio: "audio/Birrell.ogg",
-                        transcript: "transcript/Birrell.json"
+                        transcript: "transcript/Birrell.json",
+                        keywords: "James|Birrell|Interview"
                     },
                     {
                         uri: "http://qldarch.net/rdf/resources#00014",
                         label: "Interview with Graham Bligh",
                         audio: "audio/Bligh.ogg",
-                        transcript: "transcript/Bligh.json"
+                        transcript: "transcript/Bligh.json",
+                        keywords: "Graham|Bligh|Interview"
                     },
                     {
                         uri: "http://qldarch.net/rdf/resources#00014",
                         label: "Interview with Duncan McPhee",
                         audio: "audio/Duncan.ogg",
-                        transcript: "transcript/Duncan.json"
+                        transcript: "transcript/Duncan.json",
+                        keywords: "Duncan|McPhee|Interview"
                     },
                 ]
             };
@@ -418,9 +442,7 @@
     <body>
         <div class="container top">
             <div id="logo" class="span-24"><h1 class="logo">Digital Archive of Queensland Architecture</h1></div>
-            <div id="primary" class="span-16">
-            </div>
-            <div class="rightbar span-8 last">
+            <div id="primary" class="span-24">
             </div>
         </div>
     </body>

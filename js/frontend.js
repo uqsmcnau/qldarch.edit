@@ -175,73 +175,37 @@ function selectForRelationship(workingDiv, entityDiv, resource, entry) {
     };
 }
 
-function populateEntitySelection(targetJQ, type, onSelectGenerator) {
-    var entityDiv = $(supplant(
-        '<div class="entity">' +
-        '    <input class="searchbox" type="text" placeHolder="Find {label}"/>' +
-        '    <img class="first span-8 last" src="img/wordcram.png" alt="{label} Wordcram"/>' +
-        '    <div class="entityworking span-8 last"><div class="entitylist"></div></div>' +
-        '</div>', type));
-
-    targetJQ.append(entityDiv);
-    entityDiv.find(".searchbox").keyup(function() {
-        var val = $(this).val();
-
-        // Handle sibling entity types.
-        if (val == "") {
-            entityDiv.siblings().fadeIn("fast");
-        } else {
-            entityDiv.siblings().hide();
-        }
-
-        // Handle entity list
-        var workingDiv = $(this).parent().find(".entityworking");
-        var list = workingDiv.find(".entitylist");
-        list.empty();
-        if (val != "") {
-            var resources = [];
-            resourcesByRdfType[type.uri].forEach(function(resource) {
-                if (val == resource.label) {
-                    resources.push(resource);
-                }
-            });
-            if (resources.length == 0) {
-                resourcesByRdfType[type.uri].forEach(function(resource) {
-                    var found = false;
-                    val.split(" ").forEach(function(word) {
-                        if (word != "" && resource.label.indexOf(word) != -1) {
-                            found = true;
-                        }
-                    });
-                    if (found) {
-                        resources.push(resource);
-                    }
-                });
-            }
-            resources.forEach(function(resource) {
-                var entry = $('<div class="entityentry">' + resource.label + '</div>');
-                list.append(entry);
-                entry.click(onSelectGenerator(workingDiv, entityDiv, resource, entry, selection));
-            });
-        }
-    });
+function frontendOnReady() {
+    displayFrontPage();
 }
 
-function frontendOnReady() {
-    var primaryDiv = $("#primary");
-    var entityDiv = $(".rightbar");
-
-    displaySearchDiv(primaryDiv);
-    displayEntities(entityDiv);
+function displayFrontPage() {
+    $("#primary").html(
+        '<div id="mainsearch" class="span-8">' +
+            '<h2 class="columntitle span-8">Search</h2>' + 
+            '<div id="searchdiv" class="span-8"/>' +
+        '</div>' +
+        '<div id="maincontent" class="span-8">' +
+            '<h2 class="columntitle span-8">Digital Content</h2>' +
+            '<div id="contentdiv" class="span-8"/>' +
+        '</div>' +
+        '<div id="mainentities" class="span-8 last">' +
+            '<h2 class="columntitle span-8 last">People and Things</h2>' +
+            '<div id="entitydiv" class="span-8 last"/>' +
+        '</div>');
+    displaySearchDiv($("#searchdiv"));
+    displayContentDiv($("#contentdiv"));
+    displayEntityDiv($("#entitydiv"));
     updateEntities("");
+    updateContentDiv("");
 }
 
 function displaySearchDiv(parentDiv) {
-    parentDiv.html('<div class="contentsearch span-8"/><div class="search span-8"><input class="mainsearch span-6 last" type="text" value="" placeHolder="Search"/></div>');
-    displayContentDiv(parentDiv.find(".contentsearch"));
-    updateContentDiv("");
-    parentDiv.find(".mainsearch").keyup(function () {
+    parentDiv.html('<input class="span-8 last" type="text" value="" placeHolder="Search Content, People and Things"/></div>');
+
+    parentDiv.find("input").keyup(function () {
         updateEntities($(this).val());
+        updateContentDiv($(this).val());
     });
 }
 
@@ -249,7 +213,7 @@ function displayContentDiv(parentDiv) {
     types.artifacts.forEach(function(type) {
         var typeDiv = $(supplant(
             '<div class="contenttype" data-uri="{uri}">' +
-            '    <div class="contentworking span-8 last"><div class="contentlisttitle span-8">{label}</div><div class="contentlist"></div></div>' +
+            '    <div class="contentworking span-8 last"><div class="contentlisttitle span-8">{plural}</div><div class="contentlist"></div></div>' +
             '</div>', type));
         typeDiv.data("type", type);
         parentDiv.append(typeDiv)
@@ -257,48 +221,69 @@ function displayContentDiv(parentDiv) {
 }
 
 function updateContentDiv(val) {
+    val = $.trim(val);
     $(".contenttype").each(function (i, contentDiv) {
         var type = $(contentDiv).data("type");
         var list = $(contentDiv).find(".contentlist");
         list.empty();
+        var resources = [];
+        var contentRecords = contentByRdfType[type.uri];
         if (val != "") {
-            var resources = [];
-            contentByRdfType[type.uri].forEach(function(resource) {
+            contentRecords.forEach(function(resource) {
                 if (val == resource.label) {
                     resources.push(resource);
                 }
             });
             if (resources.length == 0) {
-                resourcesByRdfType[type.uri].forEach(function(resource) {
-                    var found = false;
+                contentRecords.forEach(function(resource) {
+                    var keywords = resource.keywords.split("|");
+                    var somefound = false;
+                    var allfound = true;
                     val.split(" ").forEach(function(word) {
-                        if (word != "" && resource.label.indexOf(word) != -1) {
-                            found = true;
+                        if (word != "") {
+                            var contained = false;
+                            keywords.forEach(function(keyword) {
+                                if (keyword.indexOf(word) != -1) {
+                                    contained = true;
+                                }
+                            });
+                            somefound = somefound || contained;
+                            allfound = allfound && contained;
                         }
                     });
-                    if (found) {
+                    if (somefound && allfound) {
                         resources.push(resource);
                     }
                 });
             }
-            if (resources.length == 0) {
-                $(contentDiv).removeClass("available");
-                $(contentDiv).fadeOut("fast");
-            } else {
-                $(contentDiv).addClass("available");
-                resources.forEach(function(resource) {
-                    var entry = $('<div class="contententry">' + resource.label + '</div>');
-                    list.append(entry);
-    //                entry.click(onSelectGenerator(workingDiv, entityDiv, resource, entry, selection));
-                });
-            }
         } else {
             // Search box is empty.
+            if (contentRecords && contentRecords.length > 0) {
+                $(contentDiv).addClass("available");
+                for (c = 0; c < 10 && c < contentRecords.length; c++) {
+                    resources.push(contentRecords[c]);
+                }
+            }
+        }
+        if (resources.length == 0) {
+            $(contentDiv).removeClass("available");
+            $(contentDiv).fadeOut("fast");
+        } else {
             $(contentDiv).addClass("available");
+            $(contentDiv).fadeIn("fast");
+            resources.forEach(function(resource) {
+                var entry = $('<div class="contententry">' + resource.label + '</div>');
+                list.append(entry);
+//                entry.click(onSelectGenerator(workingDiv, entityDiv, resource, entry, selection));
+            });
         }
     });
+    var available = $(".contenttype.available");
+    available.filter(":not(:last)").removeClass("final");
+    available.filter(":last").addClass("final");
 }
-function displayEntities(parentDiv) {
+
+function displayEntityDiv(parentDiv) {
     menuProperties.types.forEach(function(type) {
         var typeDiv = $(supplant(
             '<div class="entity" data-uri="{uri}">' +
@@ -314,6 +299,7 @@ function displayEntities(parentDiv) {
 }
 
 function updateEntities(val) {
+    val = $.trim(val);
     $(".entity").each(function (i, entity) {
         var type = $(entity).data("type");
         var list = $(entity).find(".entitylist");
@@ -354,10 +340,14 @@ function updateEntities(val) {
             }
         } else {
             // Search box is empty.
+            $(".entity").fadeIn("fast");
             $(entity).addClass("available");
             $(entity).find(".entityworking").fadeOut("fast", function() {
                 $(entity).find(".wordgram").fadeIn("fast");
             });
         }
     });
+    var available = $(".entity.available");
+    available.filter(":not(:last)").removeClass("final");
+    available.filter(":last").addClass("final");
 }
