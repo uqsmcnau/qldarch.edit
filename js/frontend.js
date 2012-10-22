@@ -30,27 +30,6 @@ var selection = new Object();
 selection.selection = null;
 selection.select = selectionMethod;
 
-function populateEntitiesBox(targetJQ, properties) {
-    var selector = targetJQ.html('<div class="propertyselector entity"></div>').children(".propertyselector");
-    selector.selected = null;
-    properties.forEach(function(entity) {
-        var option = selector.append(supplant(
-                '<div class="propertyoption" data-uri="{uri}">{label} ...</div>',
-                entity)).children().last();
-        option.data("rdfsummary", entity);
-        option.click(function() {
-            if (!$(this).hasClass("selected")) {
-                selection.select($(this));
-                setDefinition(entity.definition);
-                var target = $(".entitydiv>.target:first");
-                target.empty();
-                populateEntitySelection($(".entitydiv>.target:first"), entity, selectForEntity);
-            }
-        });
-    });
-}
-
-
 function selectForEntity(workingDiv, entityDiv, resource, entry) {
     return function() {
         entityDiv.find(".searchbox").val(resource.label);
@@ -221,7 +200,7 @@ function updateContentDiv(val) {
             // Search box is empty.
             if (contentRecords && contentRecords.length > 0) {
                 $(contentDiv).addClass("available");
-                for (c = 0; c < 10 && c < contentRecords.length; c++) {
+                for (c = 0; c < 50 && c < contentRecords.length; c++) {
                     resources.push(contentRecords[c]);
                 }
             }
@@ -331,7 +310,10 @@ function updateEntities(perfectmatch, partialmatch, show, isEmpty) {
                 resources.forEach(function(resource) {
                     var entry = $('<div class="entityentry">' + resource.label + '</div>');
                     list.append(entry);
-    //                entry.click(onSelectGenerator(workingDiv, entityDiv, resource, entry, selection));
+                    entry.click(function() {
+                        onClickEntity(resource);
+                        $(this).parents(".entity").find("input").val(resource.label).keyup();
+                    });
                 });
             }
         } else {
@@ -347,6 +329,27 @@ function updateEntities(perfectmatch, partialmatch, show, isEmpty) {
     var available = $(".entity.available");
     available.filter(":not(:last)").removeClass("final");
     available.filter(":last").addClass("final");
+}
+
+function onClickEntity(resource) {
+    var desc = $("#mainentities")
+        .append('<div class="entitydescription span-8 last"/>')
+        .find(".entitydescription");
+    
+    desc.append('<div class="entitylisttitle">' + resource.label + '</div>');
+    var list = desc.append('<div class="entitylist"/>').find(".entitylist");
+    for (uri in entities[resource.uri]) {
+        if (properties[uri].display) {
+            var arg = {
+                    "label" : properties[uri].label,
+                    "value" : entities[resource.uri][uri]
+            };
+            list.append(supplant(
+                '<div class="propertypair span-8 last">' +
+                '<span class="propertylabel span-3">{label}</label>' +
+                '<span class="propertyvalue span-4 last" type="text" value="{value}"/></div>', arg));
+        }
+    }
 }
 
 function displayInterview(resource) {
@@ -426,15 +429,18 @@ function linkAndPlayInterview(transcript, transcriptdiv) {
 
 function selectForInterview(resource, entry) {
     return function() {
-        console.log("Displaying Interview");
         displayInterview(resource);
-        console.log("Interview displayed");
+    };
+}
+
+function selectForPhotograph(resource, entry) {
+    return function() {
     };
 }
 
 var selectFunctions = {
     "http://qldarch.net/rdf#Interview" : selectForInterview,
-    "http://qldarch.net/rdf#Photograph" : selectForInterview,
+    "http://qldarch.net/rdf#Photograph" : selectForPhotograph,
     "http://qldarch.net/rdf#LineDrawing" : selectForInterview,
 };
 

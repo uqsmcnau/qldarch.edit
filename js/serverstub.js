@@ -71,38 +71,46 @@ var menuProperties = {
 var properties = {
     uri: {
         label: "URI",
+        display: false,
         editable: false
     },
     label: {
         label: "Label",
+        display: false,
         editable: true
     },
     "rdf:type" : {
         label: "RDF Type",
+        display: false,
         editable: false
     },
     "foaf:firstName" : {
         label: "First Name",
+        display: true,
         editable: true
     },
     "foaf:lastName" : {
         label: "Last Name",
+        display: true,
         editable: true
     },
     "qldarch:beganEmployment" : {
         label: "Began Employment",
+        display: true,
         editable: true,
         domain: [ "http://qldarch.net/rdf#EmployeeRelation", "http://qldarch.net/rdf#PartnerRelation" ],
         range: [ "xsd:date" ]
     },
     "qldarch:endedEmployment" : {
         label: "Ended Employment",
+        display: true,
         editable: true,
         domain: [ "http://qldarch.net/rdf#EmployeeRelation", "http://qldarch.net/rdf#PartnerRelation" ],
         range: [ "xsd:date" ]
     },
     "qldarch:relationDescription" : {
         label: "Other Details",
+        display: true,
         editable: true,
         domain: [ "http://qldarch.net/rdf#EmployeeRelation", "http://qldarch.net/rdf#PartnerRelation" ],
         range: [ "xsd:string" ]
@@ -153,7 +161,8 @@ var resourcesByRdfType = {
     },
     {
         uri: "http://qldarch.net/rdf/resources#00002",
-        label: "James Birrell"
+        label: "James Birrell",
+        preferredImage: "http://qldarch.net/rdf/content#00029",
     },
     {
         uri: "http://qldarch.net/rdf/resources#00003",
@@ -387,6 +396,14 @@ var contentByRdfType = {
             keywords: "Hayes|Lucia",
             "rdf:type": "http://qldarch.net/rdf#Photograph",
             "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00006"
+        },
+        {
+            uri: "http://qldarch.net/rdf/content#00029",
+            label: "James Birrell Portrait",
+            image: "img/james_birrell.jpg",
+            keywords: "James|Birrell",
+            "rdf:type": "http://qldarch.net/rdf#Photograph",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00002"
         },
     ],
     "http://qldarch.net/rdf#LineDrawing" : [
