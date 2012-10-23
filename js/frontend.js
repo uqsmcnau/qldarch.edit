@@ -409,21 +409,21 @@ function onClickEntity(resource) {
         var contentid = 0;
 
         $("#mainimage").append(supplant(
-            '<a href="{image}" style="display:none"><img class="span-16 last" src="{image}" alt="{label}"/></a>', relatedContent[contentid]));
+            '<h3>{label}</h3><a href="{image}" style="display:none"><img class="span-16 last" src="{image}" alt="{label}"/></a>', relatedContent[contentid]));
         contentid = (contentid + 1) % relatedContent.length;
 
         function transitionImage() {
             $("#mainimage").children("a:first")
                 .delay(3000)
                 .fadeOut("slow", function() {
-                    console.log("displaying content for " + contentid);
                     $("#mainimage").append(supplant(
                         '<a href="{image}" style="display:none">' + 
                         '<img class="span-16 last" src="{image}" alt="{label}"/>' +
                         '</a>', relatedContent[contentid]));
+                    $("#mainimage h3").text(relatedContent[contentid].label);
                     contentid = (contentid + 1) % relatedContent.length;
                     $("#mainimage").children("a:last").fadeIn("slow", function() {
-                        $(this).siblings().remove();
+                        $(this).siblings("a").remove();
                         transitionImage();
                     });
                 });
