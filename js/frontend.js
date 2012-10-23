@@ -35,17 +35,23 @@ function frontendOnReady() {
 
 function displayFrontPage(reload) {
     $("#primary").html(
-        '<div id="mainsearch" class="span-8">' +
-            '<h2 class="columntitle span-8">General Search</h2>' + 
-            '<div id="searchdiv" class="span-8"/>' +
+        '<div id="column1" class="span-8">' +
+            '<div id="mainsearch" class="span-8 last">' +
+                '<h2 class="columntitle span-8 last">General Search</h2>' + 
+                '<div id="searchdiv" class="span-8 last"/>' +
+            '</div>' +
         '</div>' +
-        '<div id="maincontent" class="span-8">' +
-            '<h2 class="columntitle span-8">Digital Content</h2>' +
-            '<div id="contentdiv" class="span-8"/>' +
+        '<div id="column2" class="span-8">' +
+            '<div id="maincontent" class="span-8 last">' +
+                '<h2 class="columntitle span-8 last">Digital Content</h2>' +
+                '<div id="contentdiv" class="span-8 last"/>' +
+            '</div>' +
         '</div>' +
-        '<div id="mainentities" class="span-8 last">' +
-            '<h2 class="columntitle span-8 last">People and Things</h2>' +
-            '<div id="entitydiv" class="span-8 last"/>' +
+        '<div id="column3" class="span-8 last">' +
+            '<div id="mainentities" class="span-8 last">' +
+                '<h2 class="columntitle span-8 last">People and Things</h2>' +
+                '<div id="entitydiv" class="span-8 last"/>' +
+            '</div>' +
         '</div>');
     displaySearchDiv($("#searchdiv"));
     displayContentDiv($("#contentdiv"));
@@ -371,18 +377,28 @@ function onClickEntity(resource) {
         }
     }
 
-    $("#mainentities").append($("#maincontent").detach());
-    $("#mainsearch").fadeOut("fast");
-    $("#primary").prepend('<div id="contentpane" class="span-16"><h2 class="columntitle">Related Content</h2></div>');
-    updateContentDiv(makeperfectrelatedTo(resource.uri), matchnone, true, !resource.uri);
+    if ($("contentpane:visible").length == 0) {
+        $("#column3").prepend($("#mainentities").detach());
+        $("#column3").append($("#maincontent").detach());
+        $("#column1").hide();
+        $("#column2").hide();
+        $("#mainsearch").fadeOut("fast");
+        $("#primary").prepend('<div id="contentpane" class="span-16"><h2 class="columntitle"/></div>');
+        updateContentDiv(makeperfectrelatedTo(resource.uri), matchnone, true, !resource.uri);
+    }
+    $("#contentpane h2").text("Related Content");
 }
 
 function restoreFromEntity() {
     $("#contentpane").fadeOut("fast", function() {
         $(this).remove();
+        $("#column1").show();
+        $("#column2").show();
+        $("#mainsearch").fadeIn("fast").after($("#maincontent").detach());
+        $("#column2").append($("#maincontent").detach());
+        $("#column3").append($("#mainentities").detach());
+        $("#mainentities .entitydetail").remove();
     });
-    $("#mainsearch").fadeIn("fast").after($("#maincontent").detach());
-    $("#mainentities .entitydetail").remove();
 }
 
 function displayInterview(resource) {
@@ -461,31 +477,36 @@ function linkAndPlayInterview(transcript, transcriptdiv) {
 }
 
 function displayImage(resource, entry) {
-    $("#maincontent").append($("#mainentities").detach());
-    $("#mainsearch").fadeOut("fast");
-    if ($("#mainimage").length == 0) {
-        $("#primary").append('<div id="mainimage" class="span-16 last"><h2 class="columntitle"/><div class="imagepane span-16 last"/></div>');
+    if ($("#contentpane:visible").length == 0) {
+        $("#primary").append('<div id="contentpane" class="span-16 last"><h2 class="columntitle"/></div>');
+        $("#column1").prepend($("#maincontent").detach());
+        $("#column1").append($("#mainentities").detach());
+        $("#mainsearch").fadeOut("fast");
+        updateEntities(makeperfectrelatedTo(resource.uri), matchnone, true, !resource.uri);
     }
-    $("#mainimage h2").text(resource.label);
-    var imagepane = $("#mainimage .imagepane");
-    imagepane.append(supplant(
+
+    $("#contentpane h2").text(resource.label);
+    if ($("#mainimage").length == 0) {
+        $("#contentpane").append('<div id="mainimage" class="span-16 last">');
+    }
+
+    $("#mainimage").append(supplant(
         '<a href="{image}" style="display:none"><img class="span-16 last" src="{image}" alt="{label}"/></a>', resource));
-    imagepane.children("a:first").fadeOut("slow", function() {
-        imagepane.children("a:last").fadeIn("slow", function() {
+    $("#mainimage").children("a:first").fadeOut("slow", function() {
+        $("#mainimage").children("a:last").fadeIn("slow", function() {
             $(this).siblings().remove();
         });
     });
-
-    updateEntities(makeperfectrelatedTo(resource.uri), matchnone, true, !resource.uri);
 }
 
 function restoreFromImage(entry) {
     entry.removeClass("selected");
-    $("#mainimage").fadeOut("fast", function() {
+    $("#contentpane").fadeOut("fast", function() {
         $(this).remove();
     });
+    $("#column2").append($("#maincontent").detach());
+    $("#column3").append($("#mainentities").detach());
     $("#mainsearch").fadeIn("fast").find("input").keyup();
-    $("#primary").append($("#mainentities").detach());
 }
 
 function selectForInterview(resource, entry) {
