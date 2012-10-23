@@ -386,7 +386,51 @@ function onClickEntity(resource) {
         $("#primary").prepend('<div id="contentpane" class="span-16"><h2 class="columntitle"/></div>');
         updateContentDiv(makeperfectrelatedTo(resource.uri), matchnone, true, !resource.uri);
     }
+
     $("#contentpane h2").text("Related Content");
+    var relatedContent = [];
+    for (rdftype in contentByRdfType) {
+        if (rdftype == "http://qldarch.net/rdf#Photograph" ||
+                rdftype == "http://qldarch.net/rdf#LineDrawing") {
+            contentByRdfType[rdftype].forEach(function(content) {
+                if (content["qldarch:relatedTo"] == resource.uri) {
+                    relatedContent.push(content);
+                }
+            });
+        }
+    }
+    if (relatedContent.length == 0) {
+        $("#contentpane").prepend('<div class="info span-8">No related content found</div>');
+    } else {
+        if ($("#mainimage").length == 0) {
+            $("#contentpane").append('<div id="mainimage" class="span-16 last">');
+        }
+
+        var contentid = 0;
+
+        $("#mainimage").append(supplant(
+            '<a href="{image}" style="display:none"><img class="span-16 last" src="{image}" alt="{label}"/></a>', relatedContent[contentid]));
+        contentid = (contentid + 1) % relatedContent.length;
+
+        function transitionImage() {
+            $("#mainimage").children("a:first")
+                .delay(3000)
+                .fadeOut("slow", function() {
+                    console.log("displaying content for " + contentid);
+                    $("#mainimage").append(supplant(
+                        '<a href="{image}" style="display:none">' + 
+                        '<img class="span-16 last" src="{image}" alt="{label}"/>' +
+                        '</a>', relatedContent[contentid]));
+                    contentid = (contentid + 1) % relatedContent.length;
+                    $("#mainimage").children("a:last").fadeIn("slow", function() {
+                        $(this).siblings().remove();
+                        transitionImage();
+                    });
+                });
+        }
+
+        $("#mainimage a").fadeIn("slow", transitionImage);
+    }
 }
 
 function restoreFromEntity() {
