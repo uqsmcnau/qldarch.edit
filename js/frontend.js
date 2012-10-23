@@ -22,13 +22,12 @@ function selectionMethod(selected) {
 
         return true;
     } else {
+        selected.removeClass("selected");
+        this.selection = null;
+
         return false;
     }
 };
-
-var selection = new Object();
-selection.selection = null;
-selection.select = selectionMethod;
 
 function frontendOnReady() {
     displayFrontPage();
@@ -37,7 +36,7 @@ function frontendOnReady() {
 function displayFrontPage(reload) {
     $("#primary").html(
         '<div id="mainsearch" class="span-8">' +
-            '<h2 class="columntitle span-8">Search</h2>' + 
+            '<h2 class="columntitle span-8">General Search</h2>' + 
             '<div id="searchdiv" class="span-8"/>' +
         '</div>' +
         '<div id="maincontent" class="span-8">' +
@@ -85,6 +84,8 @@ function displayContentDiv(parentDiv) {
         typeDiv.data("type", type);
         parentDiv.append(typeDiv)
     });
+
+    parentDiv.append('<div class="info span-8 last" style="display:none">No content matches</div>');
 }
 
 function updateContentDiv(perfectmatch, partialmatch, show, isEmpty) {
@@ -131,8 +132,13 @@ function updateContentDiv(perfectmatch, partialmatch, show, isEmpty) {
         }
     });
     var available = $(".contenttype.available");
-    available.filter(":not(:last)").removeClass("final");
-    available.filter(":last").addClass("final");
+    if (available.length != 0) {
+        $("#contentdiv .info").fadeOut("fast");
+        available.filter(":not(:last)").removeClass("final");
+        available.filter(":last").addClass("final");
+    } else {
+        $("#contentdiv .info").fadeIn("fast");
+    }
 }
 
 function displayEntityDiv(parentDiv) {
@@ -160,11 +166,21 @@ function displayEntityDiv(parentDiv) {
                 }
             })
             .focus(function() {
-                $(typeDiv).find(".wordgram").fadeOut("fast", function() {
-                    $(typeDiv).find(".entityworking").fadeIn("fast");
-                });
+                if ($(this).val() == "") {
+                    var input = $(this);
+                    updateEntities(makeperfecttype(type.uri), matchnone, false, !type.uri);
+                    typeDiv.one("mouseleave", function() {
+                        input.one("blur", function() {
+                            if (input.val() == "" && typeDiv.find(".selected").length == 0) {
+                                input.keyup();
+                            }
+                        });
+                    });
+                }
             });
     });
+
+    parentDiv.append('<div class="info span-8 last" style="display:none">No people or things match</div>');
 }
 
 function matchall(resource) {
@@ -228,11 +244,21 @@ function makeperfectrelatedTo(value) {
     function perfectrelatedTo(resource) {
         var relatedTo = resource["qldarch:relatedTo"];
         return value &&
-            $.isArray(relatedTo) ? (relatedTo.indexOf(value) != -1) :
-                value == relatedTo;
+            (value == resource.uri ||
+             $.isArray(relatedTo) ? (relatedTo.indexOf(value) != -1) : value == relatedTo);
     }
 
     return perfectrelatedTo;
+}
+
+function makeperfecttype(value) {
+    function matchperfecttype(resource) {
+        return value &&
+            resource &&
+            resource["rdf:type"] &&
+            value == resource["rdf:type"];
+    };
+    return matchperfecttype;
 }
 
 function updateEntities(perfectmatch, partialmatch, show, isEmpty) {
@@ -246,7 +272,7 @@ function updateEntities(perfectmatch, partialmatch, show, isEmpty) {
             });
             var resources = [];
             resourcesByRdfType[type.uri].forEach(function(resource) {
-                if (perfectmatch(resource.label)) {
+                if (perfectmatch(resource)) {
                     resources.push(resource);
                 }
             });
@@ -296,8 +322,13 @@ function updateEntities(perfectmatch, partialmatch, show, isEmpty) {
         }
     });
     var available = $(".entity.available");
-    available.filter(":not(:last)").removeClass("final");
-    available.filter(":last").addClass("final");
+    if (available.length != 0) {
+        $("#entitydiv .info").fadeOut("fast");
+        available.filter(":not(:last)").removeClass("final");
+        available.filter(":last").addClass("final");
+    } else {
+        $("#entitydiv .info").fadeIn("fast");
+    }
 }
 
 function onClickEntity(resource) {
@@ -412,20 +443,57 @@ function linkAndPlayInterview(transcript, transcriptdiv) {
     popcorn.play();
 }
 
+function displayImage(resource, entry) {
+    $("#maincontent").append($("#mainentities").detach());
+    $("#mainsearch").fadeOut("fast");
+    if ($("#mainimage").length == 0) {
+        $("#primary").append('<div id="mainimage" class="span-16 last"><h2 class="columntitle"/><div class="imagepane span-16 last"/></div>');
+    }
+    $("#mainimage h2").text(resource.label);
+    var imagepane = $("#mainimage .imagepane");
+    imagepane.append(supplant(
+        '<a href="{image}" style="display:none"><img class="span-16 last" src="{image}" alt="{label}"/></a>', resource));
+    imagepane.children("a:first").fadeOut("slow", function() {
+        imagepane.children("a:last").fadeIn("slow", function() {
+            $(this).siblings().remove();
+        });
+    });
+
+    updateEntities(makeperfectrelatedTo(resource.uri), matchnone, true, !resource.uri);
+}
+
+function restoreFromImage(entry) {
+    entry.removeClass("selected");
+    $("#mainimage").fadeOut("fast", function() {
+        $(this).remove();
+    });
+    $("#mainsearch").fadeIn("fast").find("input").keyup();
+    $("#primary").append($("#mainentities").detach());
+}
+
 function selectForInterview(resource, entry) {
     return function() {
         displayInterview(resource);
     };
 }
 
-function selectForPhotograph(resource, entry) {
+var imageSelection = new Object();
+imageSelection.selection = null;
+imageSelection.select = selectionMethod;
+
+function selectForImage(resource, entry) {
     return function() {
+        if (imageSelection.select(entry)) {
+            displayImage(resource, entry);
+        } else {
+            restoreFromImage(entry);
+        }
     };
 }
 
 var selectFunctions = {
     "http://qldarch.net/rdf#Interview" : selectForInterview,
-    "http://qldarch.net/rdf#Photograph" : selectForPhotograph,
-    "http://qldarch.net/rdf#LineDrawing" : selectForInterview,
+    "http://qldarch.net/rdf#Photograph" : selectForImage,
+    "http://qldarch.net/rdf#LineDrawing" : selectForImage,
 };
 

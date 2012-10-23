@@ -11,10 +11,8 @@ function supplant(s, o) {
 };
 
 function selectionMethod(selected) {
-    if (!selected.hasClass("selected")) {
-        if (selected != null) {
-            selected.addClass("selected");
-        }
+    if (selected && !selected.hasClass("selected")) {
+        selected.addClass("selected");
         if (this.selection != null) {
             this.selection.removeClass("selected");
         }

@@ -184,69 +184,84 @@ var resourcesByRdfType = {
     "http://qldarch.net/rdf#Architect" : [
     {
         uri: "http://qldarch.net/rdf/resources#00001",
+        "rdf:type" : "http://qldarch.net/rdf#Architect",
         label: "Graham Bligh"
     },
     {
         uri: "http://qldarch.net/rdf/resources#00002",
+        "rdf:type" : "http://qldarch.net/rdf#Architect",
         label: "James Birrell",
         preferredImage: "http://qldarch.net/rdf/content#00029",
     },
     {
         uri: "http://qldarch.net/rdf/resources#00003",
+        "rdf:type" : "http://qldarch.net/rdf#Architect",
         label: "Ian Charlton"
     },
     {
         uri: "http://qldarch.net/rdf/resources#00004",
+        "rdf:type" : "http://qldarch.net/rdf#Architect",
         label: "Jon Voller"
     },
     {
         uri: "http://qldarch.net/rdf/resources#00005",
+        "rdf:type" : "http://qldarch.net/rdf#Architect",
         label: "Blair Wilson"
     },
     {
         uri: "http://qldarch.net/rdf/resources#00015",
+        "rdf:type" : "http://qldarch.net/rdf#Architect",
         label: "Duncan McPhee"
     }
     ],
     "http://qldarch.net/rdf#Firm" : [
     {
         uri: "http://qldarch.net/rdf/resources#00006",
+        "rdf:type" : "http://qldarch.net/rdf#Firm",
         label: "Hayes and Scott",
     },
     {
         uri: "http://qldarch.net/rdf/resources#00007",
+        "rdf:type" : "http://qldarch.net/rdf#Firm",
         label: "Bligh, Jessup, Bretnall and Partners",
     },
     {
         uri: "http://qldarch.net/rdf/resources#00008",
+        "rdf:type" : "http://qldarch.net/rdf#Firm",
         label: "Colin and Fulton",
     }
     ],
     "http://qldarch.net/rdf#Client" : [
     {
         uri: "http://qldarch.net/rdf/resources#00009",
+        "rdf:type" : "http://qldarch.net/rdf#Client",
         label: "The University of Queensland"
     }
     ],
     "http://qldarch.net/rdf#Structure" : [
     {
         uri: "http://qldarch.net/rdf/resources#00010",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
         label: "International House UQ"
     },
     {
         uri: "http://qldarch.net/rdf/resources#00011",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
         label: "Schonel Theatre UQ"
     },
     {
         uri: "http://qldarch.net/rdf/resources#00012",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
         label: "Cutt House"
     },
     {
         uri: "http://qldarch.net/rdf/resources#00013",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
         label: "Queensland Agricultural College, Gatton"
     },
     {
         uri: "http://qldarch.net/rdf/resources#00014",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
         label: "Gladstone Town Council, Memorial Park"
     },
     ],
