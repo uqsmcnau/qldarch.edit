@@ -146,6 +146,8 @@ function displayEntityDiv(parentDiv) {
         var typeDiv = $(supplant(
             '<div class="entity" data-uri="{uri}">' +
                 '<input class="searchbox span-5" type="text" placeHolder="Search {plural}"/>' +
+                '<div class="button slim span-3 last switchwc" style="display:none">As Wordcloud</div>' +
+                '<div class="button slim span-3 last switchlist">As List</div>' +
                 '<div class="wordgram span-8 last">' +
                     '<img class="first span-8 last" src="img/wordcram.png" alt="{label} Wordcram"/>' +
                 '</div>' +
@@ -163,21 +165,25 @@ function displayEntityDiv(parentDiv) {
                 if (val != "") {
                     $(this).parents(".entity").siblings().removeClass("final").fadeOut("fast");
                     $(this).parents(".entity").addClass("final").fadeIn("fast");
-                }
-            })
-            .focus(function() {
-                if ($(this).val() == "") {
-                    var input = $(this);
-                    updateEntities(makeperfecttype(type.uri), matchnone, false, !type.uri);
-                    typeDiv.one("mouseleave", function() {
-                        input.one("blur", function() {
-                            if (input.val() == "" && typeDiv.find(".selected").length == 0) {
-                                input.keyup();
-                            }
-                        });
-                    });
+                    typeDiv.find(".button").fadeOut("fast");
+                } else {
+                    typeDiv.find(".button.switchlist").fadeIn("fast");
                 }
             });
+        typeDiv.find(".button.switchlist").click(function() {
+            updateEntity(makeperfecttype(type.uri), matchnone, false, !type.uri, typeDiv);
+            $(this).fadeOut("fast", function() {
+                typeDiv.find(".button.switchwc").fadeIn("fast");
+            });
+        });
+        typeDiv.find(".button.switchwc").click(function() {
+            $(this).fadeOut("fast", function() {
+                typeDiv.find(".button.switchlist").fadeIn("fast");
+            });
+            typeDiv.find(".entityworking").fadeOut("fast", function() {
+                typeDiv.find(".wordgram").fadeIn("fast");
+            });
+        });
     });
 
     parentDiv.append('<div class="info span-8 last" style="display:none">No people or things match</div>');
@@ -195,7 +201,7 @@ function makepartialstring(value) {
     return function(resource) {
         var val = $.trim(value);
         var found = false;
-        val.split(" ").forEach(function(word) {
+        val.split(/\W/).forEach(function(word) {
             if (word != "" && resource.label.indexOf(word) != -1) {
                 found = true;
             }
@@ -223,7 +229,7 @@ function makepartialkeywords(value) {
         var keywords = resource.keywords.split("|");
         var somefound = false;
         var allfound = true;
-        val.split(" ").forEach(function(word) {
+        val.split(/\W/).forEach(function(word) {
             if (word != "") {
                 var contained = false;
                 keywords.forEach(function(keyword) {
@@ -261,66 +267,70 @@ function makeperfecttype(value) {
     return matchperfecttype;
 }
 
-function updateEntities(perfectmatch, partialmatch, show, isEmpty) {
-    $(".entity").each(function (i, entity) {
-        var type = $(entity).data("type");
-        var list = $(entity).find(".entitylist");
-        list.empty();
-        if (!isEmpty) {
-            $(entity).find(".wordgram").fadeOut("fast", function() {
-                $(entity).find(".entityworking").fadeIn("fast");
-            });
-            var resources = [];
+function updateEntity(perfectmatch, partialmatch, show, isEmpty, entity) {
+    var type = $(entity).data("type");
+    var list = $(entity).find(".entitylist");
+    list.empty();
+    if (!isEmpty) {
+        $(entity).find(".wordgram").fadeOut("fast", function() {
+            $(entity).find(".entityworking").fadeIn("fast");
+        });
+        var resources = [];
+        resourcesByRdfType[type.uri].forEach(function(resource) {
+            if (perfectmatch(resource)) {
+                resources.push(resource);
+            }
+        });
+        if (resources.length == 0) {
             resourcesByRdfType[type.uri].forEach(function(resource) {
-                if (perfectmatch(resource)) {
+                if (partialmatch(resource)) {
                     resources.push(resource);
                 }
             });
-            if (resources.length == 0) {
-                resourcesByRdfType[type.uri].forEach(function(resource) {
-                    if (partialmatch(resource)) {
-                        resources.push(resource);
+        }
+        if (resources.length == 0) {
+            $(entity).removeClass("available");
+            $(entity).fadeOut("fast");
+        } else {
+            $(entity).addClass("available");
+            if (show) {
+                $(entity).fadeIn("fast");
+            }
+            resources.forEach(function(resource) {
+                var entry = $('<div class="entityentry">' + resource.label + '</div>');
+                list.append(entry);
+                entry.click(function() {
+                    if (!entry.hasClass("selected")) {
+                        onClickEntity(resource);
+                        entry.addClass("selected");
+                        var input = entry.parents(".entity").find("input");
+                        var restore = function() {
+                            restoreFromEntity()
+                            input.keyup();
+                        };
+
+                        input.val(resource.label).one("keyup", restore);
+                        entry.one("click", restore);
+                        entry.siblings(".entityentry").fadeOut("fast");
+                        entry.parents(".entity").siblings().removeClass("available");
+                        updateEntitiesDisplayed();
                     }
                 });
-            }
-            if (resources.length == 0) {
-                $(entity).removeClass("available");
-                $(entity).fadeOut("fast");
-            } else {
-                $(entity).addClass("available");
-                if (show) {
-                    $(entity).fadeIn("fast");
-                }
-                resources.forEach(function(resource) {
-                    var entry = $('<div class="entityentry">' + resource.label + '</div>');
-                    list.append(entry);
-                    entry.click(function() {
-                        if (!entry.hasClass("selected")) {
-                            onClickEntity(resource);
-                            entry.addClass("selected");
-                            var input = entry.parents(".entity").find("input");
-                            var restore = function() {
-                                restoreFromEntity()
-                                input.keyup();
-                            };
-
-                            input.val(resource.label).one("keyup", restore);
-                            entry.one("click", restore);
-                            entry.siblings(".entityentry").fadeOut("fast");
-                        }
-                    });
-                });
-            }
-        } else {
-            // Search box is empty.
-            $("input").val("");
-            $(".entity").fadeIn("fast");
-            $(entity).addClass("available");
-            $(entity).find(".entityworking").fadeOut("fast", function() {
-                $(entity).find(".wordgram").fadeIn("fast");
             });
         }
-    });
+    } else {
+        // Search box is empty.
+        $("input").val("");
+        $(".entity").fadeIn("fast");
+        $(entity).addClass("available");
+        $(entity).find(".entityworking").fadeOut("fast", function() {
+            $(entity).find(".wordgram").fadeIn("fast");
+        });
+    }
+}
+
+function updateEntitiesDisplayed() {
+    $(".entity").filter(":not(.available)").fadeOut("fast");
     var available = $(".entity.available");
     if (available.length != 0) {
         $("#entitydiv .info").fadeOut("fast");
@@ -329,6 +339,13 @@ function updateEntities(perfectmatch, partialmatch, show, isEmpty) {
     } else {
         $("#entitydiv .info").fadeIn("fast");
     }
+}
+
+function updateEntities(perfectmatch, partialmatch, show, isEmpty) {
+    $(".entity").each(function (i, entity) {
+        updateEntity(perfectmatch, partialmatch, show, isEmpty, entity);
+    });
+    updateEntitiesDisplayed();
 }
 
 function onClickEntity(resource) {
