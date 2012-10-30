@@ -7,8 +7,26 @@
 </head>
 <body>
 <script type="text/javascript">
-  d3.layout.cloud().size([300, 125])
+  d3.layout.cloud().size([300, 124])
       .words(architects.map(function(d) {
+        return {text: d, size: 6 + Math.random() * 25};
+      }))
+      .rotate(function() { return ~~(Math.random() * 2) * 90; })
+      .fontSize(function(d) { return d.size; })
+      .on("end", draw)
+      .start();
+
+  d3.layout.cloud().size([300, 124])
+      .words(firms.map(function(d) {
+        return {text: d, size: 6 + Math.random() * 25};
+      }))
+      .rotate(function() { return ~~(Math.random() * 2) * 90; })
+      .fontSize(function(d) { return d.size; })
+      .on("end", draw)
+      .start();
+
+  d3.layout.cloud().size([300, 124])
+      .words(clients.map(function(d) {
         return {text: d, size: 6 + Math.random() * 25};
       }))
       .rotate(function() { return ~~(Math.random() * 2) * 90; })
@@ -19,9 +37,9 @@
   function draw(words) {
     d3.select("body").append("svg")
         .attr("width", 300)
-        .attr("height", 300)
+        .attr("height", 124)
       .append("g")
-        .attr("transform", "translate(150,150)")
+        .attr("transform", "translate(150,62)")
       .selectAll("text")
         .data(words)
       .enter().append("text")
