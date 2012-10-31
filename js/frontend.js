@@ -149,18 +149,27 @@ function updateContentDiv(perfectmatch, partialmatch, show, isEmpty) {
 
 function displayEntityDiv(parentDiv) {
     types.proper.forEach(function(type) {
+        var uid = _.uniqueId("wordcloud_");
         var typeDiv = $(supplant(
             '<div class="entity" data-uri="{uri}">' +
                 '<input class="searchbox span-5" type="text" placeHolder="Search {plural}"/>' +
                 '<div class="button slim span-3 last switchwc" style="display:none">As Wordcloud</div>' +
                 '<div class="button slim span-3 last switchlist">As List</div>' +
-                '<div class="wordgram span-8 last">' +
-                    '<img class="first span-8 last" src="img/wordcram.png" alt="{label} Wordcram"/>' +
+                '<div id="{id}" class="wordgram span-8 last">' +
                 '</div>' +
                 '<div class="entityworking span-8 last" style="display:none"><div class="entitylisttitle">{label}</div><div class="entitylist"></div></div>' +
-            '</div>', type));
+            '</div>', _.extend({ id : uid }, type)));
         typeDiv.data("type", type);
         parentDiv.append(typeDiv)
+        makeWordCloud("#" + uid, wordclouds[type.uri]);
+
+        $("svg text").click(function() {
+            $(this).parents(".entity").find("input").val($(this).text()).keyup();
+        }).mouseenter(function() {
+            $(this).animate({opacity:'0.75'});
+        }).mouseleave(function() {
+            $(this).animate({opacity:'1'});
+        });
 
         typeDiv.find("input")
             .keyup(function() {
