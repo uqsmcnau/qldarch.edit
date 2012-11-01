@@ -404,7 +404,7 @@ function onClickEntity(resource) {
 
     displayRelatedContentPane(resource);
     displayRelatedNetworkPane(resource);
-    displayRelatedTimelinePane(resource);
+    $("#contentpane .content").append('<div class="relatedtimelinepane"/>');
 
     $('<span class="button tab">Related Content</span>')
         .appendTo($("#contentpane .contentpanetabs"))
@@ -432,7 +432,9 @@ function onClickEntity(resource) {
         .click(function() {
             if (contentSelection.select($(this))) {
                 $("#contentpane .content>:visible").fadeOut("fast", function() {
-                    $("#contentpane .content .relatedtimelinepane").fadeIn("fast");
+                    $("#contentpane .content .relatedtimelinepane").fadeIn("fast", function() {
+                        displayRelatedTimelinePane(resource);
+                    });
                 });
             }
         });
@@ -486,7 +488,7 @@ function displayRelatedContentPane(resource) {
 }
 
 function displayRelatedNetworkPane(resource) {
-    $("#contentpane .content").append('<div class="relatednetworkpane">');
+    $("#contentpane .content").append('<div class="relatednetworkpane"/>');
     if (false) {
         $("#contentpane .content .relatednetworkpane")
             .append('<div class="info span-8">No related network found</div></div>');
@@ -496,7 +498,20 @@ function displayRelatedNetworkPane(resource) {
 }
 
 function displayRelatedTimelinePane(resource) {
-    $("#contentpane .content").append('<div class="relatedtimelinepane"><div class="info span-8">No related timeline found</div></div>');
+    if (false) {
+        $("#contentpane .content .relatedtimelinepane")
+            .append('<div class="info span-8">No related network found</div></div>');
+    } else {
+        $("#contentpane .content .relatedtimelinepane").append('<div id="timelinediv"/>');
+        createStoryJS({
+            type: 'timeline',
+            width: '630',
+            height: '660',
+            source: 'example_json.json',
+            embed_id: 'timelinediv',
+            debug: true
+        });
+    }
 }
 
 function restoreFromEntity() {
