@@ -363,6 +363,10 @@ function updateEntities(perfectmatch, partialmatch, show, isEmpty) {
     updateEntitiesDisplayed();
 }
 
+var contentSelection = new Object();
+contentSelection.selection = null;
+contentSelection.select = selectionMethod;
+
 function onClickEntity(resource) {
     var desc = $("#mainentities")
         .append(
@@ -392,11 +396,50 @@ function onClickEntity(resource) {
         $("#column1").hide();
         $("#column2").hide();
         $("#mainsearch").fadeOut("fast");
-        $("#primary").prepend('<div id="contentpane" class="span-16"><h2 class="columntitle"/></div>');
+        $("#primary").prepend('<div id="contentpane" class="span-16"/>');
         updateContentDiv(makeperfectrelatedTo(resource.uri), matchnone, true, !resource.uri);
     }
 
-    $("#contentpane h2").text("Related Content");
+    $("#contentpane").append('<div class="contentpanetabs span-16"/><div class="content span-16"><div/></div>');
+
+    displayRelatedContentPane(resource);
+    displayRelatedNetworkPane(resource);
+    displayRelatedTimelinePane(resource);
+
+    $('<span class="button tab">Related Content</span>')
+        .appendTo($("#contentpane .contentpanetabs"))
+        .click(function() {
+            if (contentSelection.select($(this))) {
+                $("#contentpane .content>:visible").fadeOut("fast", function() {
+                    $("#contentpane .content .relatedcontentpane").fadeIn("fast");
+                });
+            }
+        })
+        .click();
+
+    $('<span class="button tab">Related Network</span>')
+        .appendTo($("#contentpane .contentpanetabs"))
+        .click(function() {
+            if (contentSelection.select($(this))) {
+                $("#contentpane .content>:visible").fadeOut("fast", function() {
+                    $("#contentpane .content .relatednetworkpane").fadeIn("fast");
+                });
+            }
+        });
+
+    $('<span class="button tab">Related Timeline</span>')
+        .appendTo($("#contentpane .contentpanetabs"))
+        .click(function() {
+            if (contentSelection.select($(this))) {
+                $("#contentpane .content>:visible").fadeOut("fast", function() {
+                    $("#contentpane .content .relatedtimelinepane").fadeIn("fast");
+                });
+            }
+        });
+
+}
+
+function displayRelatedContentPane(resource) {
     var relatedContent = [];
     for (rdftype in contentByRdfType) {
         if (rdftype == "http://qldarch.net/rdf#Photograph" ||
@@ -409,10 +452,10 @@ function onClickEntity(resource) {
         }
     }
     if (relatedContent.length == 0) {
-        $("#contentpane").prepend('<div class="info span-8">No related content found</div>');
+        $("#contentpane .content").append('<div class="info span-8">No related content found</div>');
     } else {
         if ($("#mainimage").length == 0) {
-            $("#contentpane").append('<div id="mainimage" class="span-16 last">');
+            $("#contentpane .content").append('<div id="mainimage" class="relatedcontentpane span-16 last" style="display:none">');
         }
 
         var contentid = 0;
@@ -440,6 +483,20 @@ function onClickEntity(resource) {
 
         $("#mainimage a").fadeIn("slow", transitionImage);
     }
+}
+
+function displayRelatedNetworkPane(resource) {
+    $("#contentpane .content").append('<div class="relatednetworkpane">');
+    if (false) {
+        $("#contentpane .content .relatednetworkpane")
+            .append('<div class="info span-8">No related network found</div></div>');
+    } else {
+        drawgraph("#contentpane .content .relatednetworkpane", samplelinks);
+    }
+}
+
+function displayRelatedTimelinePane(resource) {
+    $("#contentpane .content").append('<div class="relatedtimelinepane"><div class="info span-8">No related timeline found</div></div>');
 }
 
 function restoreFromEntity() {
