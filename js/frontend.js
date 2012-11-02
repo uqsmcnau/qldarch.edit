@@ -402,16 +402,14 @@ function onClickEntity(resource) {
 
     $("#contentpane").append('<div class="contentpanetabs span-16"/><div class="content span-16"><div/></div>');
 
-    displayRelatedContentPane(resource);
-    displayRelatedNetworkPane(resource);
-    $("#contentpane .content").append('<div class="relatedtimelinepane"/>');
 
     $('<span class="button tab">Related Content</span>')
         .appendTo($("#contentpane .contentpanetabs"))
         .click(function() {
             if (contentSelection.select($(this))) {
-                $("#contentpane .content>:visible").fadeOut("fast", function() {
-                    $("#contentpane .content .relatedcontentpane").fadeIn("fast");
+                $("#contentpane .content>:visible").hide(function() {
+                    $(this).remove();
+                    displayRelatedContentPane(resource);
                 });
             }
         })
@@ -421,8 +419,9 @@ function onClickEntity(resource) {
         .appendTo($("#contentpane .contentpanetabs"))
         .click(function() {
             if (contentSelection.select($(this))) {
-                $("#contentpane .content>:visible").fadeOut("fast", function() {
-                    $("#contentpane .content .relatednetworkpane").fadeIn("fast");
+                $("#contentpane .content>:visible").hide(function() {
+                    $(this).remove();
+                    displayRelatedNetworkPane(resource);
                 });
             }
         });
@@ -431,10 +430,9 @@ function onClickEntity(resource) {
         .appendTo($("#contentpane .contentpanetabs"))
         .click(function() {
             if (contentSelection.select($(this))) {
-                $("#contentpane .content>:visible").fadeOut("fast", function() {
-                    $("#contentpane .content .relatedtimelinepane").fadeIn("fast", function() {
-                        displayRelatedTimelinePane(resource);
-                    });
+                $("#contentpane .content>:visible").hide(function() {
+                    $(this).remove();
+                    displayRelatedTimelinePane(resource);
                 });
             }
         });
@@ -457,7 +455,7 @@ function displayRelatedContentPane(resource) {
         $("#contentpane .content").append('<div class="info span-8">No related content found</div>');
     } else {
         if ($("#mainimage").length == 0) {
-            $("#contentpane .content").append('<div id="mainimage" class="relatedcontentpane span-16 last" style="display:none">');
+            $("#contentpane .content").append('<div id="mainimage" class="relatedcontentpane span-16 last">');
         }
 
         var contentid = 0;
@@ -498,11 +496,12 @@ function displayRelatedNetworkPane(resource) {
 }
 
 function displayRelatedTimelinePane(resource) {
+    $("#contentpane .content").append('<div class="relatedtimelinepane"/>');
     if (false) {
         $("#contentpane .content .relatedtimelinepane")
             .append('<div class="info span-8">No related network found</div></div>');
     } else {
-        $("#contentpane .content .relatedtimelinepane").append('<div id="timelinediv"/>');
+        $("#contentpane .content .relatedtimelinepane").append('<div class="span-16" id="timelinediv"/>');
         createStoryJS({
             type: 'timeline',
             width: '630',
