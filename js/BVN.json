@@ -1,0 +1,63 @@
+{
+    "timeline":
+    {
+        "headline":"Timeline of BVN",
+        "type":"default",
+        "text":"Events related to the Firm BVN",
+        "startDate":"1926",
+        "date": [
+            {
+                "startDate":"1926",
+                "headline":"Arthur Bligh establishes architectural practice in Toowoomba"
+            },
+            {
+                "startDate":"1934",
+                "headline":"Arthur Bligh moves practice to Brisbane"
+            },
+            {
+                "startDate":"1946",
+                "headline":"C.W. Jessup joins practice as full partner"
+            },
+            {
+                "startDate":"1957",
+                "headline":"Athol Bretnall joins the practice as partner"
+            },
+            {
+                "startDate":"1957",
+                "headline":"H.J. Parkinson joins the practice as partner"
+            },
+            {
+                "startDate":"1957",
+                "headline":"Ronald Voller joins the practice"
+            },
+            {
+                "startDate":"1957",
+                "headline":"Practice takes the name Bligh, Jessup, Bretnall and Partners"
+            },
+            {
+                "startDate":"1960",
+                "headline":"Graham Bligh becomes partner"
+            },
+            {
+                "startDate":"1960",
+                "headline":"Bernard Ryan becomes partner"
+            },
+            {
+                "startDate":"1965",
+                "headline":"Ronald Voller becomes partner"
+            },
+            {
+                "startDate":"1968",
+                "headline":"Jon Voller joins the practice"
+            },
+            {
+                "startDate":"1974",
+                "headline":"Arthur Bligh retires"
+            },
+            {
+                "startDate":"1974",
+                "headline":"Ronald Voller retires"
+            }
+        ]
+    }
+}

@@ -315,6 +315,12 @@ var types = {
           label: "Structure",
           plural: "Structures",
           definition: "A building, or other distinguishable part of our built environment"
+      },
+      {
+          uri: "http://qldarch.net/rdf#Typology",
+          label: "Typology",
+          plural: "Types",
+          definition: "A structure classification or catagorisation"
       }
     ]
 };
@@ -456,6 +462,14 @@ var contentByRdfType = {
             keywords: "James|Birrell",
             "rdf:type": "http://qldarch.net/rdf#Photograph",
             "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00002"
+        },
+        {
+            uri: "http://qldarch.net/rdf/content#00030",
+            label: "Graham Bligh Portrait",
+            image: "img/graham_bligh.jpg",
+            keywords: "Graham|Bligh",
+            "rdf:type": "http://qldarch.net/rdf#Photograph",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00001"
         },
     ],
     "http://qldarch.net/rdf#LineDrawing" : [

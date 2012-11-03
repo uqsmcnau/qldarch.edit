@@ -1,0 +1,138 @@
+{
+    "timeline":
+    {
+        "headline":"Timeline of BVN",
+        "type":"default",
+        "text":"Events related to the Firm BVN",
+        "startDate":"1926",
+        "date": [
+            {
+                "startDate":"1926",
+                "headline":"Arthur Bligh establishes architectural practice in Toowoomba"
+            },
+            {
+                "startDate":"1934",
+                "headline":"Arthur Bligh moves practice to Brisbane"
+            },
+            {
+                "startDate":"1946",
+                "headline":"C.W. Jessup joins practice as full partner"
+            },
+            {
+                "startDate":"1957",
+                "headline":"Athol Bretnall joins the practice as partner"
+            },
+            {
+                "startDate":"1957",
+                "headline":"H.J. Parkinson joins the practice as partner"
+            },
+            {
+                "startDate":"1957",
+                "headline":"Ronald Voller joins the practice"
+            },
+            {
+                "startDate":"1957",
+                "headline":"Practice takes the name Bligh, Jessup, Bretnall and Partners"
+            },
+            {
+                "startDate":"1960",
+                "headline":"Graham Bligh becomes partner"
+            },
+            {
+                "startDate":"1960",
+                "headline":"Bernard Ryan becomes partner"
+            },
+            {
+                "startDate":"1965",
+                "headline":"Ronald Voller becomes partner"
+            },
+            {
+                "startDate":"1968",
+                "headline":"Jon Voller joins the practice"
+            },
+            {
+                "startDate":"1974",
+                "headline":"Arthur Bligh retires"
+            },
+            {
+                "startDate":"1974",
+                "headline":"Ronald Voller retires"
+            },
+            {
+                "startDate":"1974",
+                "headline":"Construction completed: Watkins Place, Brisbane",
+                "text":"<p>Client: Watkins Property and Administration Pty Ltd</p>"
+            }, 
+            {
+                "startDate":"1974",
+                "headline":"Construction completed: Runaway Bay Shopping Centre, Gold Coast",
+                "text":"<p>Client: Runaway Town Pty Ltd</p>"
+            }, 
+            {
+                "startDate":"1974",
+                "headline":"Construction completed: Supreme Court Building, Brisbane",
+                "text":"<p>Client: State Government of Queensland</p>"
+            },
+            {
+                "startDate":"1970",
+                "headline":"Construction completed: District Courts Building, Brisbane",
+                "text":"<p>Client: State Government of Queensland</p>"
+            },
+            {
+                "startDate":"1967",
+                "headline":"Construction completed: Presbyterian Church of Australia, Brisbane",
+                "text":"<p>Client: Presbyterian Church of Australia</p>"
+            },
+            {
+                "startDate":"1973",
+                "headline":"Construction completed: University of Queensland Sports Union Complex, Brisbane",
+                "text":"<p>Client: Sports Union of University of Queensland</p>"
+            },
+            {
+                "startDate":"1974",
+                "headline":"Construction completed: Capalba Tavern, Capalba",
+                "text":"<p>Client: Carlton &amp; United Breweries Queensland Ltd</p>"
+            },
+            {
+                "startDate":"1957",
+                "headline":"Construction completed: Sanitarium Factory, Brisbane",
+                "text":"<p>Client: Sanitarium Health Food Co.</p>"
+            },
+            {
+                "startDate":"1974",
+                "headline":"Construction completed: Edwards Dunlop Warehouses, Brisbane",
+                "text":"<p>Client: Civic &amp; Civic Pty Ltd</p>"
+            },
+            {
+                "startDate":"1970",
+                "headline":"Construction completed: Intensive Minimal Disease Piggery, Lawes",
+                "text":"<p>Client: Queensland Agricultural College</p>"
+            },
+            {
+                "startDate":"1970",
+                "headline":"Construction completed: Poultry Technology and Research Unit, Lawes",
+                "text":"<p>Client: Queensland Agricultural College</p>"
+            },
+            {
+                "startDate":"1970",
+                "headline":"Construction completed: Meat Abattoir, Lawes",
+                "text":"<p>Client: Queensland Agricultural College</p>"
+            },
+            {
+                "startDate":"1964",
+                "headline":"Construction completed: Queensland Agricultural College, Lawes",
+                "text":"<p>Client: Department of the Co-ordinator General and the Queensland Agricultural College Council</p>"
+            },
+            {
+                "startDate":"1969",
+                "headline":"Construction completed: General Teaching Buildings Mount Gravatt Teachers' College, Brisbane",
+                "text":"<p>Client: State Government of Queensland</p>"
+            },
+            {
+                "startDate":"1974",
+                "headline":"Construction completed: "Library and Science Building, Brisbane",
+                "text":"<p>Client: Brisbane Boys College, Brisbane Boys College P &amp; F Committee</p>"
+            }
+        ]
+    }
+}

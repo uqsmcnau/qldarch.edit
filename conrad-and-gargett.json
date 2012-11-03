@@ -1,0 +1,103 @@
+{
+    "timeline":
+    {
+        "headline":"Timeline of Conrad and Gargett",
+        "type":"default",
+        "text":"Events related to the Firm, Conrad and Gargett",
+        "startDate":"1890",
+        "date": [
+            {
+                "startDate":"1890",
+                "headline":"firm founded by H.W. Atkinson"
+            },
+            {
+                "startDate":"1907",
+                "headline":"firm became H.W. Atkinson & Chas. McLay"
+            },
+            {
+                "startDate":"1917",
+                "headline":"death Chas. McLay"
+            },
+            {
+                "startDate":"1917",
+                "headline":"firm became H.W. Atkinson & A.H. Conrad"
+            },
+            {
+                "startDate":"1939",
+                "headline":"death H.W. Atkinson"
+            },
+            {
+                "startDate":"1939",
+                "headline":"firm became A.H. Conrad & T.B.F. Gargett"
+            },
+            {
+                "startDate":"1953",
+                "headline":"new associate of the firm: V.T. Curtis"
+            },
+            {
+                "startDate":"1953",
+                "headline":"new associate of the firm: C.A. Hamilton"
+            },
+            {
+                "startDate":"1953",
+                "headline":"new associate of the firm: L.H. Hailey"
+            },
+            {
+                "startDate":"1953",
+                "headline":"new associate of the firm: K.H. Frost"
+            },
+            {
+                "startDate":"1953",
+                "headline":"new associate of the firm: W.A.H. Conrad"
+            },
+            {
+                "startDate":"1953",
+                "headline":"new associate of the firm: P.R. Gargett"
+            },
+            {
+                "startDate":"1965",
+                "headline":"V.T. Curtis, C.A. Hamiltn, L.H. Hailey, K.H. Frost, W.A.H. Conrad & P.R. Gargett become partners of the firm"
+            },
+            {
+                "startDate":"1965",
+                "headline":""firm became Conrad, Gargett & Partners""
+            },
+            {
+                "startDate":"1965",
+                "headline":"new associate: J.M. Orange"
+            },
+            {
+                "startDate":"1970",
+                "headline":"J.M. Orange becomes partner of the firm"
+            },
+            {
+                "startDate":"1970",
+                "headline":"new associate: J.D. McPhee"
+            },
+            {
+                "startDate":"1970",
+                "headline":"new associate: F.R. Holmes"
+            },
+            {
+                "startDate":"1970",
+                "headline":"new associate: R. Hawkins"
+            },
+            {
+                "startDate":"1970",
+                "headline":"new associate: G. Cummings"
+            },
+            {
+                "startDate":"1970",
+                "headline":"new associate: W. Duhs"
+            },
+            {
+                "startDate":"1972",
+                "headline":"new associate: K.R. Whiteoak"
+            },
+            {
+                "startDate":"1972",
+                "headline":"new associate: I.D. Charlton"
+            }
+        ]
+    }
+}

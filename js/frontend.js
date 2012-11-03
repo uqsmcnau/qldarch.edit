@@ -465,20 +465,22 @@ function displayRelatedContentPane(resource) {
         contentid = (contentid + 1) % relatedContent.length;
 
         function transitionImage() {
-            $("#mainimage").children("a:first")
-                .delay(3000)
-                .fadeOut("slow", function() {
-                    $("#mainimage").append(supplant(
-                        '<a href="{image}" style="display:none">' + 
-                        '<img class="span-16 last" src="{image}" alt="{label}"/>' +
-                        '</a>', relatedContent[contentid]));
-                    $("#mainimage h3").text(relatedContent[contentid].label);
-                    contentid = (contentid + 1) % relatedContent.length;
-                    $("#mainimage").children("a:last").fadeIn("slow", function() {
-                        $(this).siblings("a").remove();
-                        transitionImage();
+            if (relatedContent.length > 1) {
+                $("#mainimage").children("a:first")
+                    .delay(3000)
+                    .fadeOut("slow", function() {
+                        $("#mainimage").append(supplant(
+                            '<a href="{image}" style="display:none">' + 
+                            '<img class="span-16 last" src="{image}" alt="{label}"/>' +
+                            '</a>', relatedContent[contentid]));
+                        $("#mainimage h3").text(relatedContent[contentid].label);
+                        contentid = (contentid + 1) % relatedContent.length;
+                        $("#mainimage").children("a:last").fadeIn("slow", function() {
+                            $(this).siblings("a").remove();
+                            transitionImage();
+                        });
                     });
-                });
+            }
         }
 
         $("#mainimage a").fadeIn("slow", transitionImage);
@@ -506,7 +508,7 @@ function displayRelatedTimelinePane(resource) {
             type: 'timeline',
             width: '630',
             height: '660',
-            source: 'example_json.json',
+            source: 'json/BVN.json',
             embed_id: 'timelinediv',
             debug: true
         });
