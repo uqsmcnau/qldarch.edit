@@ -1,73 +1,3 @@
-var menuProperties = {
-    animates : [
-      {
-          uri: "http://qldarch.net/rdf#employeeOf",
-          label: "employee of",
-          definition: "The subject was an employee of the indicated firm",
-          domain: [ "http://qldarch.net/rdf#Architect" ],
-          range: [ "http://qldarch.net/rdf#Firm" ],
-          reification: "http://qldarch.net/rdf#EmployeeRelation"
-      },
-      {
-          uri: "http://qldarch.net/rdf#wasPartnerAt",
-          label: "was a partner at",
-          definition: "The subject was an partner at the indicated firm",
-          domain: [ "http://qldarch.net/rdf#Architect" ],
-          range: [ "http://qldarch.net/rdf#Firm" ],
-          reification: "http://qldarch.net/rdf#PartnerRelation"
-      },
-      {
-          uri: "http://qldarch.net/rdf#collaboratedWith",
-          label: "collaborated with",
-          definition: "The subject collaborated with the indicated architect",
-          domain: [ "http://qldarch.net/rdf#Architect" ],
-          range: [ "http://qldarch.net/rdf#Architect" ],
-      },
-  ],
-    betweens : [
-      {
-          uri: "http://qldarch.net/rdf#designed",
-          label: "designed",
-          definition: "The subject was involved in designing the indicated structure",
-          domain: [ "http://qldarch.net/rdf#Architect" ],
-          range: [ "http://qldarch.net/rdf#Structure" ],
-      },
-      {
-          uri: "http://qldarch.net/rdf#receivedAward",
-          label: "received award",
-          definition: "The subject received the indicated award.",
-          domain: [ "http://qldarch.net/rdf#Architect", "http://qldarch.net/rdf#Structure" ],
-          range: [ "http://qldarch.net/rdf#Award" ],
-      },
-  ],
-    types : [
-      {
-          uri: "http://qldarch.net/rdf#Architect",
-          label: "Architect",
-          definition: "A person who is or has been an Architect"
-      },
-      {
-          uri: "http://qldarch.net/rdf#Firm",
-          label: "Firm",
-          definition: "A business with a recognised continuity of identity"
-      },
-      {
-          uri: "http://qldarch.net/rdf#Client",
-          label: "Client",
-          definition: "An agent who has engaged an Architect or Firm on a project"
-      },
-      {
-          uri: "http://qldarch.net/rdf#Structure",
-          label: "Structure",
-          definition: "A building, or other distinguishable part of our built environment"
-      },
-      {
-          uri: "http://qldarch.net/rdf#Award",
-          label: "Award",
-          definition: "An recognition of meritorious conduct or achivement"
-      }
-  ]
-};
 var properties = {
     uri: {
         label: "URI",
@@ -104,6 +34,16 @@ var properties = {
         display: true,
         editable: true
     },
+    preferredImage : {
+        label: "Preferred Image",
+        display: false,
+        editable: true
+    },
+    "qldarch:employedBy" : {
+        label: "Employed By",
+        display: true,
+        editable: false
+    },
     "qldarch:beganEmployment" : {
         label: "Began Employment",
         display: true,
@@ -126,13 +66,16 @@ var properties = {
         range: [ "xsd:string" ]
     },
 };
+
 var entities = {
     "http://qldarch.net/rdf/resources#00001" : {
         uri: "http://qldarch.net/rdf/resources#00001",
         label: "Graham Bligh",
         "rdf:type" : "http://qldarch.net/rdf#Architect",
         "foaf:firstName" : "Graham",
-        "foaf:lastName" : "Bligh"
+        "foaf:lastName" : "Bligh",
+        preferredImage: "http://qldarch.net/rdf/content#00030",
+        "qldarch:employedBy" : "http://qldarch.net/rdf/resources#00007"
     },
     "http://qldarch.net/rdf/resources#00002" : {
         uri: "http://qldarch.net/rdf/resources#00002",
@@ -146,14 +89,16 @@ var entities = {
         label: "Ian Chalton",
         "rdf:type" : "http://qldarch.net/rdf#Architect",
         "foaf:firstName" : "Ian",
-        "foaf:lastName" : "Charlton"
+        "foaf:lastName" : "Charlton",
+        preferredImage: "http://qldarch.net/rdf/content#00031",
     },
     "http://qldarch.net/rdf/resources#00004" : {
         uri: "http://qldarch.net/rdf/resources#00004",
         label: "Jon Voller",
         "rdf:type" : "http://qldarch.net/rdf#Architect",
         "foaf:firstName" : "Jon",
-        "foaf:lastName" : "Voller"
+        "foaf:lastName" : "Voller",
+        "qldarch:employedBy" : "http://qldarch.net/rdf/resources#00007"
     },
     "http://qldarch.net/rdf/resources#00005" : {
         uri: "http://qldarch.net/rdf/resources#00005",
@@ -169,112 +114,117 @@ var entities = {
         "foaf:firstName" : "Duncan",
         "foaf:lastName" : "McPhee"
     },
+    "http://qldarch.net/rdf/resources#00016" : {
+        uri: "http://qldarch.net/rdf/resources#00016",
+        label: "Athol Bretnall",
+        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "foaf:firstName" : "Athol",
+        "foaf:lastName" : "Bretnall",
+        "qldarch:employedBy" : "http://qldarch.net/rdf/resources#00007"
+    },
+    "http://qldarch.net/rdf/resources#00017" : {
+        uri: "http://qldarch.net/rdf/resources#00017",
+        label: "Bob Gardner",
+        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "foaf:firstName" : "Bob",
+        "foaf:lastName" : "Gardner"
+    },
+    "http://qldarch.net/rdf/resources#00018" : {
+        uri: "http://qldarch.net/rdf/resources#00018",
+        label: "Col Jessup",
+        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "foaf:firstName" : "Col",
+        "foaf:lastName" : "Jessup",
+        "qldarch:employedBy" : "http://qldarch.net/rdf/resources#00007"
+    },
+    "http://qldarch.net/rdf/resources#00021" : {
+        uri: "http://qldarch.net/rdf/resources#00021",
+        label: "James Grose",
+        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "foaf:firstName" : "James",
+        "foaf:lastName" : "Grose"
+    },
     "http://qldarch.net/rdf/resources#00006" : {
         uri: "http://qldarch.net/rdf/resources#00006",
         label: "Hayes and Scott",
+        "rdf:type" : "http://qldarch.net/rdf#Firm",
         "qldarch:firmName": "Hayes and Scott"
     },
     "http://qldarch.net/rdf/resources#00007" : {
         uri: "http://qldarch.net/rdf/resources#00007",
         label: "BVN",
         altlabel: "Bligh, Jessup, Bretnall and Partners",
+        "rdf:type" : "http://qldarch.net/rdf#Firm",
         "qldarch:firmName": "BVN"
     },
     "http://qldarch.net/rdf/resources#00008" : {
         uri: "http://qldarch.net/rdf/resources#00008",
         label: "Colin and Fulton",
+        "rdf:type" : "http://qldarch.net/rdf#Firm",
         "qldarch:firmName": "Colin and Fulton"
-    }
-};
-var resourcesByRdfType = {
-    "http://qldarch.net/rdf#Architect" : [
-    {
-        uri: "http://qldarch.net/rdf/resources#00001",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
-        label: "Graham Bligh"
     },
-    {
-        uri: "http://qldarch.net/rdf/resources#00002",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
-        label: "James Birrell",
-        preferredImage: "http://qldarch.net/rdf/content#00029",
-    },
-    {
-        uri: "http://qldarch.net/rdf/resources#00003",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
-        label: "Ian Charlton"
-    },
-    {
-        uri: "http://qldarch.net/rdf/resources#00004",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
-        label: "Jon Voller"
-    },
-    {
-        uri: "http://qldarch.net/rdf/resources#00005",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
-        label: "Blair Wilson"
-    },
-    {
-        uri: "http://qldarch.net/rdf/resources#00015",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
-        label: "Duncan McPhee"
-    }
-    ],
-    "http://qldarch.net/rdf#Firm" : [
-    {
-        uri: "http://qldarch.net/rdf/resources#00006",
+    "http://qldarch.net/rdf/resources#00022" : {
+        uri: "http://qldarch.net/rdf/resources#00022",
+        label: "Conrad and Gargett",
         "rdf:type" : "http://qldarch.net/rdf#Firm",
-        label: "Hayes and Scott",
+        "qldarch:firmName": "Conrad and Gargett"
     },
-    {
-        uri: "http://qldarch.net/rdf/resources#00007",
+    "http://qldarch.net/rdf/resources#00023" : {
+        uri: "http://qldarch.net/rdf/resources#00023",
+        label: "Karl Langer",
         "rdf:type" : "http://qldarch.net/rdf#Firm",
-        label: "BVN",
-        altlabel: "Bligh, Jessup, Bretnall and Partners",
+        "qldarch:firmName": "Karl Langer"
     },
-    {
-        uri: "http://qldarch.net/rdf/resources#00008",
+    "http://qldarch.net/rdf/resources#00024" : {
+        uri: "http://qldarch.net/rdf/resources#00024",
+        label: "Wilson Architects",
         "rdf:type" : "http://qldarch.net/rdf#Firm",
-        label: "Colin and Fulton",
-    }
-    ],
-    "http://qldarch.net/rdf#Client" : [
-    {
+        "qldarch:firmName": "Wilson Architects"
+    },
+    "http://qldarch.net/rdf/resources#00025" : {
+        uri: "http://qldarch.net/rdf/resources#00025",
+        label: "Riddel Architecture",
+        "rdf:type" : "http://qldarch.net/rdf#Firm",
+        "qldarch:firmName": "Riddel Architecture"
+    },
+    "http://qldarch.net/rdf/resources#00009" : {
         uri: "http://qldarch.net/rdf/resources#00009",
         "rdf:type" : "http://qldarch.net/rdf#Client",
         label: "The University of Queensland"
-    }
-    ],
-    "http://qldarch.net/rdf#Structure" : [
-    {
+    },
+    "http://qldarch.net/rdf/resources#00010" : {
         uri: "http://qldarch.net/rdf/resources#00010",
         "rdf:type" : "http://qldarch.net/rdf#Structure",
         label: "International House UQ"
     },
-    {
+    "http://qldarch.net/rdf/resources#00011" : {
         uri: "http://qldarch.net/rdf/resources#00011",
         "rdf:type" : "http://qldarch.net/rdf#Structure",
         label: "Schonel Theatre UQ"
     },
-    {
+    "http://qldarch.net/rdf/resources#00012" : {
         uri: "http://qldarch.net/rdf/resources#00012",
         "rdf:type" : "http://qldarch.net/rdf#Structure",
         label: "Cutt House"
     },
-    {
+    "http://qldarch.net/rdf/resources#00013" : {
         uri: "http://qldarch.net/rdf/resources#00013",
         "rdf:type" : "http://qldarch.net/rdf#Structure",
         label: "Queensland Agricultural College, Gatton"
     },
-    {
+    "http://qldarch.net/rdf/resources#00014" : {
         uri: "http://qldarch.net/rdf/resources#00014",
         "rdf:type" : "http://qldarch.net/rdf#Structure",
         label: "Gladstone Town Council, Memorial Park"
-    },
-    ],
-    "http://qldarch.net/rdf#Award" : []
+    }
 };
 
+var resourcesByRdfType = _.groupBy(_.values(entities), function(entity) {
+        return entity["rdf:type"];
+    });
+
+// Flatten this into a closer representation of rdf and use filter to split.
+//
 var types = {
     artifacts : [
       {
@@ -346,7 +296,7 @@ var contentByRdfType = {
         {
             uri: "http://qldarch.net/rdf/content#00002",
             label: "Interview with Graham Bligh",
-            audio: "audio/Bligh.ogg",
+            audio: "audio/Graham_Bligh.ogg",
             transcript: "transcript/Bligh.json",
             keywords: "Graham|Bligh|Interview",
             "rdf:type": "http://qldarch.net/rdf#Interview",
@@ -464,19 +414,76 @@ var contentByRdfType = {
         },
         {
             uri: "http://qldarch.net/rdf/content#00029",
-            label: "James Birrell Portrait",
-            image: "img/james_birrell.jpg",
-            keywords: "James|Birrell",
+            label: "Athol Bretnall Portrait",
+            image: "img/Athol_Bretnall.jpg",
+            keywords: "Athol|Bretnall",
             "rdf:type": "http://qldarch.net/rdf#Photograph",
-            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00002"
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00016"
         },
         {
             uri: "http://qldarch.net/rdf/content#00030",
             label: "Graham Bligh Portrait",
-            image: "img/graham_bligh.jpg",
+            image: "img/Graham_Bligh.jpg",
             keywords: "Graham|Bligh",
             "rdf:type": "http://qldarch.net/rdf#Photograph",
             "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00001"
+        },
+        {
+            uri: "http://qldarch.net/rdf/content#00031",
+            label: "Ian Charlton Portrait",
+            image: "img/Ian_Charlton.jpg",
+            keywords: "Ian|Charlton",
+            "rdf:type": "http://qldarch.net/rdf#Photograph",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00003",
+            "qldarch:employedBy" : "http://qldarch.net/rdf/resources#00022"
+        },
+        {
+            uri: "http://qldarch.net/rdf/content#00032",
+            label: "Jon Voller Portrait",
+            image: "img/Jon_Voller.jpg",
+            keywords: "Jon|Voller",
+            "rdf:type": "http://qldarch.net/rdf#Photograph",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00004"
+        },
+        {
+            uri: "http://qldarch.net/rdf/content#00033",
+            label: "Blair Wilson Portrait",
+            image: "img/Blair_Wilson.jpg",
+            keywords: "Blair|Wilson",
+            "rdf:type": "http://qldarch.net/rdf#Photograph",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00005"
+        },
+        {
+            uri: "http://qldarch.net/rdf/content#00034",
+            label: "Duncan McPhee Portrait",
+            image: "img/Duncan_McPhee.jpg",
+            keywords: "Duncan|McPhee",
+            "rdf:type": "http://qldarch.net/rdf#Photograph",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00015"
+        },
+        {
+            uri: "http://qldarch.net/rdf/content#00035",
+            label: "Bob Gardner Portrait",
+            image: "img/Bob_Gardner.jpg",
+            keywords: "Bob|Gardner",
+            "rdf:type": "http://qldarch.net/rdf#Photograph",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00017"
+        },
+        {
+            uri: "http://qldarch.net/rdf/content#00036",
+            label: "Col Jessup Portrait",
+            image: "img/Col_Jessup.jpg",
+            keywords: "Col|Jessup",
+            "rdf:type": "http://qldarch.net/rdf#Photograph",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00018"
+        },
+        {
+            uri: "http://qldarch.net/rdf/content#00037",
+            label: "James Grose Portrait",
+            image: "img/James_Grose.jpg",
+            keywords: "James|Grose",
+            "rdf:type": "http://qldarch.net/rdf#Photograph",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00021"
         },
     ],
     "http://qldarch.net/rdf#LineDrawing" : [
@@ -578,5 +585,14 @@ var contentByRdfType = {
             keywords: "Residence|Beecroft|Bligh",
             "rdf:type": "http://qldarch.net/rdf#LineDrawing"
         },
+    ],
+    "http://qldarch.net/rdf#Timeline" : [
+        {
+            uri: "http://qldarch.net/rdf/content#00026",
+            label: "Timeline for BVN",
+            json: "json/BVN.json",
+            keywords: "BVN|Bligh",
+            "rdf:type": "http://qldarch.net/rdf#Timeline"
+        }
     ]
 };

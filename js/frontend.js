@@ -382,14 +382,35 @@ function onClickEntity(resource) {
     var list = desc.append('<div class="propertylist"/>').find(".propertylist");
     for (uri in entities[resource.uri]) {
         if (properties[uri].display) {
-            var arg = {
-                    "label" : properties[uri].label,
-                    "value" : entities[resource.uri][uri]
-            };
-            list.append(supplant(
-                '<div class="propertypair span-8 last">' +
-                '<span class="propertylabel span-3">{label}</span>' +
-                '<span class="propertyvalue span-5 last" type="text">{value}</span></div>', arg));
+            var value = entities[resource.uri][uri];
+            if (value) {
+                var first = "";
+                var rest = [];
+                if (_.isArray(value)) {
+                    first = _.first(value);
+                    rest = _.rest(value);
+                } else {
+                    first = value;
+                }
+                var arg = {
+                        "label" : properties[uri].label,
+                        "value" : first
+                };
+                list.append(supplant(
+                    '<div class="propertypair span-8 last">' +
+                    '<span class="propertylabel span-3">{label}</span>' +
+                    '<span class="propertyvalue span-5 last" type="text">{value}</span></div>', arg));
+                rest.forEach(function(v) {
+                    var arg = {
+                            "label" : "&nbsp;",
+                            "value" : v
+                    };
+                    list.append(supplant(
+                        '<div class="propertypair span-8 last">' +
+                        '<span class="propertylabel span-3">{label}</span>' +
+                        '<span class="propertyvalue span-5 last" type="text">{value}</span></div>', arg));
+                });
+            }
         }
     }
 
@@ -538,7 +559,7 @@ function displayInterview(resource) {
                     '<h2 class="columntitle">{title}</h2>' + 
                     '<h3>Conducted on {date}</h3>' +
                 '</div>' +
-                '<div class="returnbutton span-6 last">Return to Search...</div>' +
+                '<div class="returnbutton span-6 last">Front page...</div>' +
             '</div>' + 
             '<div id="audiodiv" class="span-8"></div>', transcript));
 
