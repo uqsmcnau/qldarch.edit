@@ -1,42 +1,42 @@
-// http://blog.thomsonreuters.com/index.php/mobile-patent-suits-graphic-of-the-day/
+// http://blog.thomsonreuters.com/index.php/mobile-patent-linktype2s-graphic-of-the-day/
 var samplelinks = [
-  {source: "Microsoft", target: "Amazon", type: "licensing"},
-  {source: "Microsoft", target: "HTC", type: "licensing"},
-  {source: "Samsung", target: "Apple", type: "suit"},
-  {source: "Motorola", target: "Apple", type: "suit"},
-  {source: "Nokia", target: "Apple", type: "resolved"},
-  {source: "HTC", target: "Apple", type: "suit"},
-  {source: "Kodak", target: "Apple", type: "suit"},
-  {source: "Microsoft", target: "Barnes & Noble", type: "suit"},
-  {source: "Microsoft", target: "Foxconn", type: "suit"},
-  {source: "Oracle", target: "Google", type: "suit"},
-  {source: "Apple", target: "HTC", type: "suit"},
-  {source: "Microsoft", target: "Inventec", type: "suit"},
-  {source: "Samsung", target: "Kodak", type: "resolved"},
-  {source: "LG", target: "Kodak", type: "resolved"},
-  {source: "RIM", target: "Kodak", type: "suit"},
-  {source: "Sony", target: "LG", type: "suit"},
-  {source: "Kodak", target: "LG", type: "resolved"},
-  {source: "Apple", target: "Nokia", type: "resolved"},
-  {source: "Qualcomm", target: "Nokia", type: "resolved"},
-  {source: "Apple", target: "Motorola", type: "suit"},
-  {source: "Microsoft", target: "Motorola", type: "suit"},
-  {source: "Motorola", target: "Microsoft", type: "suit"},
-  {source: "Huawei", target: "ZTE", type: "suit"},
-  {source: "Ericsson", target: "ZTE", type: "suit"},
-  {source: "Kodak", target: "Samsung", type: "resolved"},
-  {source: "Apple", target: "Samsung", type: "suit"},
-  {source: "Kodak", target: "RIM", type: "suit"},
-  {source: "Nokia", target: "Qualcomm", type: "suit"}
+  {source: "Microsoft", target: "Amazon", type: "linktype1"},
+  {source: "Microsoft", target: "HTC", type: "linktype1"},
+  {source: "Samsung", target: "Apple", type: "linktype2"},
+  {source: "Motorola", target: "Apple", type: "linktype2"},
+  {source: "Nokia", target: "Apple", type: "linktype3"},
+  {source: "HTC", target: "Apple", type: "linktype2"},
+  {source: "Kodak", target: "Apple", type: "linktype2"},
+  {source: "Microsoft", target: "Barnes & Noble", type: "linktype2"},
+  {source: "Microsoft", target: "Foxconn", type: "linktype2"},
+  {source: "Oracle", target: "Google", type: "linktype2"},
+  {source: "Apple", target: "HTC", type: "linktype2"},
+  {source: "Microsoft", target: "Inventec", type: "linktype2"},
+  {source: "Samsung", target: "Kodak", type: "linktype3"},
+  {source: "LG", target: "Kodak", type: "linktype3"},
+  {source: "RIM", target: "Kodak", type: "linktype2"},
+  {source: "Sony", target: "LG", type: "linktype2"},
+  {source: "Kodak", target: "LG", type: "linktype3"},
+  {source: "Apple", target: "Nokia", type: "linktype3"},
+  {source: "Qualcomm", target: "Nokia", type: "linktype3"},
+  {source: "Apple", target: "Motorola", type: "linktype2"},
+  {source: "Microsoft", target: "Motorola", type: "linktype2"},
+  {source: "Motorola", target: "Microsoft", type: "linktype2"},
+  {source: "Huawei", target: "ZTE", type: "linktype2"},
+  {source: "Ericsson", target: "ZTE", type: "linktype2"},
+  {source: "Kodak", target: "Samsung", type: "linktype3"},
+  {source: "Apple", target: "Samsung", type: "linktype2"},
+  {source: "Kodak", target: "RIM", type: "linktype2"},
+  {source: "Nokia", target: "Qualcomm", type: "linktype2"}
 ];
 
-function drawgraph(targetselector, links) {
+function drawgraph(targetselector, links, linkresolver) {
     var nodes = {};
 
     // Compute the distinct nodes from the links.
     links.forEach(function(link) {
-      link.source = nodes[link.source] || (nodes[link.source] = {name: link.source});
-      link.target = nodes[link.target] || (nodes[link.target] = {name: link.target});
+      link.source = nodes[link.source] || (nodes[link.source] = {name: linkresolver(link.source)});
+      link.target = nodes[link.target] || (nodes[link.target] = {name: linkresolver(link.target)});
     });
 
     var w = 630,
@@ -57,7 +57,7 @@ function drawgraph(targetselector, links) {
 
     // Per-type markers, as they don't inherit styles.
     svg.append("svg:defs").selectAll("marker")
-        .data(["suit", "licensing", "resolved"])
+        .data(["linktype1", "linktype2", "linktype3"])
       .enter().append("svg:marker")
         .attr("id", String)
         .attr("viewBox", "0 -5 10 10")

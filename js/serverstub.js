@@ -105,7 +105,11 @@ var entities = {
         label: "Blair Wilson",
         "rdf:type" : "http://qldarch.net/rdf#Architect",
         "foaf:firstName" : "Blair",
-        "foaf:lastName" : "Wilson"
+        "foaf:lastName" : "Wilson",
+        "qldarch:employedBy" : [
+            "http://qldarch.net/rdf/resources#00024",
+            "http://qldarch.net/rdf/resources#00008",
+            ]
     },
     "http://qldarch.net/rdf/resources#00015" : {
         uri: "http://qldarch.net/rdf/resources#00015",

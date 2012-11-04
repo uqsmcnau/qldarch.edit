@@ -517,8 +517,32 @@ function displayRelatedNetworkPane(resource) {
         $("#contentpane .content .relatednetworkpane")
             .append('<div class="info span-8">No related network found</div></div>');
     } else {
-        drawgraph("#contentpane .content .relatednetworkpane", samplelinks);
+        var links = [];
+        pushLinks(links, "qldarch:employedBy", "linktype1");
+        pushLinks(links, "qldarch:designedBy", "linktype2");
+        pushLinks(links, "qldarch:collaboratedWith", "linktype3");
+
+        drawgraph("#contentpane .content .relatednetworkpane", links,
+            function(link) {
+                console.log("resolving: " + link);
+                return entities[link] ? entities[link].label : "unknown";
+            });
     }
+}
+
+function pushLinks(linkArray, predicate, linkclass) {
+        _.values(entities).forEach(function(entity) {
+            if (entity[predicate]) {
+                _.flatten([entity[predicate]]).forEach(
+                    function(e) {
+                        linkArray.push({
+                            source: entity.uri,
+                            target: entities[e].uri,
+                            type: linkclass
+                        });
+                    });
+            }
+        });
 }
 
 function displayRelatedTimelinePane(resource) {
