@@ -79,6 +79,11 @@ var properties = {
         display: false,
         editable: true
     },
+    altlabel: {
+        label: "Alternative Name",
+        display: true,
+        editable: true
+    },
     "rdf:type" : {
         label: "RDF Type",
         display: false,
@@ -171,8 +176,9 @@ var entities = {
     },
     "http://qldarch.net/rdf/resources#00007" : {
         uri: "http://qldarch.net/rdf/resources#00007",
-        label: "Bligh, Jessup, Bretnall and Partners",
-        "qldarch:firmName": "Bligh, Jessup, Bretnall and Partners"
+        label: "BVN",
+        altlabel: "Bligh, Jessup, Bretnall and Partners",
+        "qldarch:firmName": "BVN"
     },
     "http://qldarch.net/rdf/resources#00008" : {
         uri: "http://qldarch.net/rdf/resources#00008",
@@ -223,7 +229,8 @@ var resourcesByRdfType = {
     {
         uri: "http://qldarch.net/rdf/resources#00007",
         "rdf:type" : "http://qldarch.net/rdf#Firm",
-        label: "Bligh, Jessup, Bretnall and Partners",
+        label: "BVN",
+        altlabel: "Bligh, Jessup, Bretnall and Partners",
     },
     {
         uri: "http://qldarch.net/rdf/resources#00008",
@@ -315,12 +322,12 @@ var types = {
           label: "Structure",
           plural: "Structures",
           definition: "A building, or other distinguishable part of our built environment"
-      },
-      {
-          uri: "http://qldarch.net/rdf#Typology",
-          label: "Typology",
-          plural: "Types",
-          definition: "A structure classification or catagorisation"
+//      },
+//      {
+//          uri: "http://qldarch.net/rdf#Typology",
+//          label: "Typology",
+//          plural: "Types",
+//          definition: "A structure classification or catagorisation"
       }
     ]
 };

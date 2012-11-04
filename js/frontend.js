@@ -217,7 +217,10 @@ function makepartialstring(value) {
         var val = $.trim(value);
         var found = false;
         val.split(/\W/).forEach(function(word) {
-            if (word != "" && resource.label.indexOf(word) != -1) {
+            if (word != "" && (
+                    resource.label && resource.label.indexOf(word) != -1 ||
+                    resource.altlabel && resource.altlabel.indexOf(word) != -1)) {
+                    
                 found = true;
             }
         });
