@@ -625,7 +625,7 @@ function displayInterview(resource) {
                 if (contentSelection.select($(this))) {
                     $("#interviewcontentdiv .content>:visible").hide(function() {
                         $(this).remove();
-//                       displayRelatedContentPane(resource);
+                       displayRelatedTranscriptContentPane(transcript);
                     });
                 }
             });
@@ -668,6 +668,17 @@ function displaySearchTranscript(transcript) {
                 });
         });
     });
+}
+
+function displayRelatedTranscriptContent(transcript) {
+    // Find all entities and content relatedTo this transcript.
+    // Do partial word search from transcript through entities to infer related entities.
+    // Find content related to entities.
+    // Find entities related to content.
+    // Prepare list of related entities (union of entities found above)
+    // Prepare carosel of related image content (filtered union of content found above)
+    // Display entities and non-image content list
+    // Display carosel
 }
 
 function linkAndPlayInterview(transcript, transcriptdiv) {

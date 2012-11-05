@@ -219,10 +219,45 @@ var entities = {
         "rdf:type" : "http://qldarch.net/rdf#Firm",
         "qldarch:firmName": "Curro Nutter and Charlton"
     },
-    "http://qldarch.net/rdf/resources#00009" : {
-        uri: "http://qldarch.net/rdf/resources#00009",
+    "http://qldarch.net/rdf/resources#00028" : {
+        uri: "http://qldarch.net/rdf/resources#00028",
         "rdf:type" : "http://qldarch.net/rdf#Client",
-        label: "The University of Queensland"
+        label: "Bougainville Copper Ltd"
+    },
+    "http://qldarch.net/rdf/resources#00029" : {
+        uri: "http://qldarch.net/rdf/resources#00029",
+        "rdf:type" : "http://qldarch.net/rdf#Client",
+        label: "Carlton and United Breweries Queensland Ltd"
+    },
+    "http://qldarch.net/rdf/resources#00030" : {
+        uri: "http://qldarch.net/rdf/resources#00030",
+        "rdf:type" : "http://qldarch.net/rdf#Client",
+        label: "Civic and Civic Pty Ltd"
+    },
+    "http://qldarch.net/rdf/resources#00031" : {
+        uri: "http://qldarch.net/rdf/resources#00031",
+        "rdf:type" : "http://qldarch.net/rdf#Client",
+        label: "Presbyterian Church of Australia"
+    },
+    "http://qldarch.net/rdf/resources#00032" : {
+        uri: "http://qldarch.net/rdf/resources#00032",
+        "rdf:type" : "http://qldarch.net/rdf#Client",
+        label: "Queensland Agricultural College"
+    },
+    "http://qldarch.net/rdf/resources#00033" : {
+        uri: "http://qldarch.net/rdf/resources#00033",
+        "rdf:type" : "http://qldarch.net/rdf#Client",
+        label: "Sanitarium Health Food Co"
+    },
+    "http://qldarch.net/rdf/resources#00034" : {
+        uri: "http://qldarch.net/rdf/resources#00034",
+        "rdf:type" : "http://qldarch.net/rdf#Client",
+        label: "State Government of Queensland"
+    },
+    "http://qldarch.net/rdf/resources#00035" : {
+        uri: "http://qldarch.net/rdf/resources#00035",
+        "rdf:type" : "http://qldarch.net/rdf#Client",
+        label: "Stirling Henry Pty Ltd"
     },
     "http://qldarch.net/rdf/resources#00010" : {
         uri: "http://qldarch.net/rdf/resources#00010",
@@ -248,7 +283,72 @@ var entities = {
         uri: "http://qldarch.net/rdf/resources#00014",
         "rdf:type" : "http://qldarch.net/rdf#Structure",
         label: "Gladstone Town Council, Memorial Park"
-    }
+    },
+    "http://qldarch.net/rdf/resources#00036" : {
+        uri: "http://qldarch.net/rdf/resources#00036",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        label: "Watkins Place"
+    },
+    "http://qldarch.net/rdf/resources#00037" : {
+        uri: "http://qldarch.net/rdf/resources#00037",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        label: "MLC Offices"
+    },
+    "http://qldarch.net/rdf/resources#00038" : {
+        uri: "http://qldarch.net/rdf/resources#00038",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        label: "Toombul Shopping Town"
+    },
+    "http://qldarch.net/rdf/resources#00039" : {
+        uri: "http://qldarch.net/rdf/resources#00039",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        label: "Silterton Centre"
+    },
+    "http://qldarch.net/rdf/resources#00040" : {
+        uri: "http://qldarch.net/rdf/resources#00040",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        label: "Supreme Court Building"
+    },
+    "http://qldarch.net/rdf/resources#00041" : {
+        uri: "http://qldarch.net/rdf/resources#00041",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        label: "District Courts Building"
+    },
+    "http://qldarch.net/rdf/resources#00042" : {
+        uri: "http://qldarch.net/rdf/resources#00042",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        label: "Karana Community Centre"
+    },
+    "http://qldarch.net/rdf/resources#00043" : {
+        uri: "http://qldarch.net/rdf/resources#00043",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        label: "Sports Union Complex UQ"
+    },
+    "http://qldarch.net/rdf/resources#00044" : {
+        uri: "http://qldarch.net/rdf/resources#00044",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        label: "Sanitarium Factory"
+    },
+    "http://qldarch.net/rdf/resources#00045" : {
+        uri: "http://qldarch.net/rdf/resources#00045",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        label: "Poultry Technology and Research Unit"
+    },
+    "http://qldarch.net/rdf/resources#00046" : {
+        uri: "http://qldarch.net/rdf/resources#00046",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        label: "St. Lucia Presbyterian Church"
+    },
+    "http://qldarch.net/rdf/resources#00047" : {
+        uri: "http://qldarch.net/rdf/resources#00047",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        label: "Radford House"
+    },
+    "http://qldarch.net/rdf/resources#00048" : {
+        uri: "http://qldarch.net/rdf/resources#00048",
+        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        label: "La Boite Theatre"
+    },
 };
 
 var resourcesByRdfType = _.groupBy(_.values(entities), function(entity) {

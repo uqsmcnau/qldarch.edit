@@ -8,55 +8,68 @@
         "date": [
             {
                 "startDate":"1926",
-                "headline":"Arthur Bligh establishes practice in Toowoomba"
+                "headline":"Arthur Bligh establishes practice in Toowoomba",
+                "text":"<p></p>"
             },
             {
                 "startDate":"1934",
-                "headline":"Arthur Bligh moves practice to Brisbane"
+                "headline":"Arthur Bligh moves practice to Brisbane",
+                "text":"<p></p>"
             },
             {
                 "startDate":"1946",
-                "headline":"C.W. Jessup joins practice as full partner"
+                "headline":"C.W. Jessup joins practice as full partner",
+                "text":"<p></p>"
             },
             {
                 "startDate":"1957",
-                "headline":"Athol Bretnall joins the practice as partner"
+                "headline":"Athol Bretnall joins the practice as partner",
+                "text":"<p></p>"
             },
             {
                 "startDate":"1957",
-                "headline":"H.J. Parkinson joins the practice as partner"
+                "headline":"H.J. Parkinson joins the practice as partner",
+                "text":"<p></p>"
             },
             {
                 "startDate":"1957",
-                "headline":"Ronald Voller joins the practice"
+                "headline":"Ronald Voller joins the practice",
+                "text":"<p></p>"
             },
             {
                 "startDate":"1957",
-                "headline":"Practice takes the name Bligh, Jessup, Bretnall and Partners"
+                "headline":"Practice takes the name Bligh, Jessup, Bretnall and Partners",
+                "text":"<p></p>"
             },
             {
                 "startDate":"1960",
-                "headline":"Graham Bligh becomes partner"
+                "headline":"Graham Bligh becomes partner",
+                "text":"<p></p>"
             },
             {
                 "startDate":"1960",
-                "headline":"Bernard Ryan becomes partner"
+                "headline":"Bernard Ryan becomes partner",
+                "text":"<p></p>"
             },
             {
                 "startDate":"1965",
-                "headline":"Ronald Voller becomes partner"
+                "headline":"Ronald Voller becomes partner",
+                "text":"<p></p>"
             },
             {
                 "startDate":"1968",
-                "headline":"Jon Voller joins the practice"
+                "headline":"Jon Voller joins the practice",
+                "text":"<p></p>"
             },
             {
                 "startDate":"1974",
-                "headline":"Arthur Bligh retires"
+                "headline":"Arthur Bligh retires",
+                "text":"<p></p>"
             },
             {
                 "startDate":"1974",
-                "headline":"Ronald Voller retires"
+                "headline":"Ronald Voller retires",
+                "text":"<p></p>"
             },
             {
                 "startDate":"1974",
@@ -77,11 +90,6 @@
                 "startDate":"1970",
                 "headline":"Construction completed: District Courts Building, Brisbane",
                 "text":"<p>Client: State Government of Queensland</p>"
-            },
-            {
-                "startDate":"1967",
-                "headline":"Construction completed: Presbyterian Church of Australia, Brisbane",
-                "text":"<p>Client: Presbyterian Church of Australia</p>"
             },
             {
                 "startDate":"1973",
