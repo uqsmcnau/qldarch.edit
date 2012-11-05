@@ -394,7 +394,9 @@ function onClickEntity(resource) {
                 }
                 var arg = {
                         "label" : properties[uri].label,
-                        "value" : first
+                        "value" : properties[uri].propertyType == "dataProperty" ?
+                            first :
+                            entities[first].label
                 };
                 list.append(supplant(
                     '<div class="propertypair span-8 last">' +
@@ -403,7 +405,9 @@ function onClickEntity(resource) {
                 rest.forEach(function(v) {
                     var arg = {
                             "label" : "&nbsp;",
-                            "value" : v
+                            "value" : properties[uri].propertyType == "dataProperty" ?
+                                v :
+                                entities[v].label
                     };
                     list.append(supplant(
                         '<div class="propertypair span-8 last">' +

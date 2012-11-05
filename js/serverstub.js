@@ -2,47 +2,56 @@ var properties = {
     uri: {
         label: "URI",
         display: false,
-        editable: false
+        editable: false,
+        propertyType: "dataProperty"
     },
     label: {
         label: "Label",
         display: false,
-        editable: true
+        editable: true,
+        propertyType: "dataProperty"
     },
     altlabel: {
         label: "Alternative Name",
         display: true,
-        editable: true
+        editable: true,
+        propertyType: "dataProperty"
     },
     "rdf:type" : {
         label: "RDF Type",
         display: false,
-        editable: false
+        editable: false,
+        propertyType: "dataProperty"
     },
     "foaf:firstName" : {
         label: "First Name",
         display: true,
-        editable: true
+        editable: true,
+        propertyType: "dataProperty"
     },
     "foaf:lastName" : {
         label: "Last Name",
         display: true,
-        editable: true
+        editable: true,
+        propertyType: "dataProperty"
     },
     "qldarch:firmName" : {
         label: "Firm Name",
         display: true,
-        editable: true
+        editable: true,
+        propertyType: "dataProperty"
     },
     preferredImage : {
         label: "Preferred Image",
         display: false,
-        editable: true
+        editable: true,
+        propertyType: "objectProperty"
     },
     "qldarch:employedBy" : {
         label: "Employed By",
         display: true,
-        editable: false
+        editable: false,
+        propertyType: "objectProperty"
     },
     "qldarch:beganEmployment" : {
         label: "Began Employment",
