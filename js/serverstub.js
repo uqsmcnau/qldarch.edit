@@ -75,7 +75,10 @@ var entities = {
         "foaf:firstName" : "Graham",
         "foaf:lastName" : "Bligh",
         preferredImage: "http://qldarch.net/rdf/content#00030",
-        "qldarch:employedBy" : "http://qldarch.net/rdf/resources#00007"
+        "qldarch:employedBy" : [
+            "http://qldarch.net/rdf/resources#00007",
+            "http://qldarch.net/rdf/resources#00022",
+            ]
     },
     "http://qldarch.net/rdf/resources#00002" : {
         uri: "http://qldarch.net/rdf/resources#00002",
@@ -98,7 +101,11 @@ var entities = {
         "rdf:type" : "http://qldarch.net/rdf#Architect",
         "foaf:firstName" : "Jon",
         "foaf:lastName" : "Voller",
-        "qldarch:employedBy" : "http://qldarch.net/rdf/resources#00007"
+        "qldarch:employedBy" : [ 
+            "http://qldarch.net/rdf/resources#00007",
+            "http://qldarch.net/rdf/resources#00006",
+            "http://qldarch.net/rdf/resources#00026",
+            ]
     },
     "http://qldarch.net/rdf/resources#00005" : {
         uri: "http://qldarch.net/rdf/resources#00005",
@@ -106,10 +113,10 @@ var entities = {
         "rdf:type" : "http://qldarch.net/rdf#Architect",
         "foaf:firstName" : "Blair",
         "foaf:lastName" : "Wilson",
-        "qldarch:employedBy" : [
-            "http://qldarch.net/rdf/resources#00024",
-            "http://qldarch.net/rdf/resources#00008",
-            ]
+//        "qldarch:employedBy" : [
+//            "http://qldarch.net/rdf/resources#00024",
+//            "http://qldarch.net/rdf/resources#00008",
+//            ]
     },
     "http://qldarch.net/rdf/resources#00015" : {
         uri: "http://qldarch.net/rdf/resources#00015",
@@ -190,6 +197,18 @@ var entities = {
         label: "Riddel Architecture",
         "rdf:type" : "http://qldarch.net/rdf#Firm",
         "qldarch:firmName": "Riddel Architecture"
+    },
+    "http://qldarch.net/rdf/resources#00026" : {
+        uri: "http://qldarch.net/rdf/resources#00026",
+        label: "Douglas and Barns",
+        "rdf:type" : "http://qldarch.net/rdf#Firm",
+        "qldarch:firmName": "Douglas and Barns"
+    },
+    "http://qldarch.net/rdf/resources#00027" : {
+        uri: "http://qldarch.net/rdf/resources#00027",
+        label: "Curro Nutter and Charlton",
+        "rdf:type" : "http://qldarch.net/rdf#Firm",
+        "qldarch:firmName": "Curro Nutter and Charlton"
     },
     "http://qldarch.net/rdf/resources#00009" : {
         uri: "http://qldarch.net/rdf/resources#00009",

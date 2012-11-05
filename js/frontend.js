@@ -630,6 +630,42 @@ function displayInterview(resource) {
     });
 }
 
+function displaySearchTranscript(transcript) {
+    $("#interviewcontentdiv .content").append(
+        '<div class="searchtranscriptpane span-16 last" style="margin-top:-10px">' +
+        '<div class="span-16 last">' +
+        '<input class="searchbox span-8" type="text" value="" placeHolder="Search Transcript"/>' +
+        '</div>' +
+        '<div class="searchresults span-16 last">' +
+            '<div class="entitylisttitle">Utterances</div>' +
+            '<div class="resultlist"/>' +
+        '</div>' +
+        '</div>');
+
+    $("#interviewcontentdiv input").keyup(function(event) {
+        var val = $(this).val();
+        var results = [];
+        if (event.keyCode == 13 || val.length > 3) {
+            transcript.exchanges.forEach(function(exchange) {
+                if (exchange.transcript.indexOf(val) != -1) {
+                    results.push(exchange);
+                }
+            });
+        }
+        $("#interviewcontentdiv .resultlist").empty();
+        results.forEach(function(result) {
+            $(supplant('<div class="transcriptref">' +
+                    '<span class="transcriptlabel">{speaker} @ {time}</span>' +
+                    '<span class="transcripttext">{transcript}</span' +
+                    '</div>', result))
+                .appendTo("#interviewcontentdiv .resultlist")
+                .click(function() {
+                    $('.subtitle[data-time="' + result.time + '"]').click();
+                });
+        });
+    });
+}
+
 function linkAndPlayInterview(transcript, transcriptdiv) {
     function subtitleUpdater(jqElement, offset, show) {
         var toppos = jqElement.position().top - offset;
@@ -655,7 +691,7 @@ function linkAndPlayInterview(transcript, transcriptdiv) {
         var speakerdiv = $('<div class="speaker" />').text(curr.speaker);
         var speechdiv = $('<div class="speech" />').text(curr.transcript);
 
-        var subtitlediv = $('<div class="subtitle" style="display:block;opacity:0.5"/>');
+        var subtitlediv = $('<div class="subtitle" data-time="' + curr.time + '" style="display:block;opacity:0.5"/>');
         subtitlediv.data("start", start).data("end", end);
         subtitlediv.append(speakerdiv).append(speechdiv);
         subtitlediv.click(function() {
