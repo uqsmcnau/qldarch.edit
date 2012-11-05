@@ -601,6 +601,31 @@ function displayInterview(resource) {
             '<div id="interviewcontentdiv" class="span-16 last">' +
             '</div>');
 
+        $("#interviewcontentdiv").append('<div class="contentpanetabs span-16"/><div class="content span-16"><div/></div>');
+
+
+        $('<span class="button tab">Search Transcript</span>')
+            .appendTo($("#interviewcontentdiv .contentpanetabs"))
+            .click(function() {
+                if (contentSelection.select($(this))) {
+                    $("#interviewcontentdiv .content>:visible").hide(function() {
+                        $(this).remove();
+                        displaySearchTranscript(transcript);
+                    });
+                }
+            }).click();
+
+        $('<span class="button tab">Related Content</span>')
+            .appendTo($("#interviewcontentdiv .contentpanetabs"))
+            .click(function() {
+                if (contentSelection.select($(this))) {
+                    $("#interviewcontentdiv .content>:visible").hide(function() {
+                        $(this).remove();
+//                       displayRelatedContentPane(resource);
+                    });
+                }
+            });
+
         linkAndPlayInterview(transcript, $("#transcript"));
     });
 }
