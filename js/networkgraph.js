@@ -35,12 +35,12 @@ function drawgraph(targetselector, links, linkresolver) {
 
     // Compute the distinct nodes from the links.
     links.forEach(function(link) {
-      link.source = nodes[link.source] || (nodes[link.source] = {name: linkresolver(link.source)});
-      link.target = nodes[link.target] || (nodes[link.target] = {name: linkresolver(link.target)});
+      link.source = nodes[link.source] || (nodes[link.source] = {name: linkresolver(link.source), type:"source"});
+      link.target = nodes[link.target] || (nodes[link.target] = {name: linkresolver(link.target), type:"target"});
     });
 
     var w = 630,
-        h = 660;
+        h = 560;
 
     var force = d3.layout.force()
         .nodes(d3.values(nodes))
@@ -78,7 +78,8 @@ function drawgraph(targetselector, links, linkresolver) {
     var circle = svg.append("svg:g").selectAll("circle")
         .data(force.nodes())
       .enter().append("svg:circle")
-        .attr("r", 6)
+        .attr("r", 6)   // Here I need to do a lookup by type.
+        .attr("class", function(d) { return "node " + d.type; })
         .call(force.drag);
 
     var text = svg.append("svg:g").selectAll("g")

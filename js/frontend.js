@@ -516,11 +516,20 @@ function displayRelatedContentPane(resource) {
 }
 
 function displayRelatedNetworkPane(resource) {
-    $("#contentpane .content").append('<div class="relatednetworkpane"/>');
+    var networkpane = $('<div class="relatednetworkpane"/>').appendTo("#contentpane .content");
     if (false) {
         $("#contentpane .content .relatednetworkpane")
             .append('<div class="info span-8">No related network found</div></div>');
     } else {
+        networkpane.append(
+            '<div class="networklegend span-16">' +
+            '<div class="nodelegend span-8">' +
+            '</div>' +
+            '<div class="linklegend span-8 last">' +
+            '</div>' +
+            '</div>');
+
+        displayNodeLegend(networkpane.find(".nodelegend"));
         var links = [];
         pushLinks(links, "qldarch:employedBy", "linktype1");
         pushLinks(links, "qldarch:designedBy", "linktype2");
@@ -532,6 +541,17 @@ function displayRelatedNetworkPane(resource) {
                 return entities[link] ? entities[link].label : "unknown";
             });
     }
+}
+
+function displayNodeLegend(legenddiv) {
+    legenddiv.append(
+        '<div class="span-4">' +
+        '<div class="legendlabel span-4">Architect</div>' +
+        '<div class="graphic span-4">' +
+        '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="14" height="14">' +
+        '<g><circle cx="7" cy="7" r="6" class="source"/></g>' +
+        '</svg></div>' +
+        '</div>');
 }
 
 function pushLinks(linkArray, predicate, linkclass) {

@@ -87,6 +87,7 @@ var entities = {
         "qldarch:employedBy" : [
             "http://qldarch.net/rdf/resources#00007",
             "http://qldarch.net/rdf/resources#00022",
+            "http://qldarch.net/rdf/resources#00049",
             ]
     },
     "http://qldarch.net/rdf/resources#00002" : {
@@ -103,6 +104,11 @@ var entities = {
         "foaf:firstName" : "Ian",
         "foaf:lastName" : "Charlton",
         preferredImage: "http://qldarch.net/rdf/content#00031",
+        "qldarch:employedBy" : [
+            "http://qldarch.net/rdf/resources#00006",
+            "http://qldarch.net/rdf/resources#00027",
+            "http://qldarch.net/rdf/resources#00022"
+            ]
     },
     "http://qldarch.net/rdf/resources#00004" : {
         uri: "http://qldarch.net/rdf/resources#00004",
@@ -110,6 +116,7 @@ var entities = {
         "rdf:type" : "http://qldarch.net/rdf#Architect",
         "foaf:firstName" : "Jon",
         "foaf:lastName" : "Voller",
+        preferredImage: "http://qldarch.net/rdf/content#00032",
         "qldarch:employedBy" : [ 
             "http://qldarch.net/rdf/resources#00007",
             "http://qldarch.net/rdf/resources#00006",
@@ -163,6 +170,29 @@ var entities = {
         "rdf:type" : "http://qldarch.net/rdf#Architect",
         "foaf:firstName" : "James",
         "foaf:lastName" : "Grose"
+    },
+    "http://qldarch.net/rdf/resources#00050" : {
+        uri: "http://qldarch.net/rdf/resources#00050",
+        label: "Helen Mills",
+        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "foaf:firstName" : "Helen",
+        "foaf:lastName" : "Mills",
+        "qldarch:employedBy" : [
+            "http://qldarch.net/rdf/resources#00049",
+            "http://qldarch.net/rdf/resources#00007",
+            ]
+    },
+    "http://qldarch.net/rdf/resources#00051" : {
+        uri: "http://qldarch.net/rdf/resources#00051",
+        label: "Rob Riddel",
+        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "foaf:firstName" : "Robert",
+        "foaf:lastName" : "Riddel",
+        "qldarch:employedBy" : [
+            "http://qldarch.net/rdf/resources#00022",
+            "http://qldarch.net/rdf/resources#00025",
+            "http://qldarch.net/rdf/resources#00007",
+            ]
     },
     "http://qldarch.net/rdf/resources#00006" : {
         uri: "http://qldarch.net/rdf/resources#00006",
@@ -218,6 +248,12 @@ var entities = {
         label: "Curro Nutter and Charlton",
         "rdf:type" : "http://qldarch.net/rdf#Firm",
         "qldarch:firmName": "Curro Nutter and Charlton"
+    },
+    "http://qldarch.net/rdf/resources#00049" : {
+        uri: "http://qldarch.net/rdf/resources#00049",
+        label: "Maxwell Fry",
+        "rdf:type" : "http://qldarch.net/rdf#Firm",
+        "qldarch:firmName": "Maxwell Fry"
     },
     "http://qldarch.net/rdf/resources#00028" : {
         uri: "http://qldarch.net/rdf/resources#00028",
@@ -614,6 +650,30 @@ var contentByRdfType = {
             label: "James Grose Portrait",
             image: "img/James_Grose.jpg",
             keywords: "James|Grose",
+            "rdf:type": "http://qldarch.net/rdf#Photograph",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00021"
+        },
+        {
+            uri: "http://qldarch.net/rdf/content#00038",
+            label: "James Birrell Portrait",
+            image: "img/James_Birrell.jpg",
+            keywords: "James|Birrell",
+            "rdf:type": "http://qldarch.net/rdf#Photograph",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00002"
+        },
+        {
+            uri: "http://qldarch.net/rdf/content#00039",
+            label: "Helem Mills Portrait",
+            image: "img/Helen_Mills.jpg",
+            keywords: "Helen|Mills",
+            "rdf:type": "http://qldarch.net/rdf#Photograph",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00050"
+        },
+        {
+            uri: "http://qldarch.net/rdf/content#00040",
+            label: "Rob Riddel Portrait",
+            image: "img/Robert_Riddel.jpg",
+            keywords: "Rob|Robert|Riddel",
             "rdf:type": "http://qldarch.net/rdf#Photograph",
             "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00021"
         },
