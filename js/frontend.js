@@ -565,14 +565,10 @@ function displayLinkLegend(legenddiv) {
         '<div class="lengendentry span-8">' +
             '<div class="graphic span-4">' +
             '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="60" height="14">' +
-            '<g><circle cx="7" cy="7" r="6" class="source"/></g>' +
+            '<defs><marker id="legendlink1" viewBox="0 -5 10 10" refX="10" refY="0" markerWidth="6" markerHeight="6" orient="auto"/></defs>' +
+            '<g><path class="link linktype1" marker-end="url(#legendlink1)" d="M0,14A60,60 0 0,1 60,14"/></g>' +
             '</svg></div>' +
-            '<div class="legendlabel span-4 last">Architect</div>' +
-            '<div class="graphic span-4">' +
-            '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="14" height="14">' +
-            '<g><circle cx="7" cy="7" r="6" class="target"/></g>' +
-            '</svg></div>' +
-        '<div class="legendlabel span-4 last">Firm</div>' +
+            '<div class="legendlabel span-4 last">Employed By</div>' +
         '</div>');
 }
 
