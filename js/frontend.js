@@ -229,8 +229,8 @@ function makepartialstring(value) {
         var found = false;
         val.split(/\W/).forEach(function(word) {
             if (word != "" && (
-                    resource.label && resource.label.indexOf(word) != -1 ||
-                    resource.altlabel && resource.altlabel.indexOf(word) != -1)) {
+                    resource.label && resource.label.toLowerCase().indexOf(word.toLowerCase()) != -1 ||
+                    resource.altlabel && resource.altlabel.toLowerCase().indexOf(word.toLowerCase()) != -1)) {
                     
                 found = true;
             }
@@ -242,13 +242,16 @@ function makepartialstring(value) {
 
 function makeperfectlabel(value) {
     return function(resource) {
-        return $.trim(value) == resource.label;
+        var lhs = $.trim(value).toLowerCase();
+        return resource.label && lhs == resource.label.toLowerCase() ||
+                resource.altlabel && lhs == resource.altlabel.toLowerCase();
     };
 }
 
 function makeperfectstring(lhs) {
-    return function(rhs) {
-        return lhs == rhs;
+    return function(resource) {
+        return resource.label && lhs.toLowerCase() == resource.label.toLowerCase() ||
+                resource.altlabel && lhs.toLowerCase() == resource.altlabel.toLowerCase();
     };
 }
 
@@ -262,7 +265,7 @@ function makepartialkeywords(value) {
             if (word != "") {
                 var contained = false;
                 keywords.forEach(function(keyword) {
-                    if (keyword.indexOf(word) != -1) {
+                    if (keyword.toLowerCase().indexOf(word.toLowerCase()) != -1) {
                         contained = true;
                     }
                 });
