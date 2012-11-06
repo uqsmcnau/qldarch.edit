@@ -323,11 +323,20 @@
 
             .networklegend {
                 min-height: 147px;
+                padding-top: 10px;
+                padding-bottom: 10px;
                 border: 1px solid lightgrey;
             }
 
             .graphic {
                 display: inline-block;
+                padding-bottom: 3px;
+            }
+
+            .graphic svg {
+                position:relative;
+                left: -7px;
+                margin-left: 50%;
             }
 
             .legendlabel {
@@ -358,7 +367,7 @@
                 stroke-width: 1.5px;
             }
 
-            circle.node.target {
+            circle.target {
                 fill: #a33;
             }
 

@@ -530,6 +530,7 @@ function displayRelatedNetworkPane(resource) {
             '</div>');
 
         displayNodeLegend(networkpane.find(".nodelegend"));
+        displayLinkLegend(networkpane.find(".linklegend"));
         var links = [];
         pushLinks(links, "qldarch:employedBy", "linktype1");
         pushLinks(links, "qldarch:designedBy", "linktype2");
@@ -545,12 +546,33 @@ function displayRelatedNetworkPane(resource) {
 
 function displayNodeLegend(legenddiv) {
     legenddiv.append(
-        '<div class="span-4">' +
-        '<div class="legendlabel span-4">Architect</div>' +
-        '<div class="graphic span-4">' +
-        '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="14" height="14">' +
-        '<g><circle cx="7" cy="7" r="6" class="source"/></g>' +
-        '</svg></div>' +
+        '<div class="lengendentry span-8">' +
+            '<div class="graphic span-4">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="14" height="14">' +
+            '<g><circle cx="7" cy="7" r="6" class="source"/></g>' +
+            '</svg></div>' +
+            '<div class="legendlabel span-4 last">Architect</div>' +
+            '<div class="graphic span-4">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="14" height="14">' +
+            '<g><circle cx="7" cy="7" r="6" class="target"/></g>' +
+            '</svg></div>' +
+        '<div class="legendlabel span-4 last">Firm</div>' +
+        '</div>');
+}
+
+function displayLinkLegend(legenddiv) {
+    legenddiv.append(
+        '<div class="lengendentry span-8">' +
+            '<div class="graphic span-4">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="60" height="14">' +
+            '<g><circle cx="7" cy="7" r="6" class="source"/></g>' +
+            '</svg></div>' +
+            '<div class="legendlabel span-4 last">Architect</div>' +
+            '<div class="graphic span-4">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="14" height="14">' +
+            '<g><circle cx="7" cy="7" r="6" class="target"/></g>' +
+            '</svg></div>' +
+        '<div class="legendlabel span-4 last">Firm</div>' +
         '</div>');
 }
 
