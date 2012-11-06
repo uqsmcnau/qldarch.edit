@@ -614,14 +614,6 @@ var contentByRdfType = {
             "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00004"
         },
         {
-            uri: "http://qldarch.net/rdf/content#00033",
-            label: "Blair Wilson Portrait",
-            image: "img/Blair_Wilson.jpg",
-            keywords: "Blair|Wilson",
-            "rdf:type": "http://qldarch.net/rdf#Photograph",
-            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00005"
-        },
-        {
             uri: "http://qldarch.net/rdf/content#00034",
             label: "Duncan McPhee Portrait",
             image: "img/Duncan_McPhee.jpg",
@@ -684,6 +676,7 @@ var contentByRdfType = {
             label: "Commerce Building for the University of Queensland, Arial view from North-West",
             image: "img/9e43071d2e64f41379b247343f60b902.jpg",
             keywords: "Commerce|University|Queensland|UQ",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00007",
             "rdf:type": "http://qldarch.net/rdf#LineDrawing"
         },
         {
@@ -691,6 +684,7 @@ var contentByRdfType = {
             label: "Commerce Building for the University of Queensland, Site & Earthworks",
             image: "img/2049829da9be94523bf5d69d91270e6a.jpg",
             keywords: "Commerce|University|Queensland|UQ",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00007",
             "rdf:type": "http://qldarch.net/rdf#LineDrawing"
         },
         {
@@ -698,6 +692,7 @@ var contentByRdfType = {
             label: "Commerce Building for the University of Queensland, Sections",
             image: "img/807cee622792787afd2eb7170436e4ed.jpg",
             keywords: "Commerce|University|Queensland|UQ",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00007",
             "rdf:type": "http://qldarch.net/rdf#LineDrawing"
         },
         {
@@ -705,6 +700,7 @@ var contentByRdfType = {
             label: "Commerce Building for the University of Queensland, Floor Plans",
             image: "img/92323ff8d0fcffbb0d98f8d8e6fc9210.jpg",
             keywords: "Commerce|University|Queensland|UQ",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00007",
             "rdf:type": "http://qldarch.net/rdf#LineDrawing"
         },
         {
@@ -712,6 +708,7 @@ var contentByRdfType = {
             label: "Gladstone Town Council, Memorial park develoment, Aerial view",
             image: "img/64d01ecda3985391e4f7365ec3ae09c7.jpg",
             keywords: "Gladstone|Council|Park",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00007",
             "rdf:type": "http://qldarch.net/rdf#LineDrawing"
         },
         {
@@ -719,6 +716,7 @@ var contentByRdfType = {
             label: "Gladstone Town Council, Memorial park develoment, Site layout",
             image: "img/792be1e292d49f497d4a8087f0f8c760.jpg",
             keywords: "Gladstone|Council|Park",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00007",
             "rdf:type": "http://qldarch.net/rdf#LineDrawing"
         },
         {
@@ -726,6 +724,7 @@ var contentByRdfType = {
             label: "Gladstone Town Council, Memorial park develoment, Pool area, Site layout",
             image: "img/5017e7e7b6f5512c43ec97be94cb82cc.jpg",
             keywords: "Gladstone|Council|Park",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00007",
             "rdf:type": "http://qldarch.net/rdf#LineDrawing"
         },
         {
@@ -733,6 +732,7 @@ var contentByRdfType = {
             label: "Queensland Agricultural College, Abattoir Poultry Technology, Plan, Elevations & Section",
             image: "img/f2e16805cf0768ec723244758833c1ce.jpg",
             keywords: "Queensland|Agricultural|Collge|Abattoir|Gatton|UQ",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00007",
             "rdf:type": "http://qldarch.net/rdf#LineDrawing"
         },
         {
@@ -740,6 +740,7 @@ var contentByRdfType = {
             label: "Queensland Agricultural College, Abattoir Poultry, Floor plan, Section & Elevation",
             image: "img/707f4921e4230155e61583fe51bf43d7.jpg",
             keywords: "Queensland|Agricultural|Collge|Abattoir|Gatton|UQ",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00007",
             "rdf:type": "http://qldarch.net/rdf#LineDrawing"
         },
         {
@@ -747,6 +748,7 @@ var contentByRdfType = {
             label: "Queensland Agricultural College, Abattoir Poultry, Floor plan, Section & Elevation",
             image: "img/707f4921e4230155e61583fe51bf43d7.jpg",
             keywords: "Queensland|Agricultural|Collge|Abattoir|Gatton|UQ",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00007",
             "rdf:type": "http://qldarch.net/rdf#LineDrawing"
         },
         {
@@ -754,6 +756,7 @@ var contentByRdfType = {
             label: "Residence at Beecroft for Mr.&Mrs. R.J. Bligh, 1st Schematic layout",
             image: "img/003de94314ae7f58848335778768b4d6.jpg",
             keywords: "Residence|Beecroft|Bligh",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00007",
             "rdf:type": "http://qldarch.net/rdf#LineDrawing"
         },
         {
@@ -761,6 +764,7 @@ var contentByRdfType = {
             label: "Residence at Beecroft for Mr.&Mrs. R.J. Bligh, Main floor plan & Section",
             image: "img/ce9b072c0161051c5b34cbae7e150f22.jpg",
             keywords: "Residence|Beecroft|Bligh",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00007",
             "rdf:type": "http://qldarch.net/rdf#LineDrawing"
         },
         {
@@ -768,6 +772,7 @@ var contentByRdfType = {
             label: "Residence at Beecroft for Mr.&Mrs. R.J. Bligh, Plan & Elevations",
             image: "img/0c123cd362b8f82db3a7de97dbccd143.jpg",
             keywords: "Residence|Beecroft|Bligh",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00007",
             "rdf:type": "http://qldarch.net/rdf#LineDrawing"
         },
         {
@@ -775,6 +780,7 @@ var contentByRdfType = {
             label: "Residence at Beecroft for Mr.&Mrs. R.J. Bligh, working drawing",
             image: "img/6b6c12cf89432eccb94c033b0301d16c.jpg",
             keywords: "Residence|Beecroft|Bligh",
+            "qldarch:relatedTo" : "http://qldarch.net/rdf/resources#00007",
             "rdf:type": "http://qldarch.net/rdf#LineDrawing"
         },
     ],
@@ -788,3 +794,7 @@ var contentByRdfType = {
         }
     ]
 };
+
+var contentByURI = _.groupBy(_.values(contentByRdfType), function(entity) {
+        return entity["uri"];
+    });

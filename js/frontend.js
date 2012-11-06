@@ -58,7 +58,7 @@ function displayFrontPage(reload) {
     displayEntityDiv($("#entitydiv"));
     if (!reload) {
         updateEntities(matchnone, matchall, true, true);
-        updateContentDiv(matchnone, matchall, true, true);
+        updateContentDiv(matchnone, matchall, matchnone, true, true);
     } else {
         reload();
     }
@@ -70,7 +70,7 @@ function displaySearchDiv(parentDiv) {
     parentDiv.find("input").keyup(function () {
         var val = $(this).val();
         updateEntities(makeperfectstring(val), makepartialstring(val), true, (val == ""));
-        updateContentDiv(makeperfectlabel(val), makepartialkeywords(val), true, (val == ""));
+        updateContentDiv(makeperfectlabel(val), makepartialkeywords(val), matchnone, true, (val == ""));
         $("#entitydiv .available input").val(val);
     });
 }
@@ -94,7 +94,7 @@ function displayContentDiv(parentDiv) {
     parentDiv.append('<div class="info span-8 last" style="display:none">No content matches</div>');
 }
 
-function updateContentDiv(perfectmatch, partialmatch, show, isEmpty) {
+function updateContentDiv(perfectmatch, partialmatch, relatedTo, show, isEmpty) {
     var val = $.trim(val);
     $(".contenttype").each(function (i, contentDiv) {
         var type = $(contentDiv).data("type");
@@ -110,7 +110,7 @@ function updateContentDiv(perfectmatch, partialmatch, show, isEmpty) {
             });
             if (resources.length == 0) {
                 contentRecords.forEach(function(resource) {
-                    if (partialmatch(resource)) {
+                    if (partialmatch(resource) || relatedTo(resource)) {
                         resources.push(resource);
                     }
                 });
@@ -175,13 +175,14 @@ function displayEntityDiv(parentDiv) {
             .keyup(function() {
                 var val = $(this).val();
                 updateSearchDiv(val);
-                updateContentDiv(makeperfectlabel(val), makepartialkeywords(val), false, (val == ""));
                 updateEntities(makeperfectstring(val), makepartialstring(val), false, (val == ""));
+                updateContentDiv(makeperfectlabel(val), makepartialkeywords(val), matchRelatedTo(), false, (val == ""));
                 if (val != "") {
                     $(this).parents(".entity").siblings().removeClass("final").fadeOut("fast");
                     $(this).parents(".entity").addClass("final").fadeIn("fast");
                     typeDiv.find(".button").fadeOut("fast");
                 } else {
+                    typeDiv.find(".button.switchwc").hide();
                     typeDiv.find(".button.switchlist").fadeIn("fast");
                 }
             });
@@ -202,6 +203,16 @@ function displayEntityDiv(parentDiv) {
     });
 
     parentDiv.append('<div class="info span-8 last" style="display:none">No people or things match</div>');
+}
+
+function matchRelatedTo() {
+    var resources = $.map($(".entityentry"), function(e) { return $(e).data("resource"); });
+    return function(contentResource) {
+        return _.any(resources, function(entityResource) {
+            return entityResource &&
+                _.contains(_.flatten([contentResource["qldarch:relatedTo"]]), entityResource.uri);
+        });
+    };
 }
 
 function matchall(resource) {
@@ -316,6 +327,7 @@ function updateEntity(perfectmatch, partialmatch, show, isEmpty, entity) {
             }
             resources.forEach(function(resource) {
                 var entry = $('<div class="entityentry">' + resource.label + '</div>');
+                entry.data("resource", resource);
                 list.append(entry);
                 entry.click(function() {
                     if (!entry.hasClass("selected")) {
@@ -324,6 +336,7 @@ function updateEntity(perfectmatch, partialmatch, show, isEmpty, entity) {
                         var input = entry.parents(".entity").find("input");
                         var restore = function() {
                             restoreFromEntity()
+                            input.val("");
                             input.keyup();
                         };
 
@@ -425,7 +438,7 @@ function onClickEntity(resource) {
         $("#column2").hide();
         $("#mainsearch").fadeOut("fast");
         $("#primary").prepend('<div id="contentpane" class="span-16"/>');
-        updateContentDiv(makeperfectrelatedTo(resource.uri), matchnone, true, !resource.uri);
+        updateContentDiv(makeperfectrelatedTo(resource.uri), matchnone, matchnone, true, !resource.uri);
     }
 
     $("#contentpane").append('<div class="contentpanetabs span-16"/><div class="content span-16"><div/></div>');
@@ -565,7 +578,7 @@ function displayLinkLegend(legenddiv) {
         '<div class="lengendentry span-8">' +
             '<div class="graphic span-4">' +
             '<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="60" height="14">' +
-            '<defs><marker id="legendlink1" viewBox="0 -5 10 10" refX="10" refY="0" markerWidth="6" markerHeight="6" orient="auto"/></defs>' +
+            '<defs><marker id="legendlink1" viewBox="0 -5 10 10" refX="10" refY="0" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,-5L10,0L0,5"/></marker></defs>' +
             '<g><path class="link linktype1" marker-end="url(#legendlink1)" d="M0,14A60,60 0 0,1 60,14"/></g>' +
             '</svg></div>' +
             '<div class="legendlabel span-4 last">Employed By</div>' +
