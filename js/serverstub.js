@@ -476,7 +476,7 @@ var contentByRdfType = {
         {
             uri: "http://qldarch.net/rdf/content#00003",
             label: "Interview with Duncan McPhee",
-            audio: "audio/Duncan.ogg",
+            audio: "audio/Duncan_McPhee.ogg",
             transcript: "transcript/Duncan.json",
             keywords: "Duncan|McPhee|Interview",
             "rdf:type": "http://qldarch.net/rdf#Interview",
