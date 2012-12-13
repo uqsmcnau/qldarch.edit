@@ -1,0 +1,360 @@
+#
+# Ontology for an Oral History of Architecture
+# (c) eResearch Laboratory, School of ITEE, The University of Queensland
+# Licensed Apache 2.0
+#
+
+@base <http://qldarch.net/ns/rdf/2012/06/terms#> .
+
+@prefix : <http://qldarch.net/ns/rdf/2012-06/terms#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix dcam: <http://purl.org/dc/dcam/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+#
+# Preliminaries
+#
+
+<http://qldarch.net/ns/rdf/2012-06/terms#> a owl:Ontology .
+
+#
+# OWL as RDFS header, redundant if using OWL, but allows OWL file to be used
+# within an RDFS reasoner unchanged.
+# 
+# 
+# owl:Class rdfs:subClassOf rdfs:Class .
+# 
+# owl:AnnotationProperty rdfs:subClassOf rdf:Property .
+# 
+# owl:ObjectProperty rdfs:subClassOf rdfs:Property .
+# 
+# owl:DatatypeProperty rdfs:subClassOf rdf:Property ;
+#     rdfs:domain rdfs:Resource ;
+#     rdfs:range rdfs:Literal .
+
+
+#
+# Annotation Properties
+#
+
+:label a owl:AnnotationProperty .
+:display a owl:AnnotationProperty .
+:editable a owl:AnnotationProperty .
+:shortname a owl:AnnotationProperty .
+:reifiedAs a owl:AnnotationProperty .
+
+# Uncomment if using a reasoner not restricted to OWL-DL.
+#    rdfs:subPropertyOf rdfs:label .
+
+#
+# Classes
+#
+
+:Entity a owl:Class ;
+    rdfs:comment "Top for concepts related by this vocabularly" .
+    
+:TemporalEntity a owl:Class ;
+    rdfs:subClassOf :Entity .
+
+:StructureOrAgent a owl:Class ;
+    rdfs:subClassOf :Entity .
+#    owl:unionOf ( :Structure foaf:Agent ) .
+
+:Structure a owl:Class ;
+    rdfs:subClassOf geo:SpatialThing ;
+    rdfs:subClassOf :StructureOrAgent .
+
+:Building a owl:Class ;
+    rdfs:subClassOf :Structure .
+
+:BuildingExtension a owl:Class ;
+    rdfs:subClassOf :Building .
+
+:Bridge a owl:Class ;
+    rdfs:subClassOf :Structure .
+
+foaf:Agent a owl:Class ;
+    rdfs:isDefinedBy <http://http://xmlns.com/foaf/spec/#term_Agent> ;
+    rdfs:subClassOf :StructureOrAgent .
+
+foaf:Person a owl:Class ;
+    rdfs:isDefinedBy <http://http://xmlns.com/foaf/spec/#term_Person> ;
+    rdfs:subClassOf foaf:Agent .
+
+:Firm a owl:Class ;
+    rdfs:subClassOf foaf:Agent .
+
+:DigitalObject a owl:Class ;
+    rdfs:subClassOf :Entity ;
+    rdfs:comment "This will be replaced by a reconciliation with FRBR Work/Expression distinction".
+
+:Photograph a owl:Class ;
+    rdfs:subClassOf :DigitalObject .
+
+:Drawing a owl:Class ;
+    rdfs:subClassOf :DigitalObject .
+
+:Plan a owl:Class ;
+    rdfs:subClassOf :DigitalObject .
+
+:Book a owl:Class ;
+    rdfs:subClassOf :DigitalObject .
+
+:Article a owl:Class ;
+    rdfs:subClassOf :DigitalObject .
+
+:Transcript a owl:Class ;
+    rdfs:subClassOf :DigitalObject .
+
+:Interview a owl:Class ;
+    rdfs:subClassOf :DigitalObject .
+
+:EventRecording a owl:Class ;
+    rdfs:subClassOf :DigitalObject .
+
+:Story a owl:Class ;
+    rdfs:subClassOf :DigitalObject .
+
+:DigitalObjectType a owl:Class ;
+    rdfs:subClassOf :Entity ;
+    rdfs:comment "This will be replaced by a reconciliation with FRBR Work/Expression distinction" ;
+    rdfs:comment "One of these two should probably be replaced with a controlled vocabulary".
+
+:Sound a owl:Class ;
+    rdfs:subClassOf :DigitalObjectType .
+
+:StillImage a owl:Class ;
+    rdfs:subClassOf :DigitalObjectType .
+
+:Text a owl:Class ;
+    rdfs:subClassOf :DigitalObjectType .
+
+:MovingImage a owl:Class ;
+    rdfs:subClassOf :DigitalObjectType .
+
+:Collection a owl:Class ;
+    rdfs:subClassOf :DigitalObjectType .
+
+:Event a owl:Class ;
+    rdfs:subClassOf :Entity .
+
+:Construction a owl:Class ;
+    rdfs:subClassOf :Event .
+
+:Completion a owl:Class ;
+    rdfs:subClassOf :Event .
+
+:Renovation a owl:Class ;
+    rdfs:subClassOf :Event .
+
+:Demolition a owl:Class ;
+    rdfs:subClassOf :Event .
+
+:Opening a owl:Class ;
+    rdfs:subClassOf :Event .
+
+:Conference a owl:Class ;
+    rdfs:subClassOf :Event .
+
+:Project a owl:Class ;
+    rdfs:subClassOf :Event .
+
+:Relationship a owl:Class ;
+    rdfs:subClassOf :TemporalEntity ;
+    rdfs:subClassOf rdf:Statement .
+
+:Authorship a owl:Class ;
+    rdfs:subClassOf :Relationship .
+
+:Employment a owl:Class ;
+    rdfs:subClassOf :Relationship .
+
+:Role a owl:Class ;
+    rdfs:subClassOf :Relationship .
+
+:Award a owl:Class ;
+    rdfs:subClassOf :Entity .
+
+:Period a owl:Class ;
+    rdfs:subClassOf :Entity ;
+    rdfs:comment "This should be aligned with CIDOC E52_Time-Span if possible" .
+
+:TopicConcept a owl:Class ;
+    rdfs:subClassOf dcam:VocabularyEncodingScheme ;
+    rdfs:subClassOf skos:Concept .
+
+:RoleConcept a owl:Class ;
+    rdfs:subClassOf dcam:VocabularyEncodingScheme ;
+    rdfs:subClassOf skos:Concept .
+
+#
+# Places
+#
+
+:Place a owl:Class ;
+    rdfs:subClassOf :Location ;
+    rdfs:subClassOf :TemporalEntity ;
+    rdfs:subClassOf skos:Concept ;
+    rdfs:comment "A named suburb, locality, or other area of significance." .
+
+:Location a owl:Class ;
+    rdfs:subClassOf :Entity .
+
+geo:SpatialThing a owl:Class ;
+    rdfs:subClassOf :Location .
+
+#
+# Properties
+#
+
+:identifier a owl:DatatypeProperty ;
+    :label "System Identifier" ;
+    :display false ;
+    :editable false ;
+    :shortname "uri" .
+
+:label a owl:DatatypeProperty ;
+    :label "The preferred label for a thing" ;
+    :display false ;
+    :editable true ;
+    :shortname "label" .
+
+rdfs:label a owl:DatatypeProperty ;
+    :label "A label for a thing" ;
+    :display true ;
+    :editable true ;
+    :shortname "altlabel" .
+
+rdf:type a owl:DatatypeProperty ;
+    :label "A label for a thing" ;
+    :display false ;
+    :editable false .
+
+foaf:firstName a owl:DatatypeProperty ;
+    :label "First Name" ;
+    :display true ;
+    :editable true .
+
+foaf:lastName a owl:DatatypeProperty ;
+    :label "Last Name" ;
+    :display true ;
+    :editable true .
+
+foaf:lastName a owl:DatatypeProperty ;
+    :label "Last Name" ;
+    :display true ;
+    :editable true .
+
+:firmName a owl:DatatypeProperty ;
+    :label "Firm Name" ;
+    :display true ;
+    :editable true .
+
+:preferredImage a owl:ObjectProperty ;
+    :label "Preferred Image" ;
+    :display false ;
+    :editable true ;
+    :shortname "preferredImage" .
+
+:employedBy a owl:ObjectProperty ;
+    :label "Employed By" ;
+    :display true ;
+    :editable false ;
+    :reifiedAs :EmploymentRelation .
+
+:taughtBy a owl:ObjectProperty ;
+    :label "Taught By" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain foaf:Person ;
+    rdfs:range foaf:Person .
+
+:mentoredBy a owl:ObjectProperty ;
+    :label "Mentored By" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain foaf:Person ;
+    rdfs:range foaf:Person .
+
+:employedBy a owl:ObjectProperty ;
+    :label "Employed By" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain foaf:Person ;
+    rdfs:range :Firm .
+
+:hasPartner a owl:ObjectProperty ;
+    :label "Has Partner" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain :Firm ;
+    rdfs:range foaf:Person .
+
+dcterms:creator a owl:ObjectProperty ;
+    :label "Creator" ;
+    :display true ;
+    :editable false ;
+    rdfs:isDefinedBy dcterms:creator .
+
+dcterms:title a owl:DatatypeProperty ;
+    rdfs:isDefinedBy dcterms:title ;
+    :display true ;
+    :editable false ;
+    :label "Title" .
+
+dcterms:description a owl:DatatypeProperty ;
+    :label "Description" ;
+    :display true ;
+    :editable false ;
+    rdfs:isDefinedBy dcterms:description .
+
+:hasSubject a owl:ObjectProperty ;
+    :label "Has Subject" ;
+    :display true ;
+    :editable false ;
+    rdfs:subClassOf dcterms:subject ;
+    rdfs:domain :DigitalObject ;
+    rdfs:range :TopicConcept .
+
+dcterms:rights a owl:DatatypeProperty ;
+    :label "Rights" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain :DigitalObject ;
+    rdfs:comment "Currently a plain text statement of IP status of the work. If required can model this further" .
+
+:systemLocation a owl:DatatypeProperty ;
+    :label "System Location" ;
+    :display false ;
+    :editable false ;
+    rdfs:domain :DigitalObject ;
+    rdfs:range xsd:anyURI .
+
+:interviewer a owl:ObjectProperty ;
+    :label "Interviewer" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain :Interview ;
+    rdfs:range foaf:Person .
+
+:interviewee a owl:ObjectProperty ;
+    :label "Interviewee" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain :Interview ;
+    rdfs:range foaf:Person .
+
+:transcriber a owl:ObjectProperty ;
+    :label "Transcriber" ;
+    :display true ;
+    :editable false ;
+    rdfs:domain :Transcript ;
+    rdfs:range foaf:Person .
+
+# vim: set ai si sw=4 sts=4 ts=4 expandtab:

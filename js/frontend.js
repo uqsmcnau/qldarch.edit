@@ -1,3 +1,9 @@
+var QA_DISPLAY = "http://qldarch.net/ns/rdf/2012-06/terms#display";
+var QA_LABEL = "http://qldarch.net/ns/rdf/2012-06/terms#label";
+var QA_EDITABLE = "http://qldarch.net/ns/rdf/2012-06/terms#editable";
+
+var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
+
 var successDelay = 2000;
 
 function supplant(s, o) {
@@ -29,8 +35,14 @@ function selectionMethod(selected) {
     }
 };
 
+var properties = { }
+
 function frontendOnReady() {
-    displayFrontPage();
+    $.getJSON("http://localhost:8080/ws/rest/system", function(data) {
+        console.log(data);
+        properties = data;
+        displayFrontPage();
+    });
 }
 
 function displayFrontPage(reload) {
@@ -397,7 +409,7 @@ function onClickEntity(resource) {
     
     var list = desc.append('<div class="propertylist"/>').find(".propertylist");
     for (uri in entities[resource.uri]) {
-        if (properties[uri].display) {
+        if (properties[uri][QA_DISPLAY]) {
             var value = entities[resource.uri][uri];
             if (value) {
                 var first = "";
@@ -409,8 +421,8 @@ function onClickEntity(resource) {
                     first = value;
                 }
                 var arg = {
-                        "label" : properties[uri].label,
-                        "value" : properties[uri].propertyType == "dataProperty" ?
+                        "label" : properties[uri][QA_LABEL],
+                        "value" : properties[uri][QA_PROPERTY_TYPE] == OWL_DATATYPE_PROPERTY ?
                             first :
                             entities[first].label
                 };
@@ -421,7 +433,7 @@ function onClickEntity(resource) {
                 rest.forEach(function(v) {
                     var arg = {
                             "label" : "&nbsp;",
-                            "value" : properties[uri].propertyType == "dataProperty" ?
+                            "value" : properties[uri][QA_PROPERTY_TYPE] == OWL_DATATYPE_PROPERTY ?
                                 v :
                                 entities[v].label
                     };
