@@ -43,14 +43,14 @@
 # Annotation Properties
 #
 
-:label a owl:AnnotationProperty .
+:label a owl:AnnotationProperty ;
+    rdfs:subPropertyOf rdfs:label .
+
 :display a owl:AnnotationProperty .
 :editable a owl:AnnotationProperty .
-:shortname a owl:AnnotationProperty .
+:shortName a owl:AnnotationProperty .
 :reifiedAs a owl:AnnotationProperty .
 
-# Uncomment if using a reasoner not restricted to OWL-DL.
-#    rdfs:subPropertyOf rdfs:label .
 
 #
 # Classes
@@ -217,19 +217,19 @@ geo:SpatialThing a owl:Class ;
     :label "System Identifier" ;
     :display false ;
     :editable false ;
-    :shortname "uri" .
+    :shortName "uri" .
 
 :label a owl:DatatypeProperty ;
     :label "The preferred label for a thing" ;
     :display false ;
     :editable true ;
-    :shortname "label" .
+    :shortName "label" .
 
 rdfs:label a owl:DatatypeProperty ;
     :label "A label for a thing" ;
     :display true ;
     :editable true ;
-    :shortname "altlabel" .
+    :shortName "altlabel" .
 
 rdf:type a owl:DatatypeProperty ;
     :label "A label for a thing" ;
@@ -260,7 +260,7 @@ foaf:lastName a owl:DatatypeProperty ;
     :label "Preferred Image" ;
     :display false ;
     :editable true ;
-    :shortname "preferredImage" .
+    :shortName "preferredImage" .
 
 :employedBy a owl:ObjectProperty ;
     :label "Employed By" ;

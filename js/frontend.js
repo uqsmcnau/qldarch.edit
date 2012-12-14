@@ -433,7 +433,7 @@ function onClickEntity(resource) {
                 rest.forEach(function(v) {
                     var arg = {
                             "label" : "&nbsp;",
-                            "value" : properties[uri][QA_PROPERTY_TYPE] == OWL_DATATYPE_PROPERTY ?
+                            "value" : properties[uri][QA_PROPERTY_TYPE] == OWL_DATATYPE_PROPERTY ?== "dataProperty" ?
                                 v :
                                 entities[v].label
                     };
