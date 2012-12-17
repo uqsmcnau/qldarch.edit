@@ -3,6 +3,15 @@ var QA_LABEL = "http://qldarch.net/ns/rdf/2012-06/terms#label";
 var QA_EDITABLE = "http://qldarch.net/ns/rdf/2012-06/terms#editable";
 
 var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
+var RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+var RDFS_SUBCLASS_OF = "http://www.w3.org/2000/01/rdf-schema#subClassOf";
+
+var QA_INTERVIEW_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Interview";
+var QA_PHOTOGRAPH_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Photograph";
+var QA_LINEDRAWING_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing";
+var QA_DIGITAL_THING = "http://qldarch.net/ns/rdf/2012-06/terms#DigitalThing";
+
+var DCT_TITLE = "http://purl.org/dc/terms/title";
 
 var successDelay = 2000;
 
@@ -35,13 +44,39 @@ function selectionMethod(selected) {
     }
 };
 
-var properties = { }
+var properties = { };
+var types = { };
+var contentByRdfType = { };
+var contentByURI = { };
 
 function frontendOnReady() {
-    $.getJSON("http://localhost:8080/ws/rest/system", function(data) {
-        console.log(data);
-        properties = data;
-        displayFrontPage();
+    $.getJSON("http://localhost:8080/ws/rest/properties", function(d1) {
+        properties = d1;
+        $.getJSON("http://localhost:8080/ws/rest/displayedEntities", function(d5) {
+            types = _.groupBy(d5, function(value) {
+                if (value[RDFS_SUBCLASS_OF] == QA_DIGITAL_THING) {
+                    return "artifacts";
+                } else {
+                    return "proper";
+                }
+            });
+            displayedContent = d5;
+            $.getJSON("http://localhost:8080/ws/rest/interviewSummary", function(d2) {
+                contentByRdfType[QA_INTERVIEW_TYPE] = _.map(d2, function(v) { v[RDF_TYPE] = QA_INTERVIEW_TYPE; return v; });
+                $.getJSON("http://localhost:8080/ws/rest/photographSummary", function(d3) {
+                    contentByRdfType[QA_PHOTOGRAPH_TYPE] = _.map(d3, function(v) { v[RDF_TYPE] = QA_PHOTOGRAPH_TYPE; return v; });
+                    $.getJSON("http://localhost:8080/ws/rest/lineDrawingSummary", function(d4) {
+                        contentByRdfType[QA_LINEDRAWING_TYPE] = _.map(d4, function(v) { v[RDF_TYPE] = QA_LINEDRAWING_TYPE; return v; });
+
+                        contentByURI = _.groupBy(_.values(contentByRdfType), function(entity) {
+                                return entity["uri"];
+                            });
+
+                        displayFrontPage();
+                    });
+                });
+            });
+        });
     });
 }
 
@@ -97,7 +132,7 @@ function displayContentDiv(parentDiv) {
     types.artifacts.forEach(function(type) {
         var typeDiv = $(supplant(
             '<div class="contenttype" data-uri="{uri}">' +
-            '    <div class="contentlisttitle span-8">{plural}</div><div class="contentlist"></div>' +
+            '    <div class="contentlisttitle span-8">{' + QA_LABEL + '}</div><div class="contentlist"></div>' +
             '</div>', type));
         typeDiv.data("type", type);
         parentDiv.append(typeDiv)
@@ -143,9 +178,10 @@ function updateContentDiv(perfectmatch, partialmatch, relatedTo, show, isEmpty) 
             $(contentDiv).addClass("available");
             $(contentDiv).fadeIn("fast");
             resources.forEach(function(resource) {
-                var entry = $('<div class="contententry">' + resource.label + '</div>');
+                console.log(resource);
+                var entry = $('<div class="contententry">' + resource[DCT_TITLE] + '</div>');
                 list.append(entry);
-                entry.click(selectFunctions[resource["rdf:type"]](resource, entry));
+                entry.click(selectFunctions[resource[RDF_TYPE]](resource, entry));
             });
         }
     });
@@ -164,12 +200,12 @@ function displayEntityDiv(parentDiv) {
         var uid = _.uniqueId("wordcloud_");
         var typeDiv = $(supplant(
             '<div class="entity" data-uri="{uri}">' +
-                '<input class="searchbox span-5" type="text" placeHolder="Search {plural}"/>' +
+                '<input class="searchbox span-5" type="text" placeHolder="Search {' + QA_LABEL + '}"/>' +
                 '<div class="button slim span-3 last switchwc" style="display:none">As Wordcloud</div>' +
                 '<div class="button slim span-3 last switchlist">As List</div>' +
                 '<div id="{id}" class="wordgram span-8 last">' +
                 '</div>' +
-                '<div class="entityworking span-8 last" style="display:none"><div class="entitylisttitle">{label}</div><div class="entitylist"></div></div>' +
+                '<div class="entityworking span-8 last" style="display:none"><div class="entitylisttitle">{' + QA_LABEL + '}</div><div class="entitylist"></div></div>' +
             '</div>', _.extend({ id : uid }, type)));
         typeDiv.data("type", type);
         parentDiv.append(typeDiv)
@@ -433,7 +469,7 @@ function onClickEntity(resource) {
                 rest.forEach(function(v) {
                     var arg = {
                             "label" : "&nbsp;",
-                            "value" : properties[uri][QA_PROPERTY_TYPE] == OWL_DATATYPE_PROPERTY ?== "dataProperty" ?
+                            "value" : properties[uri][QA_PROPERTY_TYPE] == OWL_DATATYPE_PROPERTY ?
                                 v :
                                 entities[v].label
                     };
@@ -566,7 +602,6 @@ function displayRelatedNetworkPane(resource) {
 
         drawgraph("#contentpane .content .relatednetworkpane", links,
             function(link) {
-                console.log("resolving: " + link);
                 return entities[link] ? entities[link].label : "unknown";
             });
     }
@@ -846,8 +881,8 @@ function selectForImage(resource, entry) {
 }
 
 var selectFunctions = {
-    "http://qldarch.net/rdf#Interview" : selectForInterview,
-    "http://qldarch.net/rdf#Photograph" : selectForImage,
-    "http://qldarch.net/rdf#LineDrawing" : selectForImage,
+    "http://qldarch.net/ns/rdf/2012-06/terms#Interview" : selectForInterview,
+    "http://qldarch.net/ns/rdf/2012-06/terms#Photograph" : selectForImage,
+    "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing" : selectForImage,
 };
 

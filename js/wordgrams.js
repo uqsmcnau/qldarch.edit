@@ -1,5 +1,5 @@
 var wordclouds = {
-    "http://qldarch.net/rdf#Architect" : [
+    "http://qldarch.net/ns/rdf/2012-06/terms#Architect" : [
         {"text":"Atkinson","size":21},
         {"text":"McLay","size":6},
         {"text":"Conrad","size":27},
@@ -31,7 +31,7 @@ var wordclouds = {
         {"text":"Birrell","size":20}
     ],
 
-    "http://qldarch.net/rdf#Firm" : [
+    "http://qldarch.net/ns/rdf/2012-06/terms#Firm" : [
         {"text":"Conrad & Gargett","size":13},
         {"text":"BVN","size":22},
         {"text":"Karl Langer","size":18},
@@ -39,7 +39,7 @@ var wordclouds = {
         {"text":"Wilson Architects","size":23}
     ],
 
-    "http://qldarch.net/rdf#Client" : [
+    "http://qldarch.net/ns/rdf/2012-06/terms#Client" : [
         {"text":"Bougainville Copper Ltd","size":18},
         {"text":"Carlton & United Breweries Queensland Ltd","size":7},
         {"text":"Civic & Civic Pty Ltd","size":11},
@@ -57,7 +57,7 @@ var wordclouds = {
         {"text":"Toombul Shopping Town","size":21},
         {"text":"Watkins Property and Administration Pty Ltd","size":11}
     ],
-    "http://qldarch.net/rdf#Structure" : [
+    "http://qldarch.net/ns/rdf/2012-06/terms#Structure" : [
         {"text":"Watkins Place","size":21},
         {"text":"MLC Offices","size":18},
         {"text":"Toombul Shopping Town","size":7},
@@ -114,10 +114,15 @@ var wordclouds = {
         {"text":"Science 1 Building, Griffith University","size":27},
         {"text":"Classrooms, Brisbane Grammar School","size":11},
         {"text":"Outdoor Education Centre, Brisbane Grammar School","size":8},
+    ],
+    "http://qldarch.net/ns/rdf/2012-06/terms#BuildingTypology" : [
+        {"text":"Dwellings","size":19},
+        {"text":"Educational facilities","size":14},
+        {"text":"Commercial buildings","size":13},
+        {"text":"Religious buildings","size":9},
+        {"text":"Recreation and sports facilities","size":6},
     ]
 };
-
-
 
 
 

@@ -1,4 +1,4 @@
-var properties = {
+/*var properties = {
     uri: {
         label: "URI",
         display: false,
@@ -75,12 +75,12 @@ var properties = {
         range: [ "xsd:string" ]
     },
 };
-
+*/
 var entities = {
     "http://qldarch.net/rdf/resources#00001" : {
         uri: "http://qldarch.net/rdf/resources#00001",
         label: "Graham Bligh",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Architect",
         "foaf:firstName" : "Graham",
         "foaf:lastName" : "Bligh",
         preferredImage: "http://qldarch.net/rdf/content#00030",
@@ -93,14 +93,14 @@ var entities = {
     "http://qldarch.net/rdf/resources#00002" : {
         uri: "http://qldarch.net/rdf/resources#00002",
         label: "James Birrell",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#ArchitectArchitect",
         "foaf:firstName" : "James",
         "foaf:lastName" : "Birrell"
     },
     "http://qldarch.net/rdf/resources#00003" : {
         uri: "http://qldarch.net/rdf/resources#00003",
         label: "Ian Chalton",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Architect",
         "foaf:firstName" : "Ian",
         "foaf:lastName" : "Charlton",
         preferredImage: "http://qldarch.net/rdf/content#00031",
@@ -113,7 +113,7 @@ var entities = {
     "http://qldarch.net/rdf/resources#00004" : {
         uri: "http://qldarch.net/rdf/resources#00004",
         label: "Jon Voller",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Architect",
         "foaf:firstName" : "Jon",
         "foaf:lastName" : "Voller",
         preferredImage: "http://qldarch.net/rdf/content#00032",
@@ -126,7 +126,7 @@ var entities = {
     "http://qldarch.net/rdf/resources#00005" : {
         uri: "http://qldarch.net/rdf/resources#00005",
         label: "Blair Wilson",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Architect",
         "foaf:firstName" : "Blair",
         "foaf:lastName" : "Wilson",
 //        "qldarch:employedBy" : [
@@ -137,14 +137,14 @@ var entities = {
     "http://qldarch.net/rdf/resources#00015" : {
         uri: "http://qldarch.net/rdf/resources#00015",
         label: "Duncan McPhee",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Architect",
         "foaf:firstName" : "Duncan",
         "foaf:lastName" : "McPhee"
     },
     "http://qldarch.net/rdf/resources#00016" : {
         uri: "http://qldarch.net/rdf/resources#00016",
         label: "Athol Bretnall",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Architect",
         "foaf:firstName" : "Athol",
         "foaf:lastName" : "Bretnall",
         "qldarch:employedBy" : "http://qldarch.net/rdf/resources#00007"
@@ -152,14 +152,14 @@ var entities = {
     "http://qldarch.net/rdf/resources#00017" : {
         uri: "http://qldarch.net/rdf/resources#00017",
         label: "Bob Gardner",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Architect",
         "foaf:firstName" : "Bob",
         "foaf:lastName" : "Gardner"
     },
     "http://qldarch.net/rdf/resources#00018" : {
         uri: "http://qldarch.net/rdf/resources#00018",
         label: "Col Jessup",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Architect",
         "foaf:firstName" : "Col",
         "foaf:lastName" : "Jessup",
         "qldarch:employedBy" : "http://qldarch.net/rdf/resources#00007"
@@ -167,14 +167,14 @@ var entities = {
     "http://qldarch.net/rdf/resources#00021" : {
         uri: "http://qldarch.net/rdf/resources#00021",
         label: "James Grose",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Architect",
         "foaf:firstName" : "James",
         "foaf:lastName" : "Grose"
     },
     "http://qldarch.net/rdf/resources#00050" : {
         uri: "http://qldarch.net/rdf/resources#00050",
         label: "Helen Mills",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Architect",
         "foaf:firstName" : "Helen",
         "foaf:lastName" : "Mills",
         "qldarch:employedBy" : [
@@ -185,7 +185,7 @@ var entities = {
     "http://qldarch.net/rdf/resources#00051" : {
         uri: "http://qldarch.net/rdf/resources#00051",
         label: "Rob Riddel",
-        "rdf:type" : "http://qldarch.net/rdf#Architect",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Architect",
         "foaf:firstName" : "Robert",
         "foaf:lastName" : "Riddel",
         "qldarch:employedBy" : [
@@ -197,193 +197,178 @@ var entities = {
     "http://qldarch.net/rdf/resources#00006" : {
         uri: "http://qldarch.net/rdf/resources#00006",
         label: "Hayes and Scott",
-        "rdf:type" : "http://qldarch.net/rdf#Firm",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Firm",
         "qldarch:firmName": "Hayes and Scott"
     },
     "http://qldarch.net/rdf/resources#00007" : {
         uri: "http://qldarch.net/rdf/resources#00007",
         label: "BVN",
         altlabel: "Bligh, Jessup, Bretnall and Partners",
-        "rdf:type" : "http://qldarch.net/rdf#Firm",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Firm",
         "qldarch:firmName": "BVN"
     },
     "http://qldarch.net/rdf/resources#00008" : {
         uri: "http://qldarch.net/rdf/resources#00008",
         label: "Colin and Fulton",
-        "rdf:type" : "http://qldarch.net/rdf#Firm",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Firm",
         "qldarch:firmName": "Colin and Fulton"
     },
     "http://qldarch.net/rdf/resources#00022" : {
         uri: "http://qldarch.net/rdf/resources#00022",
         label: "Conrad and Gargett",
-        "rdf:type" : "http://qldarch.net/rdf#Firm",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Firm",
         "qldarch:firmName": "Conrad and Gargett"
     },
     "http://qldarch.net/rdf/resources#00023" : {
         uri: "http://qldarch.net/rdf/resources#00023",
         label: "Karl Langer",
-        "rdf:type" : "http://qldarch.net/rdf#Firm",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Firm",
         "qldarch:firmName": "Karl Langer"
     },
     "http://qldarch.net/rdf/resources#00024" : {
         uri: "http://qldarch.net/rdf/resources#00024",
         label: "Wilson Architects",
-        "rdf:type" : "http://qldarch.net/rdf#Firm",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Firm",
         "qldarch:firmName": "Wilson Architects"
     },
     "http://qldarch.net/rdf/resources#00025" : {
         uri: "http://qldarch.net/rdf/resources#00025",
         label: "Riddel Architecture",
-        "rdf:type" : "http://qldarch.net/rdf#Firm",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Firm",
         "qldarch:firmName": "Riddel Architecture"
     },
     "http://qldarch.net/rdf/resources#00026" : {
         uri: "http://qldarch.net/rdf/resources#00026",
         label: "Douglas and Barns",
-        "rdf:type" : "http://qldarch.net/rdf#Firm",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Firm",
         "qldarch:firmName": "Douglas and Barns"
     },
     "http://qldarch.net/rdf/resources#00027" : {
         uri: "http://qldarch.net/rdf/resources#00027",
         label: "Curro Nutter and Charlton",
-        "rdf:type" : "http://qldarch.net/rdf#Firm",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Firm",
         "qldarch:firmName": "Curro Nutter and Charlton"
     },
     "http://qldarch.net/rdf/resources#00049" : {
         uri: "http://qldarch.net/rdf/resources#00049",
         label: "Maxwell Fry",
-        "rdf:type" : "http://qldarch.net/rdf#Firm",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Firm",
         "qldarch:firmName": "Maxwell Fry"
-    },
-    "http://qldarch.net/rdf/resources#00028" : {
-        uri: "http://qldarch.net/rdf/resources#00028",
-        "rdf:type" : "http://qldarch.net/rdf#Client",
-        label: "Bougainville Copper Ltd"
-    },
-    "http://qldarch.net/rdf/resources#00029" : {
-        uri: "http://qldarch.net/rdf/resources#00029",
-        "rdf:type" : "http://qldarch.net/rdf#Client",
-        label: "Carlton and United Breweries Queensland Ltd"
-    },
-    "http://qldarch.net/rdf/resources#00030" : {
-        uri: "http://qldarch.net/rdf/resources#00030",
-        "rdf:type" : "http://qldarch.net/rdf#Client",
-        label: "Civic and Civic Pty Ltd"
-    },
-    "http://qldarch.net/rdf/resources#00031" : {
-        uri: "http://qldarch.net/rdf/resources#00031",
-        "rdf:type" : "http://qldarch.net/rdf#Client",
-        label: "Presbyterian Church of Australia"
-    },
-    "http://qldarch.net/rdf/resources#00032" : {
-        uri: "http://qldarch.net/rdf/resources#00032",
-        "rdf:type" : "http://qldarch.net/rdf#Client",
-        label: "Queensland Agricultural College"
-    },
-    "http://qldarch.net/rdf/resources#00033" : {
-        uri: "http://qldarch.net/rdf/resources#00033",
-        "rdf:type" : "http://qldarch.net/rdf#Client",
-        label: "Sanitarium Health Food Co"
-    },
-    "http://qldarch.net/rdf/resources#00034" : {
-        uri: "http://qldarch.net/rdf/resources#00034",
-        "rdf:type" : "http://qldarch.net/rdf#Client",
-        label: "State Government of Queensland"
-    },
-    "http://qldarch.net/rdf/resources#00035" : {
-        uri: "http://qldarch.net/rdf/resources#00035",
-        "rdf:type" : "http://qldarch.net/rdf#Client",
-        label: "Stirling Henry Pty Ltd"
     },
     "http://qldarch.net/rdf/resources#00010" : {
         uri: "http://qldarch.net/rdf/resources#00010",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "International House UQ"
     },
     "http://qldarch.net/rdf/resources#00011" : {
         uri: "http://qldarch.net/rdf/resources#00011",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "Schonel Theatre UQ"
     },
     "http://qldarch.net/rdf/resources#00012" : {
         uri: "http://qldarch.net/rdf/resources#00012",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "Cutt House"
     },
     "http://qldarch.net/rdf/resources#00013" : {
         uri: "http://qldarch.net/rdf/resources#00013",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "Queensland Agricultural College, Gatton"
     },
     "http://qldarch.net/rdf/resources#00014" : {
         uri: "http://qldarch.net/rdf/resources#00014",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "Gladstone Town Council, Memorial Park"
     },
     "http://qldarch.net/rdf/resources#00036" : {
         uri: "http://qldarch.net/rdf/resources#00036",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "Watkins Place"
     },
     "http://qldarch.net/rdf/resources#00037" : {
         uri: "http://qldarch.net/rdf/resources#00037",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "MLC Offices"
     },
     "http://qldarch.net/rdf/resources#00038" : {
         uri: "http://qldarch.net/rdf/resources#00038",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "Toombul Shopping Town"
     },
     "http://qldarch.net/rdf/resources#00039" : {
         uri: "http://qldarch.net/rdf/resources#00039",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "Silterton Centre"
     },
     "http://qldarch.net/rdf/resources#00040" : {
         uri: "http://qldarch.net/rdf/resources#00040",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "Supreme Court Building"
     },
     "http://qldarch.net/rdf/resources#00041" : {
         uri: "http://qldarch.net/rdf/resources#00041",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "District Courts Building"
     },
     "http://qldarch.net/rdf/resources#00042" : {
         uri: "http://qldarch.net/rdf/resources#00042",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "Karana Community Centre"
     },
     "http://qldarch.net/rdf/resources#00043" : {
         uri: "http://qldarch.net/rdf/resources#00043",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "Sports Union Complex UQ"
     },
     "http://qldarch.net/rdf/resources#00044" : {
         uri: "http://qldarch.net/rdf/resources#00044",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "Sanitarium Factory"
     },
     "http://qldarch.net/rdf/resources#00045" : {
         uri: "http://qldarch.net/rdf/resources#00045",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "Poultry Technology and Research Unit"
     },
     "http://qldarch.net/rdf/resources#00046" : {
         uri: "http://qldarch.net/rdf/resources#00046",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "St. Lucia Presbyterian Church"
     },
     "http://qldarch.net/rdf/resources#00047" : {
         uri: "http://qldarch.net/rdf/resources#00047",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "Radford House"
     },
     "http://qldarch.net/rdf/resources#00048" : {
         uri: "http://qldarch.net/rdf/resources#00048",
-        "rdf:type" : "http://qldarch.net/rdf#Structure",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
         label: "La Boite Theatre"
+    },
+    "http://qldarch.net/rdf/resources#00049" : {
+        uri: "http://qldarch.net/rdf/resources#00049",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#BuildingTypology",
+        label: "Dwellings"
+    },
+    "http://qldarch.net/rdf/resources#00050" : {
+        uri: "http://qldarch.net/rdf/resources#00050",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#BuildingTypology",
+        label: "Educational factilities"
+    },
+    "http://qldarch.net/rdf/resources#00051" : {
+        uri: "http://qldarch.net/rdf/resources#00051",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#BuildingTypology",
+        label: "Commercial buildings"
+    },
+    "http://qldarch.net/rdf/resources#00052" : {
+        uri: "http://qldarch.net/rdf/resources#00052",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#BuildingTypology",
+        label: "Religious buildings"
+    },
+    "http://qldarch.net/rdf/resources#00053" : {
+        uri: "http://qldarch.net/rdf/resources#00053",
+        "rdf:type" : "http://qldarch.net/ns/rdf/2012-06/terms#BuildingTypology",
+        label: "Recreation and sports factilities"
     },
 };
 
@@ -393,6 +378,7 @@ var resourcesByRdfType = _.groupBy(_.values(entities), function(entity) {
 
 // Flatten this into a closer representation of rdf and use filter to split.
 //
+/*
 var types = {
     artifacts : [
       {
@@ -436,7 +422,7 @@ var types = {
           definition: "An agent who has engaged an Architect or Firm on a project"
       },
       {
-          uri: "http://qldarch.net/rdf#Structure",
+          uri: "http://qldarch.net/ns/rdf/2012-06/terms#Structure",
           label: "Structure",
           plural: "Structures",
           definition: "A building, or other distinguishable part of our built environment"
@@ -449,7 +435,8 @@ var types = {
       }
     ]
 };
-
+*/
+/*
 var contentByRdfType = {
     "http://qldarch.net/rdf#Interview" : [
         {
@@ -794,7 +781,4 @@ var contentByRdfType = {
         }
     ]
 };
-
-var contentByURI = _.groupBy(_.values(contentByRdfType), function(entity) {
-        return entity["uri"];
-    });
+*/
