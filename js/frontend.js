@@ -1,10 +1,13 @@
+var JSON_ROOT = "/ws/rest/";
 var QA_DISPLAY = "http://qldarch.net/ns/rdf/2012-06/terms#display";
 var QA_LABEL = "http://qldarch.net/ns/rdf/2012-06/terms#label";
 var QA_EDITABLE = "http://qldarch.net/ns/rdf/2012-06/terms#editable";
+var QA_SYSTEM_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#systemLocation";
 
 var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
 var RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
 var RDFS_SUBCLASS_OF = "http://www.w3.org/2000/01/rdf-schema#subClassOf";
+var RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
 
 var QA_INTERVIEW_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Interview";
 var QA_PHOTOGRAPH_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Photograph";
@@ -48,11 +51,20 @@ var properties = { };
 var types = { };
 var contentByRdfType = { };
 var contentByURI = { };
+var entities = { };
+var resourcesByRdfType = { };
 
 function frontendOnReady() {
-    $.getJSON("http://localhost:8080/ws/rest/properties", function(d1) {
+    $.getJSON(JSON_ROOT + "properties", function(d1) {
         properties = d1;
-        $.getJSON("http://localhost:8080/ws/rest/displayedEntities", function(d5) {
+	properties["uri"] = {
+		"uri": "uri",
+		"http://qldarch.net/ns/rdf/2012-06/terms#display": false,
+		"http://www.w3.org/1999/02/22-rdf-syntax-ns#type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+		"http://qldarch.net/ns/rdf/2012-06/terms#label": "URI Pseudo-property",
+		"http://qldarch.net/ns/rdf/2012-06/terms#editable": false
+	    };
+        $.getJSON(JSON_ROOT + "displayedEntities", function(d5) {
             types = _.groupBy(d5, function(value) {
                 if (value[RDFS_SUBCLASS_OF] == QA_DIGITAL_THING) {
                     return "artifacts";
@@ -61,18 +73,24 @@ function frontendOnReady() {
                 }
             });
             displayedContent = d5;
-            $.getJSON("http://localhost:8080/ws/rest/interviewSummary", function(d2) {
+            $.getJSON(JSON_ROOT + "interviewSummary", function(d2) {
                 contentByRdfType[QA_INTERVIEW_TYPE] = _.map(d2, function(v) { v[RDF_TYPE] = QA_INTERVIEW_TYPE; return v; });
-                $.getJSON("http://localhost:8080/ws/rest/photographSummary", function(d3) {
+                $.getJSON(JSON_ROOT + "photographSummary", function(d3) {
                     contentByRdfType[QA_PHOTOGRAPH_TYPE] = _.map(d3, function(v) { v[RDF_TYPE] = QA_PHOTOGRAPH_TYPE; return v; });
-                    $.getJSON("http://localhost:8080/ws/rest/lineDrawingSummary", function(d4) {
+                    $.getJSON(JSON_ROOT + "lineDrawingSummary", function(d4) {
                         contentByRdfType[QA_LINEDRAWING_TYPE] = _.map(d4, function(v) { v[RDF_TYPE] = QA_LINEDRAWING_TYPE; return v; });
 
                         contentByURI = _.groupBy(_.values(contentByRdfType), function(entity) {
                                 return entity["uri"];
                             });
+                        $.getJSON(JSON_ROOT + "entities", function(d6) {
+                            entities = d6;
+                            resourcesByRdfType = _.groupBy(_.values(entities), function(entity) {
+                                return entity[RDF_TYPE];
+                            });
 
-                        displayFrontPage();
+                            displayFrontPage();
+                        });
                     });
                 });
             });
@@ -178,7 +196,6 @@ function updateContentDiv(perfectmatch, partialmatch, relatedTo, show, isEmpty) 
             $(contentDiv).addClass("available");
             $(contentDiv).fadeIn("fast");
             resources.forEach(function(resource) {
-                console.log(resource);
                 var entry = $('<div class="contententry">' + resource[DCT_TITLE] + '</div>');
                 list.append(entry);
                 entry.click(selectFunctions[resource[RDF_TYPE]](resource, entry));
@@ -277,8 +294,8 @@ function makepartialstring(value) {
         var found = false;
         val.split(/\W/).forEach(function(word) {
             if (word != "" && (
-                    resource.label && resource.label.toLowerCase().indexOf(word.toLowerCase()) != -1 ||
-                    resource.altlabel && resource.altlabel.toLowerCase().indexOf(word.toLowerCase()) != -1)) {
+                    resource[QA_LABEL] && resource[QA_LABEL].toLowerCase().indexOf(word.toLowerCase()) != -1 ||
+                    resource[RDFS_LABEL] && resource[RDFS_LABEL].toLowerCase().indexOf(word.toLowerCase()) != -1)) {
                     
                 found = true;
             }
@@ -291,15 +308,15 @@ function makepartialstring(value) {
 function makeperfectlabel(value) {
     return function(resource) {
         var lhs = $.trim(value).toLowerCase();
-        return resource.label && lhs == resource.label.toLowerCase() ||
-                resource.altlabel && lhs == resource.altlabel.toLowerCase();
+        return resource[QA_LABEL] && lhs == resource[QA_LABEL].toLowerCase() ||
+                resource[RDFS_LABEL] && lhs == resource[RDFS_LABEL].toLowerCase();
     };
 }
 
 function makeperfectstring(lhs) {
     return function(resource) {
-        return resource.label && lhs.toLowerCase() == resource.label.toLowerCase() ||
-                resource.altlabel && lhs.toLowerCase() == resource.altlabel.toLowerCase();
+        return resource[QA_LABEL] && lhs.toLowerCase() == resource[QA_LABEL].toLowerCase() ||
+                resource[RDFS_LABEL] && lhs.toLowerCase() == resource[RDFS_LABEL].toLowerCase();
     };
 }
 
@@ -341,8 +358,8 @@ function makeperfecttype(value) {
     function matchperfecttype(resource) {
         return value &&
             resource &&
-            resource["rdf:type"] &&
-            value == resource["rdf:type"];
+            resource[RDF_TYPE] &&
+            value == resource[RDF_TYPE];
     };
     return matchperfecttype;
 }
@@ -362,7 +379,9 @@ function updateEntity(perfectmatch, partialmatch, show, isEmpty, entity) {
             }
         });
         if (resources.length == 0) {
+            console.log(resourcesByRdfType[type.uri]);
             resourcesByRdfType[type.uri].forEach(function(resource) {
+                console.log(resource);
                 if (partialmatch(resource)) {
                     resources.push(resource);
                 }
@@ -377,7 +396,7 @@ function updateEntity(perfectmatch, partialmatch, show, isEmpty, entity) {
                 $(entity).fadeIn("fast");
             }
             resources.forEach(function(resource) {
-                var entry = $('<div class="entityentry">' + resource.label + '</div>');
+                var entry = $('<div class="entityentry">' + resource[QA_LABEL] + '</div>');
                 entry.data("resource", resource);
                 list.append(entry);
                 entry.click(function() {
@@ -391,7 +410,7 @@ function updateEntity(perfectmatch, partialmatch, show, isEmpty, entity) {
                             input.keyup();
                         };
 
-                        input.val(resource.label).one("keyup", restore);
+                        input.val(resource[QA_LABEL]).one("keyup", restore);
                         entry.one("click", restore);
                         entry.siblings(".entityentry").fadeOut("fast");
                         entry.parents(".entity").siblings().removeClass("available");
@@ -458,9 +477,9 @@ function onClickEntity(resource) {
                 }
                 var arg = {
                         "label" : properties[uri][QA_LABEL],
-                        "value" : properties[uri][QA_PROPERTY_TYPE] == OWL_DATATYPE_PROPERTY ?
+                        "value" : properties[uri][RDF_TYPE] == OWL_DATATYPE_PROPERTY ?
                             first :
-                            entities[first].label
+                            entities[first][QA_LABEL]
                 };
                 list.append(supplant(
                     '<div class="propertypair span-8 last">' +
@@ -469,9 +488,9 @@ function onClickEntity(resource) {
                 rest.forEach(function(v) {
                     var arg = {
                             "label" : "&nbsp;",
-                            "value" : properties[uri][QA_PROPERTY_TYPE] == OWL_DATATYPE_PROPERTY ?
+                            "value" : properties[uri][RDF_TYPE] == OWL_DATATYPE_PROPERTY ?
                                 v :
-                                entities[v].label
+                                entities[v][QA_LABEL]
                     };
                     list.append(supplant(
                         '<div class="propertypair span-8 last">' +
@@ -534,8 +553,7 @@ function onClickEntity(resource) {
 function displayRelatedContentPane(resource) {
     var relatedContent = [];
     for (rdftype in contentByRdfType) {
-        if (rdftype == "http://qldarch.net/rdf#Photograph" ||
-                rdftype == "http://qldarch.net/rdf#LineDrawing") {
+        if (rdftype == QA_PHOTOGRAPH_TYPE || rdftype == QA_LINEDRAWING_TYPE) {
             contentByRdfType[rdftype].forEach(function(content) {
                 if (content["qldarch:relatedTo"] == resource.uri) {
                     relatedContent.push(content);
@@ -842,7 +860,7 @@ function displayImage(resource, entry) {
     }
 
     $("#mainimage").append(supplant(
-        '<a href="{image}" style="display:none"><img class="span-16 last" src="{image}" alt="{label}"/></a>', resource));
+        '<a href="http://qldarch.net/omeka/archive/files/{' + QA_SYSTEM_LOCATION + '}" style="display:none"><img class="span-16 last" src="http://qldarch.net/omeka/archive/files/{' + QA_SYSTEM_LOCATION + '}" alt="{' + QA_LABEL + '}"/></a>', resource));
     $("#mainimage").children("a:first").fadeOut("slow", function() {
         $("#mainimage").children("a:last").fadeIn("slow", function() {
             $(this).siblings().remove();

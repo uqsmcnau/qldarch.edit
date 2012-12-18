@@ -76,6 +76,7 @@
     },
 };
 */
+/*
 var entities = {
     "http://qldarch.net/rdf/resources#00001" : {
         uri: "http://qldarch.net/rdf/resources#00001",
@@ -371,11 +372,11 @@ var entities = {
         label: "Recreation and sports factilities"
     },
 };
-
 var resourcesByRdfType = _.groupBy(_.values(entities), function(entity) {
         return entity["rdf:type"];
     });
 
+*/
 // Flatten this into a closer representation of rdf and use filter to split.
 //
 /*
