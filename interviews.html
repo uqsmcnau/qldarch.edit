@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Digital Archive of Queensland Architecture</title>
+        <link rel="stylesheet" href="css/blueprint/screen.css" type="text/css" media="screen, projection">
+        <link rel="stylesheet" href="css/blueprint/print.css" type="text/css" media="print"> 
+        <!--[if lt IE 8]>
+            <link rel="stylesheet" href="css/blueprint/ie.css" type="text/css" media="screen, projection">
+        <![endif]-->
+        <style>
+            body * {
+                font-family: Helvetica, Arial, Geneva, sans-serif;
+            }
+
+            .container {
+                margin-top: 30px;
+                margin-bottom: 30px;
+                max-width: 1024;
+                padding-top: 22px;
+                padding-bottom: 22px;
+                padding-left: 44px;
+                padding-right: 44px;
+                border: 1px solid #CCCCCC;
+                margin-left: 136px;
+            }
+
+            #logo {
+                margin-bottom: 10px 0 0;
+            }
+
+            #logo h1 {
+                color: #000000;
+                display: inline-block;
+                font-size: 27px;
+                font-weight: 200;
+                margin-bottom: 10px;
+                margin-top: 10px;
+            }
+
+            #logomenu {
+                padding-top: 2px;
+                margin-bottom: 2em;
+            }
+
+            #logomenu a {
+                color: #000000;
+                font-size: 13px;
+                text-decoration: none;
+                padding-right: 22px;
+            }
+
+            h2.columntitle {
+                font-size: 20px;
+            }
+
+            h2.columntitle:not(:first-of-type) {
+                margin-top: 5px;
+            }
+
+            #mainsearch input {
+                margin-top: 0px;
+            }
+
+            .searchlabel {
+                font-size: 20px;
+            }
+
+            .entity,
+            .contenttype {
+                border-left: 1px solid lightgrey;
+                border-right: 1px solid lightgrey;
+                border-top: 1px solid lightgrey;
+                float: left;
+                padding: 1px;
+                width: 306px;
+                height: 147px;
+            }
+
+            .entity.final,
+            .contenttype.final {
+                border-bottom: 1px solid lightgrey;
+                margin-bottom: 10px;
+            }
+
+            .entity .span-8,
+            .contentworking .span-8 {
+                width: 306px;
+            }
+
+            .entitylisttitle,
+            .contentlisttitle {
+                padding-left: 10px;
+            }
+
+            .entitylist,
+            .contentlist {
+                overflow-y: auto;
+                padding-top: 5px;
+                padding-bottom: 5px;
+                padding-left: 20px;
+                padding-right: 10px;
+                margin-right:20px;
+                text-align: left;
+            }
+
+            .entitylist {
+                height: 90px;
+            }
+            
+            .contentlist {
+                height:110px;
+            }
+
+            .entitylist :nth-child(2n-1),
+            .contentlist :nth-child(2n-1) {
+                background: #e5e5e5;
+            }
+
+            #entitydiv .searchbox {
+                margin-top: 0px;
+                margin-bottom: 0px;
+                margin-left: 0px;
+                margin-right: 10px;
+            }
+
+            .entityentry.selected,
+            .contententry.selected {
+                background: #555555;
+                color: #e5e5e5;
+            }
+
+            .entityentry:hover,
+            .contententry:hover {
+                background: #333333;
+                color: #e5e5e5;
+                cursor: default;
+            }
+
+            .entityworking {
+                height: 124px;
+            }
+
+            .entitydescription {
+                border: 1px solid lightgrey;
+                margin-bottom: 10px;
+                padding-top: 10px;
+            }
+
+            #transcript {
+                border-left: 1px solid lightgrey;
+                border-right: 1px solid lightgrey;
+                border-bottom: 1px solid lightgrey;
+                height: 600px;
+                overflow:hidden;
+            }
+
+            audio {
+                border-left: 1px solid lightgrey;
+                border-right: 1px solid lightgrey;
+                border-top: 1px solid lightgrey;
+            }
+
+            .returnbutton {
+                background: #333333;
+                color: #e5e5e5;
+                padding-left:20px;
+                padding-top:10px;
+                padding-bottom:10px;
+                border-radius: 10px;
+                font-weight: 200;
+                font-size: 20px;
+                width: 210px;
+                cursor: default;
+            }
+
+            .returnbutton:hover {
+                color: #333333;
+                background: #e5e5e5;
+            }
+
+            .img.span-16 {
+                border: 1px solid lightgrey;
+                padding: 10px;
+                background: #ffffff;
+            }
+
+            .propertypair {
+                margin-bottom: 2px;
+            }
+
+            .propertypair:first-of-type {
+                margin-top: 0px;
+            }
+
+            .propertypair:last-of-type {
+                margin-bottom: 10px;
+            }
+
+            .propertylabel {
+                margin-left: 10px;
+                background: #e5e5e5;
+            }
+
+            .propertylabel.span-3 {
+                margin-right: 0px;
+                background: #e5e5e5;
+                width: 100px;
+            }
+
+            .propertyvalue {
+                padding-left:10px;
+                padding-right:10px;
+            }
+
+            .propertyvalue.span-5 {
+                padding-right: 10px;
+                width: 180px;
+            }
+
+            div.button,
+            span.button {
+                background: #999999;
+                color: #1a1a1a;
+                text-align: center;
+                cursor: default;
+            }
+
+            div.button.slim,
+            span.button.slim {
+                border-radius:6px;
+                width: 105px;
+                padding-top: 2px;
+                padding-bottom: 2px;
+            }
+
+            div.button.tab,
+            span.button.tab {
+                border-top-left-radius:6px;
+                border-top-right-radius:6px;
+                padding-top: 4px;
+                padding-bottom: 4px;
+                padding-left: 10px;
+                padding-right: 10px;
+                font-weight: 200;
+                font-size: 15px;
+                float:left;
+                margin-right: 1px;
+            }
+
+            div.button.tab.selected,
+            span.button.tab.selected {
+                background: #555555;
+                color: #e5e5e5;
+            }
+
+            div.contentpanetabs {
+                margin-bottom: 20px;
+            }
+
+            #mainimage h3 {
+                margin-bottom: 15px;
+            }
+
+            #interviewcontentdiv {
+                margin-bottom: 10px;
+            }
+
+            #interviewcontentdiv .searchbox {
+                margin: 0;
+            }
+
+            #interviewcontentdiv .searchtranscriptpane {
+                margin-top: -10px;
+                border: 1px solid lightgrey;
+                min-height: 200px;
+                max-height: 550px;
+                overflow-y: auto;
+            }
+
+            .transcriptref {
+                margin-bottom: 3px;
+                margin-right: 20px;
+            }
+
+            .transcriptref:first-of-type {
+                margin-top: 0px;
+            }
+
+            .transcriptref:last-of-type {
+                margin-bottom: 10px;
+            }
+
+            .transcriptlabel {
+                margin-left: 0px;
+                background: #e5e5e5;
+                padding-left:5px;
+                padding-right:5px;
+            }
+
+            .transcripttext {
+                background: #ffffff;
+                color: #000000;
+                cursor: default;
+            }
+
+            .transcripttext:hover {
+                background: #999999;
+                color: #1a1a1a;
+                cursor: default;
+            }
+
+            .alert.span-8.last {
+                width:  288px;
+            }
+
+            .success.span-8.last {
+                width:  288px;
+            }
+
+            .info.span-8.last {
+                width:  288px;
+            }
+
+            .networklegend {
+                min-height: 35px;
+                padding-top: 10px;
+                padding-bottom: 10px;
+                border: 1px solid lightgrey;
+            }
+
+            .graphic {
+                display: inline-block;
+                padding-bottom: 3px;
+            }
+
+            .graphic svg {
+                position:relative;
+                left: -7px;
+                margin-left: 50%;
+            }
+
+            .legendlabel {
+                display: inline-block;
+            }
+
+            path.link {
+                fill: none;
+                stroke: #666;
+                stroke-width: 1.5px;
+            }
+
+            marker#linktype1,
+            marker#legendlink1 {
+                fill: green;
+            }
+
+            path.link.linktype1 {
+                stroke: green;
+            }
+
+            path.link.linktype3 {
+                stroke-dasharray: 0,2 1;
+            }
+
+            circle {
+                fill: #ccc;
+                stroke: #333;
+                stroke-width: 1.5px;
+            }
+
+            circle.target {
+                fill: #a33;
+            }
+
+            text {
+                font: 10px sans-serif;
+                pointer-events: none;
+            }
+
+            text.shadow {
+                stroke: #fff;
+                stroke-width: 3px;
+                stroke-opacity: .8;
+            }
+        </style>
+        <script type="text/javascript" src="js/underscore.js"></script>
+        <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
+        <script type="text/javascript" src="js/popcorn-complete.min.js"></script>
+        <script type="text/javascript" src="js/d3.v2.js"></script>
+        <script type="text/javascript" src="js/d3.layout.cloud.js"></script>
+        <script type="text/javascript" src="js/wordgrams.js"></script>
+        <script type="text/javascript" src="js/networkgraph.js"></script>
+        <script type="text/javascript" src="js/faketimelinedata.js"></script>
+        <script type="text/javascript" src="js/interviews.js"></script>
+        <script type="text/javascript" src="js/storyjs-embed.js"></script>
+        <script type="text/javascript">$(function() { interviewReady(); });</script>
+    </head>
+    <body>
+        <div class="container top">
+            <div id="logo" class="span-24"><a href="http://qldarch.net/"><h1 class="logo">Digital Archive of Queensland Architecture</h1></a></div>
+            <div id="logomenu" class="span-24">
+                <a href="http://qldarch.net/?page_id=5">ABOUT</a>
+                <a href="http://qldarch.net/?page_id=8">COLLABORATORS</a>
+                <a href="http://qldarch.net/?page_id=44">DIGITAL STORIES</a>
+                <a href="http://qldarch.net/?page_id=845">SEARCH</a>
+                <a href="http://qldarch.net/?page_id=12">CONTRIBUTE</a>
+                <a href="http://qldarch.net/?page_id=10">CONTACT</a>
+            </div>
+            <div id="primary" class="span-24">
+            </div>
+        </div>
+    </body>
+</html>
