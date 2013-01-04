@@ -102,7 +102,25 @@ function frontendOnReady() {
 }($("#primary")));
 
 function displayFrontPage(reload) {
-    $("#primary").html($("#frontpageTemplate").detach());
+    $("#primary").html(
+        '<div id="column1" class="span-8">' +
+        '    <div id="mainsearch" class="span-8 last">' +
+        '        <h2 class="columntitle span-8 last">General Search</h2>' +
+        '        <div id="searchdiv" class="span-8 last"/>' +
+        '    </div>' +
+        '</div>' +
+        '<div id="column2" class="span-8">' +
+        '    <div id="maincontent" class="span-8 last">' +
+        '        <h2 class="columntitle span-8 last">Digital Content</h2>' +
+        '        <div id="contentdiv" class="span-8 last"/>' +
+        '    </div>' +
+        '</div>' +
+        '<div id="column3" class="span-8 last">' +
+        '    <div id="mainentities" class="span-8 last">' +
+        '        <h2 class="columntitle span-8 last">People and Things</h2>' +
+        '        <div id="entitydiv" class="span-8 last"/>' +
+        '    </div>' +
+        '</div>');
     displaySearchDiv($("#searchdiv"));
     displayContentDiv($("#contentdiv"));
     displayEntityDiv($("#entitydiv"));
