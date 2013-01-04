@@ -146,22 +146,21 @@ function displayInterview(resource, callback) {
 function displaySearchTranscript(resource) {
     $("#interviewcontentdiv .content").append(
         '<div class="searchtranscriptpane span-16 last" style="margin-top:-10px">' +
-        '<div class="span-16 last">' +
+        '<div class="span-15 last">' +
         '<input class="searchbox span-8" type="text" value="" placeHolder="Search Transcripts"/>' +
         '</div>' +
-        '<div class="searchresults span-16 last">' +
-            '<div class="entitylisttitle">Utterances</div>' +
-            '<div class="resultlist"/>' +
+        '<div class="searchresults span-15 last">' +
+            '<div class="resultlist span-15 last"/>' +
         '</div>' +
         '</div>');
 
     $("#interviewcontentdiv input").keyup(function(event) {
         var val = $(this).val();
 
-        $.getJSON('http://115.146.94.110/solr/collection1/select?q=transcript%3A' + val + '&rows=20&wt=json', function(results) {
+        $.getJSON('http://115.146.94.110/solr/collection1/select?q=transcript%3A' + val + '&rows=50&wt=json', function(results) {
             $("#interviewcontentdiv .resultlist").empty();
             results.response.docs.forEach(function(result) {
-                $(supplant('<div class="transcriptref">' +
+                $(supplant('<div class="transcriptref span-15 last">' +
                         '<span class="transcriptlabel">{interview}</span>' +
                         '<span class="transcriptlabel">{time}</span>' +
                         '<span class="transcripttext">{transcript}</span' +
