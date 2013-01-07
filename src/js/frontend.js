@@ -57,13 +57,13 @@ var resourcesByRdfType = { };
 function frontendOnReady() {
     $.getJSON(JSON_ROOT + "properties", function(d1) {
         properties = d1;
-	properties["uri"] = {
-		"uri": "uri",
-		"http://qldarch.net/ns/rdf/2012-06/terms#display": false,
-		"http://www.w3.org/1999/02/22-rdf-syntax-ns#type": "http://www.w3.org/2002/07/owl#ObjectProperty",
-		"http://qldarch.net/ns/rdf/2012-06/terms#label": "URI Pseudo-property",
-		"http://qldarch.net/ns/rdf/2012-06/terms#editable": false
-	    };
+        properties["uri"] = {
+            "uri": "uri",
+            "http://qldarch.net/ns/rdf/2012-06/terms#display": false,
+            "http://www.w3.org/1999/02/22-rdf-syntax-ns#type": "http://www.w3.org/2002/07/owl#ObjectProperty",
+            "http://qldarch.net/ns/rdf/2012-06/terms#label": "URI Pseudo-property",
+            "http://qldarch.net/ns/rdf/2012-06/terms#editable": false
+        };
         $.getJSON(JSON_ROOT + "displayedEntities", function(d5) {
             types = _.groupBy(d5, function(value) {
                 if (value[RDFS_SUBCLASS_OF] == QA_DIGITAL_THING) {
@@ -132,8 +132,31 @@ function displayFrontPage(reload) {
     }
 }
 
+
+function setupGeneralSearch() {
+    var GeneralSearchModel = Backbone.Model.extend();
+
+    var GeneralSearchView = Backbone.View.extend({
+        tagName: "div",
+        className: "generalsearch",
+        template: _.template($("#searchdivTemplate").html()),
+        
+        events: {
+            "keyup input"   : update
+        },
+
+        render: function() {
+            $(this.el).html(this.template({}));
+        }
+
+        update: function() {
+            model.set({'searchstring', this.$("input").val()});
+        }
+    });
+}
+
 function displaySearchDiv(parentDiv) {
-    parentDiv.html('<input class="span-8 last" type="text" value="" placeHolder="Search Content, People and Things"/></div>');
+    parentDiv.html('<div><input class="span-8 last" type="text" value="" placeHolder="Search Content, People and Things"/></div>');
 
     parentDiv.find("input").keyup(function () {
         var val = $(this).val();
@@ -147,6 +170,25 @@ function updateSearchDiv(val) {
     if ($("#searchdiv")) {
         $("#searchdiv input").val(val);
     }
+}
+
+function setupContentDisplay() {
+    var ContentDisplayModel = Backbone.Model.extend();
+
+    var ContentDisplay = Backbone.View.extend({
+        tagName: "div",
+        className: "contenttype",
+        template: _.template($("#contenttypeTemplate").html()),
+    
+        events: {},
+    
+        render: function() {
+            $(this.el).html(this.template({
+                    uri: model.get('uri'),
+                    label: model.get(QA_LABEL)
+                }));
+        }
+    });
 }
 
 function displayContentDiv(parentDiv) {
