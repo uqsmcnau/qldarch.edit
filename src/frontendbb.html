@@ -411,18 +411,8 @@
                 <a href="http://qldarch.net/?page_id=10">CONTACT</a>
             </div>
             <div id="primary" class="span-24">
-                <div id="column1" class="span-8">
-                    <div id="mainsearch" class="span-8 last">
-                        <h2 class="columntitle span-8 last">General Search</h2>
-                        <div id="searchdiv" class="span-8 last"></div>
-                    </div>
-                </div>
-                <div id="column2" class="span-8">
-                    <div id="maincontent" class="span-8 last">
-                        <h2 class="columntitle span-8 last">Digital Content</h2>
-                        <div id="contentdiv" class="span-8 last"></div>
-                    </div>
-                </div>
+                <div id="column1" class="span-8"> </div>
+                <div id="column2" class="span-8"> </div>
                 <div id="column3" class="span-8 last">
                     <div id="mainentities" class="span-8 last">
                         <h2 class="columntitle span-8 last">People and Things</h2>
@@ -434,14 +424,21 @@
         </div>
         <script type="text/template" id="frontpageTemplate">
         </script>
+        <script type="text/template" id="digitalContentTemplate">
+            <h2 class="columntitle span-8 last">Digital Content</h2>
+            <div id="contentdiv" class="span-8 last"></div>
+        </script>
         <script type="text/template" id="contenttypeTemplate">
-            <div class="contenttype" data-uri="<%=uri=%>">
-                <div class="contentlisttitle span-8"><%=label=%></div>
+            <div class="contenttype" data-uri="<%= uri %>">
+                <div class="contentlisttitle span-8"><%= label %></div>
                 <div class="contentlist"></div>
             </div>
         </script>
         <script type="text/template" id="searchdivTemplate">
-            <input class="span-8 last" type="text" value="" placeHolder="Search Content, People and Things"/>
+            <h2 class="columntitle span-8 last">General Search</h2>
+            <div id="searchdiv" class="span-8 last">
+                <input class="span-8 last" type="text" value="" placeHolder="Search Content, People and Things"/>
+            </div>
         </script>
 
         <script type="text/javascript">

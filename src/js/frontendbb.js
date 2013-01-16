@@ -3,7 +3,7 @@ var frontend = (function() {
     _.mixin({
         // If x is a scalar wraps in a single-element array.
         // Leaves array objects untouched.
-        lifta: function(x) { return _.flatten([x], 1) },
+        lifta: function(x) { return x === undefined ? [] : _.flatten([x], true); },
 
         // Defers evaulation of a function until forced by _.force.
         // To match the behaviour of _.result, it leaves non-functions untouched.
@@ -23,6 +23,7 @@ var frontend = (function() {
     var QA_LABEL = "http://qldarch.net/ns/rdf/2012-06/terms#label";
     var QA_EDITABLE = "http://qldarch.net/ns/rdf/2012-06/terms#editable";
     var QA_SYSTEM_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#systemLocation";
+    var QA_DISPLAY_PRECIDENCE = "http://qldarch.net/ns/rdf/2012-06/terms#displayPrecedence";
 
     var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
     var RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
@@ -52,42 +53,58 @@ var frontend = (function() {
     });
 
     var GeneralSearchView = Backbone.View.extend({
-        initialize: function(args) {
+        initialize: function(options) {
             this.template = _.template($("#searchdivTemplate").html())
+            _.bindAll(this, '_keyup', '_update');
+            options.model.on("change:searchstring", this._update);
         },
         
         events: {
-            "keyup input"   : "update"
+            "keyup input"   : "_keyup"
         },
 
         render: function() {
-            this.$el.html(this.template({}));
-            return this.el;
+            this.$el.html(this.template(this.model.toJSON()));
+            return this;
         },
 
-        update: function() {
+        _keyup: function() {
             this.model.set({
                 'searchstring': this.$("input").val()
             });
+        },
+
+        _update: function() {
+            this.$("input").val(this.model.get("searchstring"));
         }
     });
 
     var RDFDescription = Backbone.Model.extend({
-    });
+        idAttribute: "uri",
 
-    var RDFGraph = Backbone.Collection.extend({
-        url: function() { return JSON_ROOT + "displayedEntities" },
-        model: RdfDescription,
-        parse: function(resp) {
-            return _.values(resp);
+        subject: function() { return this.uri; },
+
+        predicates: function() {
+            return _.chain(this.toJSON())
+                .keys()
+                .reject(function(k) { return k === 'uri'; })
+                .value();
+        },
+
+        objects: function() {
+            return _.chain(this.toJSON()).values().flatten().value();
         }
     });
 
-    var DisplayedEntities = Backbone.Collection.extend({
-        url: function() { return JSON_ROOT + "displayedEntities" },
-        model: Entity,
-        parse: function(resp) {
-            return _.values(resp);
+    // This should probably be a sub-class rather than sub-type of Collection.
+    var RDFGraph = Backbone.Collection.extend({
+        model: RDFDescription,
+
+        parse: _.values,
+
+        initialize: function(models, options) {
+            options || (options = {});
+            if (options.url) this.url = options.url
         }
     });
 
@@ -109,7 +126,6 @@ var frontend = (function() {
 
     _.extend(SubCollection.prototype, Collection.prototype, {
         _doReset : function(collection, options) {
-            console.log("Reset callback called");
             this.reset(collection.filter(this.predicate), options);
         },
 
@@ -150,87 +166,134 @@ var frontend = (function() {
 
     Backbone.SubCollection = SubCollection;
 
-    var ArtifactTypes = Backbone.SubCollection.extend({
-        tracksort: false,
-        predicate: function(model) {
-                return model.get(RDFS_SUBCLASS_OF) === QA_DIGITAL_THING;
-            },
-
-        comparator: "http://qldarch.net/ns/rdf/2012-06/terms#displayPrecedence",
-    });
-
-    var ProperTypes = Backbone.SubCollection.extend({
-        tracksort: false,
-        predicate: function(model) { return model[RDFS_SUBCLASS_OF] !== QA_DIGITAL_THING; },
-        comparator: "http://qldarch.net/ns/rdf/2012-06/terms#displayPrecedence",
-    });
-
-    var Photograph = Backbone.Model.extend({ });
-
-    var Photographs = Backbone.Collection.extend({
-        model: Photograph,
-
-        initialize: function() {
-            var that = this;
-            $.getJSON(JSON_ROOT + "photographSummary", function(d) {
-                that.add(
-                    _.chain(d)
-                        .map(function(v) { v[RDF_TYPE] = QA_INTERVIEW_TYPE; return v; })
-                        .sortBy(DCT_TITLE)
-                        .map(function(v) { return new Photograph(v); }));
-            });
+    var DigitalContentView = Backbone.View.extend({
+        initialize: function(options) {
+            options || (options = {});
+            this.template = _.template($("#digitalContentTemplate").html());
+            this.content = options.content;
+            _.bindAll(this, 'render');
+            if (options.initialize) { options.initialize.call(this); }
         },
-
-        sync: function(method, collection, options) {
-            ({
-                create: function() {
-                },
-                read: function() {
-                },
-                update: function() {
-                },
-                delete: function() {
-                },
-            })[method]();
-        }
+        
+        render: function() {
+            this.$el.html(this.template());
+            this.model.each(function(artifactType) {
+                if (artifactType.get('uri') && this.content[artifactType.get('uri')]) {
+                    var contentView = new ContentTypeView({
+                        model: this.content[artifactType.uri],
+                        type: artifactType
+                    });
+                    this.$('#contentdiv').append(contentView.render().el);
+                }
+            }, this);
+            return this;
+        },
     });
 
-    var ContentListView = Backbone.View.extend({
+    var ContentTypeView = Backbone.View.extend({
+        initialize: function(options) {
+            options || (options = {});
+            this.template = _.template($("#contenttypeTemplate").html());
+            _.bindAll(this, 'render');
+            if (options.initialize) { options.initialize.call(this); }
+        },
+        
+        render: function() {
+            this.$el.html(this.template({
+                uri: this.options.type.get('uri'),
+                label: this.options.type.get(QA_LABEL)
+            }));
+            /*
+            this.model.each(function(model) {
+                this.$el.append(this.template({
+                    uri: model.get('uri'),
+                    label: model.get(QA_LABEL)
+                }));
+            }, this);
+            */
+            return this;
+        },
     });
 
     function frontendOnReady() {
-        var gsModel = new GeneralSearchModel();
-        var gsView = new GeneralSearchView({
-            el: $("#searchdiv"),
-            model: gsModel
+        var searchModel = new GeneralSearchModel();
+        var searchView = new GeneralSearchView({
+            id: "mainsearch",
+            model: searchModel
         });
 
-        gsModel.on("change:searchstring", function() { console.log(this.get("searchstring")); }, gsModel);
-        $("#searchdiv").html(gsView.render().el);
+        searchModel.on("change:searchstring", function() { console.log(this.get("searchstring")); }, searchModel);
+        searchView.render();
 
-        var phModel = new Photographs();
-        phModel.on("change", function() { console.log(this); });
-
-        var displayedEntities = new DisplayedEntities();
-        var artifacts = new ArtifactTypes(displayedEntities);
-        var proper = new ProperTypes(displayedEntities);
-
-        displayedEntities.on("reset", function(collection) {
-            console.log("reset:displayedEntities");
-            collection.each(function(entity) { console.log(entity.toJSON()); });
+        var displayedEntities = new RDFGraph([], {
+            url: function() { return JSON_ROOT + "displayedEntities" },
         });
 
-        artifacts.on("add", function(entity) {
-            console.log("add:artifacts");
-            console.log(entity.toJSON());
+        var photographs = new RDFGraph([], {
+            url: function() { return JSON_ROOT + "photographSummary" },
+            comparator: DCT_TITLE,
         });
 
-        proper.on("reset", function(collection) {
-            console.log("reset:proper");
-            collection.each(function(entity) { console.log(entity.toJSON()); });
+        var linedrawings = new RDFGraph([], {
+            url: function() { return JSON_ROOT + "lineDrawingSummary" },
+            comparator: DCT_TITLE,
         });
 
-        displayedEntities.fetch({ update: true });
+        var interviews = new RDFGraph([], {
+            url: function() { return JSON_ROOT + "interviewSummary" },
+            comparator: DCT_TITLE,
+        });
+
+        var entities = new RDFGraph([], {
+            url: function() { return JSON_ROOT + "entities" },
+            comparator: DCT_TITLE,
+        });
+
+        var artifacts = new SubCollection(displayedEntities, {
+            name: "artifacts",
+            tracksort: false,
+            predicate: function(model) {
+                    return model.get(RDFS_SUBCLASS_OF) === QA_DIGITAL_THING;
+                },
+
+            comparator: QA_DISPLAY_PRECIDENCE,
+        });
+
+        var proper = new SubCollection(displayedEntities, {
+            name: "proper",
+            tracksort: false,
+            predicate: function(model) {
+                    return model.get(RDFS_SUBCLASS_OF) !== QA_DIGITAL_THING;
+                },
+
+            comparator: QA_DISPLAY_PRECIDENCE,
+        });
+
+        photographs.on("reset", function(collection) {
+            console.log("reset:photographs: " + collection.length);
+        });
+
+        var contentView = new DigitalContentView({
+            id: "maincontent",
+            model: artifacts,
+            content: {
+                "http://qldarch.net/ns/rdf/2012-06/terms#Interview": interviews,
+                "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": photographs,
+                "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing": linedrawings
+            },
+            initialize: function() {
+                artifacts.on("reset", this.render, this);
+                artifacts.on("reset", function() { console.log(this.toJSON()); }, artifacts);
+            }
+        });
+
+        displayedEntities.fetch();
+        photographs.fetch();
+        interviews.fetch();
+        linedrawings.fetch();
+
+        $("#column1").html(searchView.render().el);
+        $("#column2").html(contentView.render().el);
     }
 
     return {
