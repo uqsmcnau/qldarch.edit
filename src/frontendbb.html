@@ -414,11 +414,6 @@
                 <div id="column1" class="span-8"> </div>
                 <div id="column2" class="span-8"> </div>
                 <div id="column3" class="span-8 last">
-                    <div id="mainentities" class="span-8 last">
-                        <h2 class="columntitle span-8 last">People and Things</h2>
-                        <div id="entitydiv" class="span-8 last">
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -434,10 +429,26 @@
                 <div class="contentlist"></div>
             </div>
         </script>
+        <script type="text/template" id="contentitemTemplate">
+            <%= title %>
+        </script>
         <script type="text/template" id="searchdivTemplate">
             <h2 class="columntitle span-8 last">General Search</h2>
             <div id="searchdiv" class="span-8 last">
                 <input class="span-8 last" type="text" value="" placeHolder="Search Content, People and Things"/>
+            </div>
+        </script>
+        <script type="text/template" id="entityContentTemplate">
+            <h2 class="columntitle span-8 last">People and Things</h2>
+            <div id="entitydiv" class="span-8 last"></div>
+        </script>
+        <script type="text/template" id="entityTemplate">
+            <div class="entity" data-uri="<%= uri %>">
+                <input class="searchbox span-5" type="text" placeHolder="Search <%= label %>"/>
+                <div class="entityworking span-8 last" style="display:none">
+                    <div class="entitylisttitle"><%=  label %></div>
+                    <div class="entitylist"></div>
+                </div>
             </div>
         </script>
 

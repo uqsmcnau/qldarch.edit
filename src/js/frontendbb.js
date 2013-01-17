@@ -159,7 +159,12 @@ var frontend = (function() {
             this.baseCollection.on("sort", this._doSort, this);
         },
 
-        predicate: function() { return true; }
+        predicate: function() { return true; },
+
+        setPredicate: function(predicate) {
+            this.predicate = predicate;
+            _doReset(this.baseCollection, {});
+        }
     });
 
     SubCollection.extend = Collection.extend;
@@ -180,7 +185,7 @@ var frontend = (function() {
             this.model.each(function(artifactType) {
                 if (artifactType.get('uri') && this.content[artifactType.get('uri')]) {
                     var contentView = new ContentTypeView({
-                        model: this.content[artifactType.uri],
+                        model: this.content[artifactType.get('uri')],
                         type: artifactType
                     });
                     this.$('#contentdiv').append(contentView.render().el);
@@ -194,8 +199,13 @@ var frontend = (function() {
         initialize: function(options) {
             options || (options = {});
             this.template = _.template($("#contenttypeTemplate").html());
-            _.bindAll(this, 'render');
+            _.bindAll(this, 'render', 'onupdate');
             if (options.initialize) { options.initialize.call(this); }
+//            this.model = new SubCollection(options.model, {
+//                name: "ContentTypeViewModel",
+//                tracksort: true
+//            });
+            this.model.on("reset", this.onupdate);
         },
         
         render: function() {
@@ -203,15 +213,104 @@ var frontend = (function() {
                 uri: this.options.type.get('uri'),
                 label: this.options.type.get(QA_LABEL)
             }));
-            /*
-            this.model.each(function(model) {
-                this.$el.append(this.template({
-                    uri: model.get('uri'),
-                    label: model.get(QA_LABEL)
-                }));
+
+            this.model.each(function(contentItem) {
+                var itemView = new ContentItemView({
+                    model: contentItem,
+                });
+                this.$('.contentlist').append(itemView.render().el);
             }, this);
-            */
+
             return this;
+        },
+
+        onupdate: function() {
+            this.render();
+        },
+    });
+
+    var ContentItemView = Backbone.View.extend({
+        className: "contententry",
+        initialize: function(options) {
+            options || (options = {});
+            this.template = _.template($("#contentitemTemplate").html());
+            _.bindAll(this, 'render');
+            if (options.initialize) { options.initialize.call(this); }
+        },
+        
+        render: function() {
+            this.$el.html(this.template({
+                title: this.model.get(DCT_TITLE)
+            }));
+
+            return this;
+        },
+    });
+
+    var EntityContentView = Backbone.View.extend({
+        initialize: function(options) {
+            options || (options = {});
+            this.template = _.template($("#entityContentTemplate").html());
+            this.content = options.content;
+            _.bindAll(this, 'render');
+            if (options.initialize) { options.initialize.call(this); }
+        },
+        
+        render: function() {
+            this.$el.html(this.template());
+            this.model.each(function(entityType) {
+                console.log(entityType.toJSON());
+                if (entityType.get('uri')) {
+                    var entityView = new EntityTypeView({
+                        model: new SubCollection(this.content, {
+                            name: "entity subcollection",
+                            tracksort: false,
+                            predicate: function(model) {
+                                    return model.get(RDF_TYPE) === entityType.get('uri');
+                                },
+                            comparator: QA_LABEL,
+                        }),
+                        type: entityType
+                    });
+                    this.$('#entitydiv').append(entityView.render().el);
+                }
+            }, this);
+            return this;
+        },
+    });
+
+    var EntityTypeView = Backbone.View.extend({
+        initialize: function(options) {
+            options || (options = {});
+            this.template = _.template($("#entitytypeTemplate").html());
+            _.bindAll(this, 'render', 'onupdate');
+            if (options.initialize) { options.initialize.call(this); }
+//            this.model = new SubCollection(options.model, {
+//                name: "ContentTypeViewModel",
+//                tracksort: true
+//            });
+            this.model.on("reset", this.onupdate);
+        },
+        
+        render: function() {
+            this.$el.html(this.template({
+                uri: this.options.type.get('uri'),
+                label: this.options.type.get(QA_LABEL)
+            }));
+
+            /*
+            this.model.each(function(contentItem) {
+                var itemView = new ContentItemView({
+                    model: contentItem,
+                });
+                this.$('.contentlist').append(itemView.render().el);
+            }, this);
+*/
+            return this;
+        },
+
+        onupdate: function() {
+            this.render();
         },
     });
 
@@ -246,7 +345,7 @@ var frontend = (function() {
 
         var entities = new RDFGraph([], {
             url: function() { return JSON_ROOT + "entities" },
-            comparator: DCT_TITLE,
+            comparator: QA_LABEL,
         });
 
         var artifacts = new SubCollection(displayedEntities, {
@@ -273,6 +372,11 @@ var frontend = (function() {
             console.log("reset:photographs: " + collection.length);
         });
 
+        entities.on("reset", function(collection) {
+            console.log("reset:entities: " + collection.length);
+            collection.each(function(model) { console.log(model.toJSON()); });
+        });
+
         var contentView = new DigitalContentView({
             id: "maincontent",
             model: artifacts,
@@ -283,17 +387,28 @@ var frontend = (function() {
             },
             initialize: function() {
                 artifacts.on("reset", this.render, this);
-                artifacts.on("reset", function() { console.log(this.toJSON()); }, artifacts);
+            }
+        });
+
+        var entityView = new EntityContentView({
+            id: "mainentities",
+            model: proper,
+            content: entities,
+
+            initialize: function() {
+                proper.on("reset", this.render, this);
             }
         });
 
         displayedEntities.fetch();
+        entities.fetch();
         photographs.fetch();
         interviews.fetch();
         linedrawings.fetch();
 
         $("#column1").html(searchView.render().el);
         $("#column2").html(contentView.render().el);
+        $("#column3").html(entityView.render().el);
     }
 
     return {
