@@ -46,9 +46,10 @@ var frontend = (function() {
     var entities = { };
     var resourcesByRdfType = { };
 
-    var GeneralSearchModel = Backbone.Model.extend({
+    var SearchModel = Backbone.Model.extend({
         defaults: {
-            'searchstring' : ""
+            'searchstring': "",
+            'searchtypes': ['all']
         }
     });
 
@@ -70,7 +71,8 @@ var frontend = (function() {
 
         _keyup: function() {
             this.model.set({
-                'searchstring': this.$("input").val()
+                'searchstring': this.$("input").val(),
+                'searchtypes': ['all'],
             });
         },
 
@@ -176,50 +178,63 @@ var frontend = (function() {
             options || (options = {});
             this.template = _.template($("#digitalContentTemplate").html());
             this.content = options.content;
-            _.bindAll(this, 'render');
+            this.search = options.search;
+            _.bindAll(this, 'render', '_keyup');
             if (options.initialize) { options.initialize.call(this); }
         },
-        
+
+        events: {
+            "keyup input"   : "_keyup"
+        },
+
         render: function() {
             this.$el.html(this.template());
             this.model.each(function(artifactType) {
                 if (artifactType.get('uri') && this.content[artifactType.get('uri')]) {
                     var contentView = new ContentTypeView({
                         model: this.content[artifactType.get('uri')],
-                        type: artifactType
+                        type: artifactType,
+                        search: this.search
                     });
                     this.$('#contentdiv').append(contentView.render().el);
                 }
             }, this);
+//            this.$('#contentdiv :last-child .contenttype').addClass('final');
             return this;
+        },
+
+        _keyup: function() {
         },
     });
 
     var ContentTypeView = Backbone.View.extend({
+        className: 'typeview',
         initialize: function(options) {
             options || (options = {});
             this.template = _.template($("#contenttypeTemplate").html());
+            this.search = options.search;
             _.bindAll(this, 'render', 'onupdate');
             if (options.initialize) { options.initialize.call(this); }
-//            this.model = new SubCollection(options.model, {
-//                name: "ContentTypeViewModel",
-//                tracksort: true
-//            });
             this.model.on("reset", this.onupdate);
         },
         
         render: function() {
-            this.$el.html(this.template({
-                uri: this.options.type.get('uri'),
-                label: this.options.type.get(QA_LABEL)
-            }));
+            if (_.intersects(this.search.get('searchtypes'),
+                    ['all', this.options.type.get('uri')])) {
+                        this.$el.fadeOut('slow');
+            } else {
+                this.$el.html(this.template({
+                    uri: this.options.type.get('uri'),
+                    label: this.options.type.get(QA_LABEL)
+                }));
 
-            this.model.each(function(contentItem) {
-                var itemView = new ContentItemView({
-                    model: contentItem,
-                });
-                this.$('.contentlist').append(itemView.render().el);
-            }, this);
+                this.model.each(function(contentItem) {
+                    var itemView = new ContentItemView({
+                        model: contentItem,
+                    });
+                    this.$('.contentlist').append(itemView.render().el);
+                }, this);
+            }
 
             return this;
         },
@@ -233,14 +248,14 @@ var frontend = (function() {
         className: "contententry",
         initialize: function(options) {
             options || (options = {});
-            this.template = _.template($("#contentitemTemplate").html());
+            this.template = _.template($("#itemTemplate").html());
             _.bindAll(this, 'render');
             if (options.initialize) { options.initialize.call(this); }
         },
         
         render: function() {
             this.$el.html(this.template({
-                title: this.model.get(DCT_TITLE)
+                label: this.model.get(DCT_TITLE)
             }));
 
             return this;
@@ -259,7 +274,6 @@ var frontend = (function() {
         render: function() {
             this.$el.html(this.template());
             this.model.each(function(entityType) {
-                console.log(entityType.toJSON());
                 if (entityType.get('uri')) {
                     var entityView = new EntityTypeView({
                         model: new SubCollection(this.content, {
@@ -275,20 +289,18 @@ var frontend = (function() {
                     this.$('#entitydiv').append(entityView.render().el);
                 }
             }, this);
+
             return this;
         },
     });
 
     var EntityTypeView = Backbone.View.extend({
+        className: 'typeview',
         initialize: function(options) {
             options || (options = {});
             this.template = _.template($("#entitytypeTemplate").html());
             _.bindAll(this, 'render', 'onupdate');
             if (options.initialize) { options.initialize.call(this); }
-//            this.model = new SubCollection(options.model, {
-//                name: "ContentTypeViewModel",
-//                tracksort: true
-//            });
             this.model.on("reset", this.onupdate);
         },
         
@@ -298,14 +310,13 @@ var frontend = (function() {
                 label: this.options.type.get(QA_LABEL)
             }));
 
-            /*
-            this.model.each(function(contentItem) {
-                var itemView = new ContentItemView({
-                    model: contentItem,
+            this.model.each(function(entityItem) {
+                var itemView = new EntityItemView({
+                    model: entityItem,
                 });
-                this.$('.contentlist').append(itemView.render().el);
+                this.$('.entitylist').append(itemView.render().el);
             }, this);
-*/
+
             return this;
         },
 
@@ -314,15 +325,30 @@ var frontend = (function() {
         },
     });
 
+    var EntityItemView = Backbone.View.extend({
+        className: "entityentry",
+        initialize: function(options) {
+            options || (options = {});
+            this.template = _.template($("#itemTemplate").html());
+            _.bindAll(this, 'render');
+            if (options.initialize) { options.initialize.call(this); }
+        },
+        
+        render: function() {
+            this.$el.html(this.template({
+                label: this.model.get(QA_LABEL)
+            }));
+
+            return this;
+        },
+    });
+
     function frontendOnReady() {
-        var searchModel = new GeneralSearchModel();
+        var searchModel = new SearchModel();
         var searchView = new GeneralSearchView({
             id: "mainsearch",
             model: searchModel
         });
-
-        searchModel.on("change:searchstring", function() { console.log(this.get("searchstring")); }, searchModel);
-        searchView.render();
 
         var displayedEntities = new RDFGraph([], {
             url: function() { return JSON_ROOT + "displayedEntities" },
@@ -368,13 +394,12 @@ var frontend = (function() {
             comparator: QA_DISPLAY_PRECIDENCE,
         });
 
-        photographs.on("reset", function(collection) {
-            console.log("reset:photographs: " + collection.length);
+        searchModel.on("change:searchstring", function(model) {
+            console.log(model.get("searchstring"));
         });
 
-        entities.on("reset", function(collection) {
-            console.log("reset:entities: " + collection.length);
-            collection.each(function(model) { console.log(model.toJSON()); });
+        photographs.on("reset", function(collection) {
+            console.log("reset:photographs: " + collection.length);
         });
 
         var contentView = new DigitalContentView({
@@ -385,6 +410,7 @@ var frontend = (function() {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": photographs,
                 "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing": linedrawings
             },
+            search: searchModel,
             initialize: function() {
                 artifacts.on("reset", this.render, this);
             }
@@ -394,7 +420,7 @@ var frontend = (function() {
             id: "mainentities",
             model: proper,
             content: entities,
-
+            search: searchModel,
             initialize: function() {
                 proper.on("reset", this.render, this);
             }
