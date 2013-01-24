@@ -50,12 +50,27 @@ var frontend = (function() {
         defaults: {
             'searchstring': "",
             'searchtypes': ['all']
-        }
+        },
+
+        serialize: function() {
+            return encodeURIComponent(this.get('searchstring'))
+                + "/" + _.map(this.get('searchtypes'), encodeURIComponent).join(",");
+        },
+
+        deserialize: function(string) {
+            var first = string.split("/");
+            var second = first[1].split(",");
+            return {
+                'searchstring': decodeURIComponent(first[0]),
+                'searchtypes': _.map(second, decodeURIComponent),
+            };
+        },
     });
 
     var GeneralSearchView = Backbone.View.extend({
         initialize: function(options) {
-            this.template = _.template($("#searchdivTemplate").html())
+            this.template = _.template($("#searchdivTemplate").html());
+            this.router = options.router;
             _.bindAll(this, '_keyup', '_update');
             options.model.on("change:searchstring", this._update);
         },
@@ -66,6 +81,7 @@ var frontend = (function() {
 
         render: function() {
             this.$el.html(this.template(this.model.toJSON()));
+            this._update();
             return this;
         },
 
@@ -179,12 +195,9 @@ var frontend = (function() {
             this.template = _.template($("#digitalContentTemplate").html());
             this.content = options.content;
             this.search = options.search;
-            _.bindAll(this, 'render', '_keyup');
+            this.router = options.router;
+            _.bindAll(this, 'render');
             if (options.initialize) { options.initialize.call(this); }
-        },
-
-        events: {
-            "keyup input"   : "_keyup"
         },
 
         render: function() {
@@ -192,6 +205,7 @@ var frontend = (function() {
             this.model.each(function(artifactType) {
                 if (artifactType.get('uri') && this.content[artifactType.get('uri')]) {
                     var contentView = new ContentTypeView({
+                        router: this.router,
                         model: this.content[artifactType.get('uri')],
                         type: artifactType,
                         search: this.search
@@ -199,11 +213,7 @@ var frontend = (function() {
                     this.$('#contentdiv').append(contentView.render().el);
                 }
             }, this);
-//            this.$('#contentdiv :last-child .contenttype').addClass('final');
             return this;
-        },
-
-        _keyup: function() {
         },
     });
 
@@ -219,9 +229,10 @@ var frontend = (function() {
         },
         
         render: function() {
-            if (_.intersects(this.search.get('searchtypes'),
-                    ['all', this.options.type.get('uri')])) {
-                        this.$el.fadeOut('slow');
+            var searchtypes = this.search.get('searchtypes');
+            if (!_.contains(searchtypes, 'all') &&
+                !_.contains(searchtypes, this.options.type.get('uri'))) {
+                    this.$el.hide();
             } else {
                 this.$el.html(this.template({
                     uri: this.options.type.get('uri'),
@@ -230,7 +241,9 @@ var frontend = (function() {
 
                 this.model.each(function(contentItem) {
                     var itemView = new ContentItemView({
+                        router: this.router,
                         model: contentItem,
+                        search: this.search
                     });
                     this.$('.contentlist').append(itemView.render().el);
                 }, this);
@@ -249,6 +262,8 @@ var frontend = (function() {
         initialize: function(options) {
             options || (options = {});
             this.template = _.template($("#itemTemplate").html());
+            this.search = options.search;
+            this.router = options.router;
             _.bindAll(this, 'render');
             if (options.initialize) { options.initialize.call(this); }
         },
@@ -267,6 +282,8 @@ var frontend = (function() {
             options || (options = {});
             this.template = _.template($("#entityContentTemplate").html());
             this.content = options.content;
+            this.search = options.search;
+            this.router = options.router;
             _.bindAll(this, 'render');
             if (options.initialize) { options.initialize.call(this); }
         },
@@ -284,7 +301,9 @@ var frontend = (function() {
                                 },
                             comparator: QA_LABEL,
                         }),
-                        type: entityType
+                        type: entityType,
+                        router: this.router,
+                        search: this.search,
                     });
                     this.$('#entitydiv').append(entityView.render().el);
                 }
@@ -299,39 +318,114 @@ var frontend = (function() {
         initialize: function(options) {
             options || (options = {});
             this.template = _.template($("#entitytypeTemplate").html());
-            _.bindAll(this, 'render', 'onupdate');
+            this.type = options.type;
+            this.router = options.router;
+            this.search = options.search;
+            this.itemviews = {};
+
+            _.bindAll(this, 'render', '_update', '_keyup', '_setinput', '_updater');
+
             if (options.initialize) { options.initialize.call(this); }
-            this.model.on("reset", this.onupdate);
+            this.model.on("reset", this._updater);
+            this.search.on("change:searchstring", this._setinput);
+
+            console.log("Showing");
+            console.log(this.model);
+            console.log(this.type);
+
+            this.rendered = false;
+            this.visible = false;
         },
         
+        events: {
+            "keyup input"   : "_keyup"
+        },
+
         render: function() {
             this.$el.html(this.template({
-                uri: this.options.type.get('uri'),
-                label: this.options.type.get(QA_LABEL)
+                uri: this.type.get('uri'),
+                label: this.type.get(QA_LABEL)
             }));
 
             this.model.each(function(entityItem) {
                 var itemView = new EntityItemView({
+                    router: this.router,
                     model: entityItem,
                 });
+                this.itemviews[entityItem.get('uri')] = itemView;
                 this.$('.entitylist').append(itemView.render().el);
             }, this);
+
+            this._update();
+            this._setinput();
 
             return this;
         },
 
-        onupdate: function() {
-            this.render();
+        _keyup: function() {
+            this.search.set({
+                'searchstring': this.$("input").val(),
+                'searchtypes': [this.type.get('uri')],
+            });
         },
+
+        _updater: function() {
+            this.render();
+        }, 
+
+        _update: function() {
+            var searchtypes = this.search.get('searchtypes');
+            var searchstring = this.search.get('searchstring');
+            if (_.contains(searchtypes, 'all') ||
+                _.contains(searchtypes, this.options.type.get('uri'))) {
+
+                this.$el.show();
+                _.each(this.itemviews, function(itemview) {
+                    itemview.visibility(function(itemmodel) {
+                        return partialstringmatch(itemmodel, searchstring);
+                    });
+                }, this);
+            } else {
+                this.$el.hide();
+            }
+        },
+
+        _setinput: function() {
+            this.$("input").val(this.search.get('searchstring'));
+            this._update();
+        }
     });
+
+    function partialstringmatch(resource, value) {
+        var val = $.trim(value);
+        if (!val) {
+            return true;
+        }
+
+        var found = false;
+        val.split(/\W/).forEach(function(word) {
+            if (word != "" && (
+                    resource.get(QA_LABEL) && resource.get(QA_LABEL).toLowerCase().indexOf(word.toLowerCase()) != -1 ||
+                    resource.get(RDFS_LABEL) && resource.get(RDFS_LABEL).toLowerCase().indexOf(word.toLowerCase()) != -1)) {
+                    
+                found = true;
+            }
+        });
+
+        return found;
+    }
 
     var EntityItemView = Backbone.View.extend({
         className: "entityentry",
         initialize: function(options) {
             options || (options = {});
             this.template = _.template($("#itemTemplate").html());
+            this.router = options.router;
             _.bindAll(this, 'render');
             if (options.initialize) { options.initialize.call(this); }
+            this.$placeholder = $('<span display="none" data-uri="' + this.model.get('uri') + '"/>');
+            this.rendered = false;
+            this.visible = false;
         },
         
         render: function() {
@@ -339,15 +433,44 @@ var frontend = (function() {
                 label: this.model.get(QA_LABEL)
             }));
 
+            this.rendered = true;
+            this.visible = true;
+
             return this;
+        },
+
+        visibility: function(predicate) {
+            if (this.rendered) {
+                if (predicate(this.model)) {
+                    if (!this.visible) {
+                        this.$placeholder.after(this.$el).detach();
+                        this.visible = true;
+                    }
+                } else {
+                    if (this.visible) {
+                        this.$el.after(this.$placeholder).detach();
+                        this.visible = false;
+                    }
+                }
+            }
         },
     });
 
+    var QldarchRouter = Backbone.Router.extend({
+        routes: {
+            "": "frontpage",
+            "search(/*search)": "frontpage",
+        }
+    });
+
     function frontendOnReady() {
+        var router = new QldarchRouter();
+
         var searchModel = new SearchModel();
         var searchView = new GeneralSearchView({
             id: "mainsearch",
-            model: searchModel
+            model: searchModel,
+            router: router
         });
 
         var displayedEntities = new RDFGraph([], {
@@ -394,15 +517,20 @@ var frontend = (function() {
             comparator: QA_DISPLAY_PRECIDENCE,
         });
 
-        searchModel.on("change:searchstring", function(model) {
-            console.log(model.get("searchstring"));
+        searchModel.on("change", function(model) {
+            console.log("\tCHANGE:SEARCHMODEL: " + JSON.stringify(model.toJSON()));
         });
 
         photographs.on("reset", function(collection) {
-            console.log("reset:photographs: " + collection.length);
+            console.log("\tRESET:PHOTOGRAPHS: " + collection.length);
+        });
+
+        entities.on("reset", function(collection) {
+            console.log("\tRESET:ENTITIES: " + collection.length);
         });
 
         var contentView = new DigitalContentView({
+            router: router,
             id: "maincontent",
             model: artifacts,
             content: {
@@ -417,6 +545,7 @@ var frontend = (function() {
         });
 
         var entityView = new EntityContentView({
+            router: router,
             id: "mainentities",
             model: proper,
             content: entities,
@@ -426,18 +555,36 @@ var frontend = (function() {
             }
         });
 
-        displayedEntities.fetch();
-        entities.fetch();
-        photographs.fetch();
-        interviews.fetch();
-        linedrawings.fetch();
+        searchModel.on("change", function(searchModel) {
+            this.navigate("search/" + searchModel.serialize(), { trigger: false, replace: true });
+        }, router);
 
-        $("#column1").html(searchView.render().el);
-        $("#column2").html(contentView.render().el);
-        $("#column3").html(entityView.render().el);
+        router.on('route:frontpage', function(search) {
+            if (search) {
+                searchModel.set(this.deserialize(search));
+            } else {
+                searchModel.set(searchModel.defaults);
+            }
+
+            $("#column123,#column12,#column23").hide();
+            $("#column1").html(searchView.render().el);
+            $("#column2").html(contentView.render().el);
+            $("#column3").html(entityView.render().el);
+            $("#column1,#column2,#column3").show();
+        }, searchModel);
+
+        Backbone.history.start();
+
+        _.defer(function() {
+            displayedEntities.fetch();
+            entities.fetch();
+            photographs.fetch();
+            interviews.fetch();
+            linedrawings.fetch();
+        });
     }
 
     return {
-        frontendOnReady: frontendOnReady
+        frontendOnReady: frontendOnReady,
     };
 })();
