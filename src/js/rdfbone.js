@@ -1,0 +1,95 @@
+(function(Backbone, $, _, undefined) {
+    var RDFDescription = Backbone.Model.extend({
+        idAttribute: "uri",
+
+        subject: function() { return this.uri; },
+
+        predicates: function() {
+            return _.chain(this.toJSON())
+                .keys()
+                .reject(function(k) { return k === 'uri'; })
+                .value();
+        },
+
+        objects: function() {
+            return _.chain(this.toJSON()).values().flatten().value();
+        }
+    });
+
+    // This should probably be a sub-class rather than sub-type of Collection.
+    var RDFGraph = Backbone.Collection.extend({
+        model: RDFDescription,
+
+        parse: _.values,
+
+        initialize: function(models, options) {
+            options || (options = {});
+            if (options.url) this.url = options.url
+        }
+    });
+
+    var Collection = Backbone.Collection;
+    var SubCollection = function(baseCollection, options) {
+        options || (options = {})
+        if (options.predicate) this.predicate = options.predicate;
+        this.baseCollection = baseCollection ? baseCollection : new Collection([], options);
+
+        Collection.apply(this, [this.baseCollection.filter(this.predicate), options]);
+
+        if (options.tracksort) this.tracksort = options.tracksort;
+        if (_.result(this.tracksort)) {
+            this.comparator = this.baseCollection.comparator;
+            this.sort({silent: true}); // This should be a noop given the in-order filter above.
+        }
+        this.bindToBaseCollection();
+    }
+
+    _.extend(SubCollection.prototype, Collection.prototype, {
+        _doReset : function(collection, options) {
+            this.reset(collection.filter(this.predicate), options);
+        },
+
+        _doAdd : function(model, collection, options) {
+            // TODO: Handle the 'at' option, this will counting the number of models in
+            //  the base collection that don't match the predicate that are also to the
+            //  left of 'at', and adjusting the 'at' option passed thru to compensate.
+            //  Of course, this will only be necessary if tracksort=true is used.
+            if (this.predicate(model)) {
+                this.add(model, options);
+            }
+        },
+
+        _doRemove : function(model, collection, options) {
+            if (this.predicate(model)) {
+                this.remove(model, _.omit(options, 'index'));
+            }
+        },
+
+        _doSort : function(collection, options) {
+            if (_.result(this.tracksort)) {
+                this.comparator = this.baseCollection.comparator;
+                this.sort(options);
+            }
+        },
+
+        bindToBaseCollection : function() {
+            this.baseCollection.on("add", this._doAdd, this);
+            this.baseCollection.on("remove", this._doRemove, this);
+            this.baseCollection.on("reset", this._doReset, this);
+            this.baseCollection.on("sort", this._doSort, this);
+        },
+
+        predicate: function() { return true; },
+
+        setPredicate: function(predicate) {
+            this.predicate = predicate;
+            _doReset(this.baseCollection, {});
+        }
+    });
+
+    SubCollection.extend = Collection.extend;
+
+    Backbone.RDFGraph = RDFGraph;
+    Backbone.RDFDescription = RDFDescription;
+    Backbone.SubCollection = SubCollection;
+})(Backbone, $, _);

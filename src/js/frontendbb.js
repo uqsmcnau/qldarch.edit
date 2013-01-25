@@ -72,7 +72,7 @@ var frontend = (function() {
 
         deserialize: function(string) {
             var first = string.split("/");
-            var second = first[1].split(",");
+            var second = first[1] ? first[1].split(",") : [ 'all' ];
             return {
                 'searchstring': decodeURIComponent(first[0]),
                 'searchtypes': _.map(second, decodeURIComponent),
@@ -80,11 +80,87 @@ var frontend = (function() {
         },
     });
 
-    var GeneralSearchView = Backbone.View.extend({
+    var EntitySearchModel = Backbone.Model.extend({
+        defaults: {
+            'entity': "",
+        },
+
+        initialize: function() { },
+
+        serialize: function() {
+            return encodeURIComponent(this.get('entity'))
+        },
+
+        deserialize: function(string) {
+            return {
+                'entity': decodeURIComponent(string),
+            };
+        },
+    });
+
+    var ToplevelView = Backbone.View.extend({
         initialize: function(options) {
+            _.bindAll(this);
+            this.rendered = false;
+            this.attached = false;
+        },
+
+        render: function() {
+            this.rendered = true;
+        },
+
+        attach: function(selector) {
+            if (this.rendered) {
+                if (this.attached) {
+                    if (!$(selector).is(this.$el.parent())) {
+                        $(selector).html(this.detach().$el);
+                    } // else leave alone.
+                } else {
+                    $(selector).html(this.$el);
+                }
+            } else {
+                $(selector).html(this.render().$el);
+            }
+
+            this.attached = true;
+
+            return this;
+        },
+
+        append: function(selector) {
+            if (this.rendered) {
+                if (this.attached) {
+                    if (!$(selector).is(this.$el.parent())) {
+                        $(selector).append(this.detach().$el);
+                    } // else leave alone.
+                } else {
+                    $(selector).append(this.$el);
+                }
+            } else {
+                $(selector).append(this.render().$el);
+            }
+
+            this.attached = true;
+
+            return this;
+        },
+
+        detach: function() {
+            if (this.attached) {
+                this.$el = this.$el.detach();
+            }
+            this.attached = false;
+
+            return this;
+        },
+    });
+
+    var GeneralSearchView = ToplevelView.extend({
+        initialize: function(options) {
+            ToplevelView.prototype.initialize.call(this, options);
+
             this.template = _.template($("#searchdivTemplate").html());
             this.router = options.router;
-            _.bindAll(this, '_keyup', '_update');
             options.model.on("change:searchstring", this._update);
         },
         
@@ -93,6 +169,8 @@ var frontend = (function() {
         },
 
         render: function() {
+            ToplevelView.prototype.render.call(this);
+
             this.$el.html(this.template(this.model.toJSON()));
             this._update();
             return this;
@@ -107,21 +185,24 @@ var frontend = (function() {
 
         _update: function() {
             this.$("input").val(this.model.get("searchstring"));
-        }
+        },
+
     });
 
-    var DigitalContentView = Backbone.View.extend({
+    var DigitalContentView = ToplevelView.extend({
         initialize: function(options) {
             options || (options = {});
+            ToplevelView.prototype.initialize.call(this, options);
+
             this.template = _.template($("#digitalContentTemplate").html());
             this.content = options.content;
             this.search = options.search;
             this.router = options.router;
-            _.bindAll(this, 'render');
             if (options.initialize) { options.initialize.call(this); }
         },
 
         render: function() {
+            ToplevelView.prototype.render.call(this);
             this.$el.html(this.template());
             this.model.each(function(artifactType) {
                 if (artifactType.id && this.content[artifactType.id]) {
@@ -249,8 +330,14 @@ var frontend = (function() {
             options || (options = {});
             this.template = _.template($("#itemTemplate").html());
             this.router = options.router;
+
             _.bindAll(this, 'render');
             if (options.initialize) { options.initialize.call(this); }
+
+            this.$placeholder = $('<span display="none" data-uri="' + this.model.id + '"/>');
+            this.rendered = false;
+            this.visible = false;
+            this.predicate = this._defaultPredicate;
         },
         
         render: function() {
@@ -258,22 +345,79 @@ var frontend = (function() {
                 label: this.model.get(DCT_TITLE)
             }));
 
+            this.rendered = true;
+            this.visible = true;
+
             return this;
+        },
+
+        _update: function() {
+            if (this.rendered) {
+                if (this.predicate(this.model)) {
+                    if (!this.visible) {
+                        this.$placeholder.after(this.$el).detach();
+                        this.visible = true;
+                    }
+                    this._cascadeUpdate();
+                } else {
+                    if (this.visible) {
+                        this.$el.after(this.$placeholder).detach();
+                        this.visible = false;
+                    }
+                }
+            }
+        },
+
+        _cascadeUpdate: function() {},
+
+        setPredicate: function(predicate) {
+            this.predicate = predicate ? predicate : this._defaultPredicate;
+            this._update();
+        },
+
+        _defaultPredicate: function(model) {
+            return true;
+        },
+
+        partialStringPredicator: function(value) {
+            return function() {
+                var val = $.trim(value);
+                if (!val) {
+                    return true;
+                }
+
+                var found = false;
+                _.each(val.split(/\W/), function(word) {
+                    if (word !== "" && (
+                        this.model.get(DCT_TITLE) &&
+                        this.model.get(DCT_TITLE).toLowerCase().indexOf(word.toLowerCase()) != -1 ||
+                        this.model.get(RDFS_LABEL) &&
+                        this.model.get(RDFS_LABEL).toLowerCase().indexOf(word.toLowerCase()) != -1)) {
+                            
+                        found = true;
+                    }
+                }, this);
+
+                return found;
+            };
         },
     });
 
-    var EntityContentView = Backbone.View.extend({
+    var EntityContentView = ToplevelView.extend({
         initialize: function(options) {
             options || (options = {});
+            ToplevelView.prototype.initialize.call(this, options);
+
             this.template = _.template($("#entityContentTemplate").html());
             this.content = options.content;
             this.search = options.search;
             this.router = options.router;
-            _.bindAll(this, 'render');
             if (options.initialize) { options.initialize.call(this); }
         },
         
         render: function() {
+            ToplevelView.prototype.render.call(this);
+
             this.$el.html(this.template());
             this.model.each(function(entityType) {
                 if (entityType.id) {
@@ -418,6 +562,10 @@ var frontend = (function() {
             this.predicate = this._defaultPredicate;
         },
         
+        events: {
+            "click"   : "_select"
+        },
+
         render: function() {
             this.$el.html(this.template({
                 label: this.model.get(QA_LABEL)
@@ -479,12 +627,115 @@ var frontend = (function() {
                 return found;
             };
         },
+
+        _select: function() {
+            this.router.navigate("entity/" + encodeURIComponent(this.model.id),
+                    { trigger: true, replace: false });
+        },
+    });
+
+    var ContentPaneView = ToplevelView.extend({
+        className: "contentpane",
+        initialize: function(options) {
+            ToplevelView.prototype.initialize.call(this, options);
+
+            this.template = _.template($("#contentpaneTemplate").html());
+            this.router = options.router;
+        },
+        
+        events: {
+            "click span"   : "_selecttab"
+        },
+
+        render: function() {
+            ToplevelView.prototype.render.call(this);
+
+            this.$el.html(this.template());
+            this._update();
+            return this;
+        },
+
+        _selecttab: function(event) {
+            console.log("Tab clicked: " + $(event.target).attr("type"));
+        },
+
+        _update: function() {
+            
+        },
+
+    });
+
+    var EntityDetailView = ToplevelView.extend({
+        initialize: function(options) {
+            options || (options = {});
+            ToplevelView.prototype.initialize.call(this, options);
+
+            this.template = _.template($("#entitydetailTemplate").html());
+            this.itemTemplate = _.template($("#entitydetailItemTemplate").html());
+            this.router = options.router;
+            this.entities = options.entities;
+            this.properties = options.properties;
+            this.entity = undefined;
+
+            if (options.initialize) { options.initialize.call(this); }
+            this.model.on("change", this._updateEntity);
+        },
+        
+        render: function() {
+            ToplevelView.prototype.render.call(this);
+
+            this.$el.html(this.template());
+            
+            this._update();
+
+            return this;
+        },
+
+        _update: function() {
+            if (this.entity) {
+                this.$("h2").text("About " + this.entity.get(QA_LABEL));
+                var $propertylist = this.$(".propertylist");
+                $propertylist.empty();
+                _.each(this.entity.predicates(), function(predicate) {
+                    var property = this.properties.get(predicate);
+                    console.log(property.toJSON());
+                    if (property.get(QA_DISPLAY)) {
+                        $propertylist.append(this.itemTemplate({
+                            label: this.properties.get(predicate).get(QA_LABEL),
+                            value: this.entity.get(predicate),
+                        }));
+                    }
+                }, this);
+            } else {
+                this.$("h2").text("Unknown");
+            }
+        },
+
+        _updateEntity: function() {
+            var entityId = this.model.get('entity');
+            if (entityId) {
+                var newEntity = this.entities.get(entityId);
+                if (newEntity) {
+                    if (newEntity !== this.entity) {
+                        this.entity = newEntity;
+                        this._update();
+                    }
+                } else {
+                    this.entity = undefined;
+                    this._update();
+                }
+            } else {
+                this.entity = undefined;
+                this._update();
+            }
+        },
     });
 
     var QldarchRouter = Backbone.Router.extend({
         routes: {
             "": "frontpage",
             "search(/*search)": "frontpage",
+            "entity(/*entity)": "viewentity",
         }
     });
 
@@ -496,6 +747,12 @@ var frontend = (function() {
             id: "mainsearch",
             model: searchModel,
             router: router
+        });
+
+        var entitySearchModel = new EntitySearchModel();
+
+        var properties = new RDFGraph([], {
+            url: function() { return JSON_ROOT + "properties" },
         });
 
         var displayedEntities = new RDFGraph([], {
@@ -580,27 +837,56 @@ var frontend = (function() {
             }
         });
 
+        var contentpaneView = new ContentPaneView({
+            router: router,
+            id: "contentpane",
+        });
+
+        var entityDetailView = new EntityDetailView({
+            router: router,
+            model: entitySearchModel,
+            entities: entities,
+            properties: properties,
+        });
+
         searchModel.on("change", function(searchModel) {
             this.navigate("search/" + searchModel.serialize(), { trigger: false, replace: true });
         }, router);
 
         router.on('route:frontpage', function(search) {
             if (search) {
+                console.log("deserializing frontpage");
                 searchModel.set(this.deserialize(search));
             } else {
                 searchModel.set(searchModel.defaults);
             }
 
             $("#column123,#column12,#column23").hide();
-            $("#column1").html(searchView.render().el);
-            $("#column2").html(contentView.render().el);
-            $("#column3").html(entityView.render().el);
+            contentpaneView.detach();
+            searchView.attach("#column1");
+            contentView.attach("#column2");
+            entityView.attach("#column3");
             $("#column1,#column2,#column3").show();
+
         }, searchModel);
+
+        router.on('route:viewentity', function(estring) {
+            console.log("deserializing viewentity");
+            entitySearchModel.set(entitySearchModel.deserialize(estring));
+
+            $("#column123,#column1,#column2,#column23").hide();
+            searchView.detach();
+            entityView.detach();
+            contentpaneView.attach("#column12");
+            entityDetailView.append("#column3");
+            contentView.append("#column3");
+            $("#column12,#column3").show();
+        }, entitySearchModel);
 
         Backbone.history.start();
 
         _.defer(function() {
+            properties.fetch();
             displayedEntities.fetch();
             entities.fetch();
             photographs.fetch();

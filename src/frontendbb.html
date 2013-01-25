@@ -453,6 +453,28 @@
                 </div>
             </div>
         </script>
+        <script type="text/template" id="contentpaneTemplate">
+            <h2 class="columntitle"></h2>
+            <div class="contentpanetabs span-16">
+                <span type="content" class="button tab">Related Content</span>
+                <span type="network" class="button tab">Related Network</span>
+                <span type="timeline" class="button tab">Related Timeline</span>
+            </div>
+            <div class="content span-16"><div/>
+        </script>
+        <script type="text/template" id="entitydetailTemplate">
+            <h2 class="columntitle span-8 last">About Entity</h2>
+            <div class="entitydescription span-8 last">
+                <div class="propertylist"></div>
+            </div>
+        </script>
+        <script type="text/template" id="entitydetailItemTemplate">
+            <div class="propertypair span-8 last">
+                <span class="propertylabel span-3"><%= label %></span>
+                <span class="propertyvalue span-5 last" type="text"><%= value %></span>
+            </div>
+        </script>
+
 
         <script type="text/javascript">
             $(function() {
