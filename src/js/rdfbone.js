@@ -89,7 +89,53 @@
 
     SubCollection.extend = Collection.extend;
 
+    /*
+     * WARNING: This is not working yet.
+     * */
+    var UnionCollection = function(baseCollections, options) {
+        options || (options = {})
+        if (options.predicate) this.predicate = options.predicate;
+        this.baseCollections = baseCollections;
+
+        Collection.apply(this, [[], options]);
+        this._doReset();
+        this.bindToBaseCollections();
+    }
+
+    _.extend(UnionCollection.prototype, Collection.prototype, {
+        _doReset : function(collection, options) {
+            console.log("resetting union");
+            console.log(this.baseCollections);
+            console.log(_.pluck(this.baseCollections[0], 'models'));
+            console.log(_.union(_.pluck(this.baseCollections, 'models')));
+            this.reset(_.union(_.pluck(this.baseCollections, 'models')), options);
+        },
+
+        _doAdd : function(model, collection, options) {
+            this.add(model, options);
+        },
+
+        _doRemove : function(model, collection, options) {
+            if (!_.any(this.baseCollections, function(collection) {
+                return collection.get(model);
+            }, this)) {
+                this.remove(model, _.omit(options, 'index'));
+            }
+        },
+
+        bindToBaseCollections : function() {
+            _.each(this.baseCollections, function(collection) {
+                collection.on("add", this._doAdd, this);
+                collection.on("remove", this._doRemove, this);
+                collection.on("reset", this._doReset, this);
+            }, this);
+        },
+    });
+
+    UnionCollection.extend = UnionCollection.extend;
+
     Backbone.RDFGraph = RDFGraph;
     Backbone.RDFDescription = RDFDescription;
     Backbone.SubCollection = SubCollection;
+    Backbone.UnionCollection = UnionCollection;
 })(Backbone, $, _);
