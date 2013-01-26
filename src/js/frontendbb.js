@@ -29,6 +29,7 @@ var frontend = (function() {
     var QA_LABEL = "http://qldarch.net/ns/rdf/2012-06/terms#label";
     var QA_EDITABLE = "http://qldarch.net/ns/rdf/2012-06/terms#editable";
     var QA_SYSTEM_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#systemLocation";
+    var QA_EXTERNAL_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#externalLocation";
     var QA_DISPLAY_PRECIDENCE = "http://qldarch.net/ns/rdf/2012-06/terms#displayPrecedence";
 
     var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
@@ -710,6 +711,13 @@ var frontend = (function() {
         className: "contentpane",
         template: "#contentpaneTemplate",
 
+        initialize: function(options) {
+            options || (options = {});
+            ToplevelView.prototype.initialize.call(this, options);
+
+            this.infoTemplate = _.template($("#infopanelTemplate").html());
+        },
+
         events: {
             "click span"   : "_selecttab"
         },
@@ -719,15 +727,17 @@ var frontend = (function() {
 
             this.$el.html(this.template());
             this._update();
+            this.$(".button:first").click();
             return this;
         },
 
         _selecttab: function(event) {
-            console.log("Tab clicked: " + $(event.target).attr("type"));
+            this.$(".content").html(this.infoTemplate({
+                message: $(event.target).attr("type") + " Tab disabled pending deploying relatedTo inferencing",
+            }));
         },
 
         _update: function() {
-            
         },
 
     });
@@ -738,6 +748,8 @@ var frontend = (function() {
         initialize: function(options) {
             options || (options = {});
             ToplevelView.prototype.initialize.call(this, options);
+
+            this.itemTemplate = _.template($("#entitydetailItemTemplate").html());
 
             this.entities = options.entities;
             this.properties = options.properties;
@@ -850,6 +862,97 @@ var frontend = (function() {
                     this.$(".columntitle").text("Unknown Image");
                     this.$(".mainimage").html(this.infoTemplate({
                         message: "Content not found (" + this.model.get('selection') + ")",
+                    }));
+                }
+            }
+        },
+
+        // FIXME: This is slightly ridiculous. I should introduce the ViewModel concept of
+        // derivied for views and then this can be a direct model application.
+        _updateContentDescription: function() {
+            var contentId = this.model.get('selection');
+            var type = this.model.get('type');
+            if (contentId && type) {
+                console.log(this.content[type]);
+                var newContent = this.content[type].get(contentId);
+                console.log(newContent);
+                if (newContent) {
+                    console.log(this.contentDescription);
+                    if (newContent !== this.contentDescription) {
+                        this.contentDescription = newContent;
+                        this._update();
+                    }
+                } else {
+                    this.contentDescription = undefined;
+                    this._update();
+                }
+            } else {
+                this.contentDescription = undefined;
+                this._update();
+            }
+        },
+    });
+
+    var TranscriptView = ToplevelView.extend({
+        className: "interviewpane",
+        template: "#interviewTemplate",
+
+        initialize: function(options) {
+            options || (options = {});
+            ToplevelView.prototype.initialize.call(this, options);
+
+            this.transcriptTemplate = _.template($("#transcriptTemplate").html());
+            this.infoTemplate = _.template($("#infopanelTemplate").html());
+            this.content = options.content;
+            this.contentDescription = undefined;
+
+            this.model.on("change", this._updateContentDescription);
+            _.each(_.values(this.content), function(collection) {
+                collection.on("reset", this._updateContentDescription, this)
+            }, this);
+        },
+
+        render: function() {
+            ToplevelView.prototype.render.call(this);
+
+            this.$el.html(this.template());
+            this._update();
+            return this;
+        },
+
+        _update: function() {
+            if (this.attached) {
+                if (this.contentDescription) {
+                    if (this.$(".audiodiv").length != 0 &&
+                            this.contentDescription.id === this.$(".audiodiv").data("uri")) {
+                        return;
+                    }
+
+                    /*
+                        label: this.contentDescription.get(QA_LABEL),
+                        systemlocation: this.contentDescription.get(QA_SYSTEM_LOCATION),
+                        uri: this.contentDescription.id,
+                    */
+
+                    var audiocontrolid = _.uniqueId("audiocontrol");
+                    this.$(".interviewplayer div.info").remove();
+                    this.$(".columntitle").text(that.contentDescription.get(DCT_TITLE));
+                    this.$(".interviewplayer").html(this.transcriptTemplate({
+                        audiocontrolid: audiocontrolid,
+                        audiosrc: this.contentDescription.get(QA_EXTERNAL_LOCATION),
+                    }));
+                    // NOT WORKING - To get tis working
+
+                    var that = this;
+                    this.$(".mainimage").children("a:first").fadeOut("slow", function() {
+                        that.$(".mainimage").children("a:last").fadeIn("slow", function() {
+                            $(this).siblings().remove();
+                        });
+                    });
+                } else {
+                    this.$(".columntitle").text("Unknown Interview");
+                    this.$(".interviewplayer").html(this.infoTemplate({
+                        message: "Interview not found (" + this.model.get('selection') + ")",
                     }));
                 }
             }
@@ -1003,6 +1106,15 @@ var frontend = (function() {
             },
         });
 
+        /*
+        var transcriptView = new TranscriptView({
+            router: router,
+            model: contentSearchModel,
+            content: {
+                "http://qldarch.net/ns/rdf/2012-06/terms#Interview": interviews,
+            },
+        });
+*/
         searchModel.on("change", function(searchModel) {
             this.navigate("search/" + searchModel.serialize(), { trigger: false, replace: true });
         }, router);
@@ -1053,6 +1165,20 @@ var frontend = (function() {
             $("#column1,#column23").show();
         }, contentSearchModel);
 
+        router.on('route:interview', function(id) {
+            console.log("deserializing interview");
+            contentSearchModel.set(contentSearchModel.deserialize(id));
+
+            $("#column12,#column1,#column2,#column3, #column23").hide();
+            searchView.detach();
+            entityView.detach();
+            contentpaneView.detach();
+            entityDetailView.detach();
+            contentView.detach();
+            imageContentView.detach();
+            $("#column123").show();
+        }, contentSearchModel);
+
         Backbone.history.start();
 
         _.defer(function() {
@@ -1071,6 +1197,7 @@ var frontend = (function() {
             "search(/*search)": "frontpage",
             "entity(/*id)": "viewentity",
             "viewimage(/*id)": "viewimage",
+            "interview(/*id)": "viewimage",
         }
     });
 

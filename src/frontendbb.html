@@ -456,9 +456,9 @@
         <script type="text/template" id="contentpaneTemplate">
             <h2 class="columntitle"></h2>
             <div class="contentpanetabs span-16">
-                <span type="content" class="button tab">Related Content</span>
-                <span type="network" class="button tab">Related Network</span>
-                <span type="timeline" class="button tab">Related Timeline</span>
+                <span type="Content" class="button tab">Related Content</span>
+                <span type="Network" class="button tab">Related Network</span>
+                <span type="Timeline" class="button tab">Related Timeline</span>
             </div>
             <div class="content span-16"></div>
         </script>
@@ -486,6 +486,39 @@
         </script>
         <script type="text/template" id="infopanelTemplate">
             <div class="info"><%= message %></div>
+        </script>
+        <script type="text/template" id="interviewTemplate">
+            <div class="span-18">
+                <h2 class="columntitle">Unknown Interview</h2>
+                <h3>Conducted on unknown date</h3>
+            </div>
+            <div class="returnbutton span-6 last">Front page...</div>
+            <div class="interviewplayer span-24"></div>
+        </script>
+        <!-- target .content -->
+        <script type="text/template" id="transcriptTemplate">
+            <div class="audiodiv" class="span-8" data-uri="<%= uri %>">
+                <audio id="<%= audiocontrolid %>" class="span-8" controls="controls">
+                    <source src="<%= audiosrc %>" type="audio/ogg">
+                </audio>
+                <div class="transcript" class="transcript span-8">
+            </div>
+            <div class="span-16 last">
+                <div class="contentpanetabs span-16">
+                    <span type="Search" class="button tab">Search Transcript</span>
+                </div>
+                <div class="content span-16">
+                    <div class="searchtranscriptpane span-16 last" style="margin-top:-10px">
+                        <div class="span-16 last">
+                            <input class="searchbox span-8" type="text" value="" placeHolder="Search Transcript"/>
+                        </div>
+                        <div class="searchresults span-16 last">
+                            <div class="entitylisttitle">Utterances</div>
+                            <div class="resultlist"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </script>
         <script type="text/javascript">
             $(function() {
