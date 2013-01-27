@@ -30,6 +30,7 @@ var frontend = (function() {
     var QA_EDITABLE = "http://qldarch.net/ns/rdf/2012-06/terms#editable";
     var QA_SYSTEM_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#systemLocation";
     var QA_EXTERNAL_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#externalLocation";
+    var QA_TRANSCRIPT_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#transcriptLocation";
     var QA_DISPLAY_PRECIDENCE = "http://qldarch.net/ns/rdf/2012-06/terms#displayPrecedence";
 
     var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
@@ -114,9 +115,7 @@ var frontend = (function() {
         },
 
         deserialize: function(string) {
-            console.log(string);
             var components = string.split("/");
-            console.log(components);
             if (components.length != 2) {
                 return this.defaults;
             } else {
@@ -436,8 +435,10 @@ var frontend = (function() {
             });
             
             if (newSelection) {
-                this.router.navigate("viewimage/" + this.selection.serialize(),
-                        { trigger: true, replace: !this.recordroute });
+                console.log(this.router.contentViews);
+                console.log(this.type.id);
+                this.router.navigate(this.router.contentViews[this.type.id] +
+                        this.selection.serialize(), { trigger: true, replace: !this.recordroute });
             } else {
                 this.router.navigate("", { trigger: true, replace: false });
             }
@@ -776,7 +777,6 @@ var frontend = (function() {
                 $propertylist.empty();
                 _.each(this.entity.predicates(), function(predicate) {
                     var property = this.properties.get(predicate);
-                    console.log(property.toJSON());
                     if (property.get(QA_DISPLAY)) {
                         $propertylist.append(this.itemTemplate({
                             label: this.properties.get(predicate).get(QA_LABEL),
@@ -872,12 +872,9 @@ var frontend = (function() {
         _updateContentDescription: function() {
             var contentId = this.model.get('selection');
             var type = this.model.get('type');
-            if (contentId && type) {
-                console.log(this.content[type]);
+            if (contentId && type && _.contains(_(this.content).keys(), type)) {
                 var newContent = this.content[type].get(contentId);
-                console.log(newContent);
                 if (newContent) {
-                    console.log(this.contentDescription);
                     if (newContent !== this.contentDescription) {
                         this.contentDescription = newContent;
                         this._update();
@@ -903,6 +900,7 @@ var frontend = (function() {
 
             this.transcriptTemplate = _.template($("#transcriptTemplate").html());
             this.infoTemplate = _.template($("#infopanelTemplate").html());
+            this.spinnerTemplate = _.template($("#spinnerTemplate").html());
             this.content = options.content;
             this.contentDescription = undefined;
 
@@ -928,27 +926,37 @@ var frontend = (function() {
                         return;
                     }
 
-                    /*
-                        label: this.contentDescription.get(QA_LABEL),
-                        systemlocation: this.contentDescription.get(QA_SYSTEM_LOCATION),
-                        uri: this.contentDescription.id,
-                    */
-
                     var audiocontrolid = _.uniqueId("audiocontrol");
                     this.$(".interviewplayer div.info").remove();
-                    this.$(".columntitle").text(that.contentDescription.get(DCT_TITLE));
+                    this.$(".columntitle").text(this.contentDescription.get(DCT_TITLE));
                     this.$(".interviewplayer").html(this.transcriptTemplate({
+                        uri: this.contentDescription.id,
                         audiocontrolid: audiocontrolid,
                         audiosrc: this.contentDescription.get(QA_EXTERNAL_LOCATION),
                     }));
-                    // NOT WORKING - To get tis working
-
-                    var that = this;
-                    this.$(".mainimage").children("a:first").fadeOut("slow", function() {
-                        that.$(".mainimage").children("a:last").fadeIn("slow", function() {
-                            $(this).siblings().remove();
+                    this.$(".transcript").html(this.spinnerTemplate());
+                    var transcriptURL = this.contentDescription.get(QA_TRANSCRIPT_LOCATION);
+                    if (transcriptURL) {
+                        var that = this;
+                        console.log("Fetching " + transcriptURL);
+                        $.get(transcriptURL).done(function(transcript) {
+                            console.log("fetch success: " + transcript);
+                        }).fail(function() {
+                            console.log("fetch failure");
                         });
-                    });
+
+                        $.getJSON(transcriptURL).success(function(transcript) {
+                            that.linkAndPlayInterview(transcript, audiocontrolid);
+                        }).error(function() {
+                            that.$(".transcript").html(that.infoTemplate({
+                                message: "Error fetching transcript (" + transcriptURL + ")",
+                            }));
+                        });
+                    } else {
+                        this.$(".transcript").html(this.infoTemplate({
+                            message: "No known transcript for this interview",
+                        }));
+                    }
                 } else {
                     this.$(".columntitle").text("Unknown Interview");
                     this.$(".interviewplayer").html(this.infoTemplate({
@@ -964,11 +972,8 @@ var frontend = (function() {
             var contentId = this.model.get('selection');
             var type = this.model.get('type');
             if (contentId && type) {
-                console.log(this.content[type]);
                 var newContent = this.content[type].get(contentId);
-                console.log(newContent);
                 if (newContent) {
-                    console.log(this.contentDescription);
                     if (newContent !== this.contentDescription) {
                         this.contentDescription = newContent;
                         this._update();
@@ -981,6 +986,58 @@ var frontend = (function() {
                 this.contentDescription = undefined;
                 this._update();
             }
+        },
+
+        linkAndPlayInterview: function(transcript, audiocontrolid) {
+            var transcriptdiv = this.$(".transcript");
+            transcriptdiv.empty();
+
+            function subtitleUpdater(jqElement, offset, show) {
+                var toppos = jqElement.position().top - offset;
+                return function(options) {
+                    if (show) {
+                        jqElement.animate({"opacity": "1.0"});
+                        transcriptdiv.animate({"scrollTop": toppos - 50}, function() {
+                            jqElement.animate({"opacity": "1.0"});
+                        });
+                    } else {
+                        transcriptdiv.stop();
+                        jqElement.animate({"opacity": "0.5"});
+                    }
+                };
+            }
+
+            // FIXME: This needs to be extracted into a template.
+            console.log("creating popcorn instance from: " + audiocontrolid);
+            var popcorn = Popcorn("#" + audiocontrolid);
+            for (var i = 0; i < transcript.exchanges.length; i++) {
+                var curr = transcript.exchanges[i];
+                var next = transcript.exchanges[i+1];
+
+                var start = Math.max(0.5, Popcorn.util.toSeconds(curr.time)) - 0.5;
+                var end = next ? Popcorn.util.toSeconds(next.time) - 0.5 : popcorn.duration();
+
+                var speakerdiv = $('<div class="speaker" />').text(curr.speaker);
+                var speechdiv = $('<div class="speech" />').text(curr.transcript);
+
+                var subtitlediv = $('<div class="subtitle" data-time="' + curr.time + '" style="display:block;opacity:0.5"/>');
+                subtitlediv.data("start", start).data("end", end);
+                subtitlediv.append(speakerdiv).append(speechdiv);
+                subtitlediv.click(function() {
+                    popcorn.currentTime($(this).data("start"));
+                });
+
+                transcriptdiv.append(subtitlediv);
+
+                popcorn.code({
+                    start: start,
+                    end: end,
+                    onStart: subtitleUpdater(subtitlediv, transcriptdiv.position().top, true),
+                    onEnd: subtitleUpdater(subtitlediv, transcriptdiv.position().top, false)
+                });
+            }
+
+            popcorn.play();
         },
     });
 
@@ -1106,7 +1163,6 @@ var frontend = (function() {
             },
         });
 
-        /*
         var transcriptView = new TranscriptView({
             router: router,
             model: contentSearchModel,
@@ -1114,23 +1170,24 @@ var frontend = (function() {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Interview": interviews,
             },
         });
-*/
+
         searchModel.on("change", function(searchModel) {
             this.navigate("search/" + searchModel.serialize(), { trigger: false, replace: true });
         }, router);
 
         router.on('route:frontpage', function(search) {
             if (search) {
-                console.log("deserializing frontpage");
                 searchModel.set(this.deserialize(search));
             } else {
                 searchModel.set(searchModel.defaults);
             }
+            contentSearchModel.set(contentSearchModel.defaults);
 
             $("#column123,#column12,#column23").hide();
             contentpaneView.detach();
             imageContentView.detach();
             entityDetailView.detach();
+            transcriptView.detach();
             searchView.append("#column1");
             contentView.append("#column2");
             entityView.append("#column3");
@@ -1145,6 +1202,7 @@ var frontend = (function() {
             searchView.detach();
             entityView.detach();
             imageContentView.detach();
+            transcriptView.detach();
             contentpaneView.attach("#column12");
             entityDetailView.append("#column3");
             contentView.append("#column3");
@@ -1152,7 +1210,6 @@ var frontend = (function() {
         }, entitySearchModel);
 
         router.on('route:viewimage', function(id) {
-            console.log("deserializing viewimage");
             contentSearchModel.set(contentSearchModel.deserialize(id));
 
             $("#column123,#column2,#column3").hide();
@@ -1160,6 +1217,7 @@ var frontend = (function() {
             entityView.detach();
             contentpaneView.detach();
             entityDetailView.detach();
+            transcriptView.detach();
             contentView.append("#column1");
             imageContentView.append("#column23");
             $("#column1,#column23").show();
@@ -1170,13 +1228,16 @@ var frontend = (function() {
             contentSearchModel.set(contentSearchModel.deserialize(id));
 
             $("#column12,#column1,#column2,#column3, #column23").hide();
+            console.log("detaching");
             searchView.detach();
             entityView.detach();
             contentpaneView.detach();
             entityDetailView.detach();
             contentView.detach();
             imageContentView.detach();
+            transcriptView.append("#column123");
             $("#column123").show();
+            console.log("detached");
         }, contentSearchModel);
 
         Backbone.history.start();
@@ -1197,8 +1258,14 @@ var frontend = (function() {
             "search(/*search)": "frontpage",
             "entity(/*id)": "viewentity",
             "viewimage(/*id)": "viewimage",
-            "interview(/*id)": "viewimage",
-        }
+            "interview(/*id)": "interview",
+        },
+
+        contentViews: {
+            "http://qldarch.net/ns/rdf/2012-06/terms#Interview": "interview/",
+            "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": "viewimage/",
+            "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing": "viewimage/",
+        },
     });
 
     return {

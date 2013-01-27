@@ -146,7 +146,8 @@
                 padding-top: 10px;
             }
 
-            #transcript {
+            .transcript {
+                padding: 5px;
                 border-left: 1px solid lightgrey;
                 border-right: 1px solid lightgrey;
                 border-bottom: 1px solid lightgrey;
@@ -497,11 +498,11 @@
         </script>
         <!-- target .content -->
         <script type="text/template" id="transcriptTemplate">
-            <div class="audiodiv" class="span-8" data-uri="<%= uri %>">
+            <div class="audiodiv span-8" data-uri="<%= uri %>">
                 <audio id="<%= audiocontrolid %>" class="span-8" controls="controls">
                     <source src="<%= audiosrc %>" type="audio/ogg">
                 </audio>
-                <div class="transcript" class="transcript span-8">
+                <div class="transcript" class="transcript span-8"></div>
             </div>
             <div class="span-16 last">
                 <div class="contentpanetabs span-16">
@@ -519,6 +520,9 @@
                     </div>
                 </div>
             </div>
+        </script>
+        <script type="text/template" id="spinnerTemplate">
+            <img src="img/spinner.gif" alt="Spinner GIF" style="margin-left:100px;margin-top:50px;margin-bottom:50px"/>
         </script>
         <script type="text/javascript">
             $(function() {
