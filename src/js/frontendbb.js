@@ -901,13 +901,19 @@ var frontend = (function() {
             this.transcriptTemplate = _.template($("#transcriptTemplate").html());
             this.infoTemplate = _.template($("#infopanelTemplate").html());
             this.spinnerTemplate = _.template($("#spinnerTemplate").html());
+            this.transcriptResultTemplate = _.template($("#transcriptresultTemplate").html());
             this.content = options.content;
             this.contentDescription = undefined;
+            this.transcript = undefined;
 
             this.model.on("change", this._updateContentDescription);
             _.each(_.values(this.content), function(collection) {
                 collection.on("reset", this._updateContentDescription, this)
             }, this);
+        },
+
+        events: {
+            "keyup input.searchbox"   : "searchTranscript"
         },
 
         render: function() {
@@ -946,6 +952,7 @@ var frontend = (function() {
                         });
 
                         $.getJSON(transcriptURL).success(function(transcript) {
+                            that.transcript = transcript;
                             that.linkAndPlayInterview(transcript, audiocontrolid);
                         }).error(function() {
                             that.$(".transcript").html(that.infoTemplate({
@@ -1038,6 +1045,34 @@ var frontend = (function() {
             }
 
             popcorn.play();
+        },
+
+        searchTranscript: function(event) {
+            var val = this.$("input").val();
+            var results = [];
+            if (!this.transcript) {
+                this.$(".resultlist").html(this.infoTemplate({
+                    message: "No transcript loaded",
+                }));
+            } else {
+                if (event.keyCode == 13 || val.length > 3) {
+                    this.transcript.exchanges.forEach(function(exchange) {
+                        if (exchange.transcript.indexOf(val) != -1) {
+                            results.push(exchange);
+                        }
+                    });
+                }
+                this.$(".resultlist").empty();
+                _.each(results, function(result) {
+                    $(this.transcriptResultTemplate({
+                        speaker: result.speaker,
+                        time: result.time,
+                        transcript: result.transcript,
+                    })).appendTo(this.$(".resultlist")).click(function() {
+                            $('.subtitle[data-time="' + result.time + '"]').click();
+                        });
+                }, this);
+            }
         },
     });
 

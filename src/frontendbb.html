@@ -524,6 +524,12 @@
         <script type="text/template" id="spinnerTemplate">
             <img src="img/spinner.gif" alt="Spinner GIF" style="margin-left:100px;margin-top:50px;margin-bottom:50px"/>
         </script>
+        <script type="text/template" id="transcriptresultTemplate">
+            <div class="transcriptref">
+                <span class="transcriptlabel"><%= speaker %> @ <%= time %></span>
+                <span class="transcripttext"><%= transcript %></span>
+            </div>
+        </script>
         <script type="text/javascript">
             $(function() {
                 frontend.frontendOnReady();
