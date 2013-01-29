@@ -978,7 +978,7 @@ var frontend = (function() {
         _updateContentDescription: function() {
             var contentId = this.model.get('selection');
             var type = this.model.get('type');
-            if (contentId && type) {
+            if (contentId && type && this.content[type]) {
                 var newContent = this.content[type].get(contentId);
                 if (newContent) {
                     if (newContent !== this.contentDescription) {
