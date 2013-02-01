@@ -392,7 +392,7 @@ var frontend = (function() {
 
         render: function() {
             this.$el.html(this.template({
-                label: this.model.get(DCT_TITLE)
+                label: this._labeltext(this.model.get(DCT_TITLE))
             }));
 
             this.rendered = true;
@@ -424,6 +424,17 @@ var frontend = (function() {
         },
 
         _cascadeUpdate: function() {},
+
+        _labeltext: function(label) {
+            if (label.length < 40) return label;
+            var rawcut = Math.floor(label.length/2);
+            var lower = Math.min(18, rawcut);
+            var upper = Math.max(Math.floor(label.length/2), label.length - 18);
+            var front = label.substr(0, lower);
+            var back = label.substr(upper);
+            var result = front + '&hellip;' + back;
+            return result;
+        },
 
         _select: function() {
             var newSelection = (this.selection.get('selection') !== this.model.id) ?
