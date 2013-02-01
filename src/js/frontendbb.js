@@ -446,10 +446,13 @@ var frontend = (function() {
             });
             
             if (newSelection) {
-                console.log(this.router.contentViews);
-                console.log(this.type.id);
-                this.router.navigate(this.router.contentViews[this.type.id] +
-                        this.selection.serialize(), { trigger: true, replace: !this.recordroute });
+                console.log(this.router.currentRoute.route);
+                console.log(this.router.contentViews[this.type.id]);
+                if (this.router.currentRoute.route !== this.router.contentViews[this.type.id]) {
+                    this.router.navigate(this.router.contentViews[this.type.id] + "/" +
+                            this.selection.serialize(),
+                            { trigger: true, replace: !this.recordroute });
+                }
             } else {
                 this.router.navigate("", { trigger: true, replace: false });
             }
@@ -855,6 +858,14 @@ var frontend = (function() {
                         return;
                     }
 
+                    console.log("Content");
+                    console.log(this.content);
+                    console.log("ContentDescription");
+                    console.log(this.contentDescription);
+                    console.log("Model");
+                    console.log(this.model);
+                    console.trace();
+
                     this.$(".mainimage").append(this.imageTemplate({
                         label: this.contentDescription.get(QA_LABEL),
                         systemlocation: this.contentDescription.get(QA_SYSTEM_LOCATION),
@@ -955,13 +966,6 @@ var frontend = (function() {
                     var transcriptURL = this.contentDescription.get(QA_TRANSCRIPT_LOCATION);
                     if (transcriptURL) {
                         var that = this;
-                        console.log("Fetching " + transcriptURL);
-                        $.get(transcriptURL).done(function(transcript) {
-                            console.log("fetch success: " + transcript);
-                        }).fail(function() {
-                            console.log("fetch failure");
-                        });
-
                         $.getJSON(transcriptURL).success(function(transcript) {
                             that.transcript = transcript;
                             that.linkAndPlayInterview(transcript, audiocontrolid);
@@ -1026,7 +1030,6 @@ var frontend = (function() {
             }
 
             // FIXME: This needs to be extracted into a template.
-            console.log("creating popcorn instance from: " + audiocontrolid);
             var popcorn = Popcorn("#" + audiocontrolid);
             for (var i = 0; i < transcript.exchanges.length; i++) {
                 var curr = transcript.exchanges[i];
@@ -1149,6 +1152,7 @@ var frontend = (function() {
             comparator: QA_DISPLAY_PRECIDENCE,
         });
 
+        /*
         searchModel.on("change", function(model) {
             console.log("\tCHANGE:SEARCHMODEL: " + JSON.stringify(model.toJSON()));
         });
@@ -1160,7 +1164,7 @@ var frontend = (function() {
         entities.on("reset", function(collection) {
             console.log("\tRESET:ENTITIES: " + collection.length);
         });
-
+*/
         var contentView = new DigitalContentView({
             router: router,
             id: "maincontent",
@@ -1270,11 +1274,9 @@ var frontend = (function() {
         }, contentSearchModel);
 
         router.on('route:interview', function(id) {
-            console.log("deserializing interview");
             contentSearchModel.set(contentSearchModel.deserialize(id));
 
             $("#column12,#column1,#column2,#column3, #column23").hide();
-            console.log("detaching");
             searchView.detach();
             entityView.detach();
             contentpaneView.detach();
@@ -1283,7 +1285,6 @@ var frontend = (function() {
             imageContentView.detach();
             transcriptView.append("#column123");
             $("#column123").show();
-            console.log("detached");
         }, contentSearchModel);
 
         Backbone.history.start();
@@ -1299,6 +1300,11 @@ var frontend = (function() {
     }
 
     var QldarchRouter = Backbone.Router.extend({
+        initialize: function(options) {
+            console.log("Router: initialized");
+            Backbone.history.on("route", this.onroute, this);
+        },
+
         routes: {
             "": "frontpage",
             "search(/*search)": "frontpage",
@@ -1308,9 +1314,17 @@ var frontend = (function() {
         },
 
         contentViews: {
-            "http://qldarch.net/ns/rdf/2012-06/terms#Interview": "interview/",
-            "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": "viewimage/",
-            "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing": "viewimage/",
+            "http://qldarch.net/ns/rdf/2012-06/terms#Interview": "interview",
+            "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": "viewimage",
+            "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing": "viewimage",
+        },
+
+        currentRoute: {},
+
+        onroute: function(router, route, params) {
+            console.log("route called: " + route);
+            this.currentRoute.route = route;
+            this.currentRoute.params = params;
         },
     });
 
