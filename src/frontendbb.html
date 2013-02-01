@@ -76,8 +76,8 @@
                 height: 147px;
             }
 
-            .entity.final,
-            .contenttype.final {
+            .typeview:last-of-type .entity,
+            .typeview:last-of-type .contenttype {
                 border-bottom: 1px solid lightgrey;
                 margin-bottom: 10px;
             }
@@ -94,7 +94,7 @@
 
             .entitylist,
             .contentlist {
-                overflow-y: auto;
+                overflow-y: scroll;
                 padding-top: 5px;
                 padding-bottom: 5px;
                 padding-left: 20px;
@@ -111,8 +111,8 @@
                 height:110px;
             }
 
-            .entitylist :nth-child(2n-1),
-            .contentlist :nth-child(2n-1) {
+            .entitylist :nth-of-type(2n-1),
+            .contentlist :nth-of-type(2n-1) {
                 background: #e5e5e5;
             }
 
@@ -146,7 +146,8 @@
                 padding-top: 10px;
             }
 
-            #transcript {
+            .transcript {
+                padding: 5px;
                 border-left: 1px solid lightgrey;
                 border-right: 1px solid lightgrey;
                 border-bottom: 1px solid lightgrey;
@@ -384,18 +385,18 @@
             }
         </style>
         <script type="text/javascript" src="js/underscore.js"></script>
-        <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
+        <script type="text/javascript" src="js/jquery-1.9.0.js"></script>
         <script type="text/javascript" src="js/popcorn-complete.min.js"></script>
         <script type="text/javascript" src="js/d3.v2.js"></script>
         <script type="text/javascript" src="js/d3.layout.cloud.js"></script>
         <script type="text/javascript" src="js/wordgrams.js"></script>
         <script type="text/javascript" src="js/storyjs-embed.js"></script>
-        <script type="text/javascript" src="backbone.js"></script>
-        <script type="text/javascript" src="js/foo.js"></script>
+        <script type="text/javascript" src="js/backbone.js"></script>
 
         <script type="text/javascript" src="js/networkgraph.js"></script>
         <script type="text/javascript" src="js/faketimelinedata.js"></script>
 
+        <script type="text/javascript" src="js/rdfbone.js"></script>
         <script type="text/javascript" src="js/frontendbb.js"></script>
 
     </head>
@@ -411,15 +412,12 @@
                 <a href="http://qldarch.net/?page_id=10">CONTACT</a>
             </div>
             <div id="primary" class="span-24">
-                <div id="column1" class="span-8"> </div>
-                <div id="column2" class="span-8"> </div>
-                <div id="column3" class="span-8 last">
-                    <div id="mainentities" class="span-8 last">
-                        <h2 class="columntitle span-8 last">People and Things</h2>
-                        <div id="entitydiv" class="span-8 last">
-                        </div>
-                    </div>
-                </div>
+                <div id="column123" class="span-24"></div>
+                <div id="column12" class="span-16"></div>
+                <div id="column1" class="span-8"></div>
+                <div id="column2" class="span-8"></div>
+                <div id="column3" class="span-8 last"></div>
+                <div id="column23" class="span-16 last"></div>
             </div>
         </div>
         <script type="text/template" id="frontpageTemplate">
@@ -434,13 +432,104 @@
                 <div class="contentlist"></div>
             </div>
         </script>
+        <script type="text/template" id="itemTemplate">
+            <%= label %>
+        </script>
         <script type="text/template" id="searchdivTemplate">
             <h2 class="columntitle span-8 last">General Search</h2>
             <div id="searchdiv" class="span-8 last">
                 <input class="span-8 last" type="text" value="" placeHolder="Search Content, People and Things"/>
             </div>
         </script>
-
+        <script type="text/template" id="entityContentTemplate">
+            <h2 class="columntitle span-8 last">People and Things</h2>
+            <div id="entitydiv" class="span-8 last"></div>
+        </script>
+        <script type="text/template" id="entitytypeTemplate">
+            <div class="entity" data-uri="<%= uri %>">
+                <input class="searchbox span-5" type="text" placeHolder="Search <%= label %>"/>
+                <div class="entityworking span-8 last">
+                    <div class="entitylisttitle"><%= label %></div>
+                    <div class="entitylist"></div>
+                </div>
+            </div>
+        </script>
+        <script type="text/template" id="contentpaneTemplate">
+            <h2 class="columntitle"></h2>
+            <div class="contentpanetabs span-16">
+                <span type="Content" class="button tab">Related Content</span>
+                <span type="Network" class="button tab">Related Network</span>
+                <span type="Timeline" class="button tab">Related Timeline</span>
+            </div>
+            <div class="content span-16"></div>
+        </script>
+        <script type="text/template" id="entitydetailTemplate">
+            <h2 class="columntitle span-8 last">About Entity</h2>
+            <div class="entitydescription span-8 last">
+                <div class="propertylist"></div>
+            </div>
+        </script>
+        <script type="text/template" id="entitydetailItemTemplate">
+            <div class="propertypair span-8 last">
+                <span class="propertylabel span-3"><%= label %></span>
+                <span class="propertyvalue span-5 last" type="text"><%= value %></span>
+            </div>
+        </script>
+        <script type="text/template" id="imagecontentTemplate">
+            <h2 class="columntitle">Image</h2>
+            <div class="mainimage" class="span-16 last">
+            </div>
+        </script>
+        <script type="text/template" id="imageTemplate">
+            <a href="http://qldarch.net/omeka/archive/files/<%= systemlocation %>" style="display:none" data-uri="<%= uri %>">
+                <img class="span-16 last" src="http://qldarch.net/omeka/archive/files/<%= systemlocation %>" alt="<%= label %>"/>
+            </a>
+        </script>
+        <script type="text/template" id="infopanelTemplate">
+            <div class="info"><%= message %></div>
+        </script>
+        <script type="text/template" id="interviewTemplate">
+            <div class="span-18">
+                <h2 class="columntitle">Unknown Interview</h2>
+                <h3>Conducted on unknown date</h3>
+            </div>
+            <div class="returnbutton span-6 last">Front page...</div>
+            <div class="interviewplayer span-24"></div>
+        </script>
+        <!-- target .content -->
+        <script type="text/template" id="transcriptTemplate">
+            <div class="audiodiv span-8" data-uri="<%= uri %>">
+                <audio id="<%= audiocontrolid %>" class="span-8" controls="controls">
+                    <source src="<%= audiosrc %>" type="audio/ogg">
+                </audio>
+                <div class="transcript" class="transcript span-8"></div>
+            </div>
+            <div class="span-16 last">
+                <div class="contentpanetabs span-16">
+                    <span type="Search" class="button tab">Search Transcript</span>
+                </div>
+                <div class="content span-16">
+                    <div class="searchtranscriptpane span-16 last" style="margin-top:-10px">
+                        <div class="span-16 last">
+                            <input class="searchbox span-8" type="text" value="" placeHolder="Search Transcript"/>
+                        </div>
+                        <div class="searchresults span-16 last">
+                            <div class="entitylisttitle">Utterances</div>
+                            <div class="resultlist"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </script>
+        <script type="text/template" id="spinnerTemplate">
+            <img src="img/spinner.gif" alt="Spinner GIF" style="margin-left:100px;margin-top:50px;margin-bottom:50px"/>
+        </script>
+        <script type="text/template" id="transcriptresultTemplate">
+            <div class="transcriptref">
+                <span class="transcriptlabel"><%= speaker %> @ <%= time %></span>
+                <span class="transcripttext"><%= transcript %></span>
+            </div>
+        </script>
         <script type="text/javascript">
             $(function() {
                 frontend.frontendOnReady();
