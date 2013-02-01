@@ -133,28 +133,6 @@ function displayFrontPage(reload) {
 }
 
 
-function setupGeneralSearch() {
-    var GeneralSearchModel = Backbone.Model.extend();
-
-    var GeneralSearchView = Backbone.View.extend({
-        tagName: "div",
-        className: "generalsearch",
-        template: _.template($("#searchdivTemplate").html()),
-        
-        events: {
-            "keyup input"   : update
-        },
-
-        render: function() {
-            $(this.el).html(this.template({}));
-        }
-
-        update: function() {
-            model.set({'searchstring', this.$("input").val()});
-        }
-    });
-}
-
 function displaySearchDiv(parentDiv) {
     parentDiv.html('<div><input class="span-8 last" type="text" value="" placeHolder="Search Content, People and Things"/></div>');
 
@@ -170,25 +148,6 @@ function updateSearchDiv(val) {
     if ($("#searchdiv")) {
         $("#searchdiv input").val(val);
     }
-}
-
-function setupContentDisplay() {
-    var ContentDisplayModel = Backbone.Model.extend();
-
-    var ContentDisplay = Backbone.View.extend({
-        tagName: "div",
-        className: "contenttype",
-        template: _.template($("#contenttypeTemplate").html()),
-    
-        events: {},
-    
-        render: function() {
-            $(this.el).html(this.template({
-                    uri: model.get('uri'),
-                    label: model.get(QA_LABEL)
-                }));
-        }
-    });
 }
 
 function displayContentDiv(parentDiv) {

@@ -72,13 +72,13 @@ rdf:type qldarch:Architect ;
 foaf:firstName "James" ;
 foaf:lastName "Grose"
 .
-<#00050>
+<#00019>
 qldarch:label "Helen Mills" ;
 rdf:type qldarch:Architect ;
 foaf:firstName "Helen" ;
 foaf:lastName "Mills"
 .
-<#00051>
+<#00054>
 qldarch:label "Rob Riddel" ;
 rdf:type qldarch:Architect ;
 foaf:firstName "Robert" ;
@@ -129,7 +129,7 @@ qldarch:label "Curro Nutter and Charlton" ;
 rdf:type qldarch:Firm ;
 qldarch:firmName "Curro Nutter and Charlton"
 .
-<#00049>
+<#00028>
 qldarch:label "Maxwell Fry" ;
 rdf:type qldarch:Firm ;
 qldarch:firmName "Maxwell Fry"
