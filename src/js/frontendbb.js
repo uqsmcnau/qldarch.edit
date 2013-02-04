@@ -174,9 +174,7 @@ var frontend = (function() {
             }
 
             this.attached = true;
-            console.log("Calling append from ToplevelView append");
             this._update();
-            console.log("Called append from ToplevelView append");
 
             return this;
         },
@@ -341,7 +339,6 @@ var frontend = (function() {
         },
 
         _update: function() {
-            console.log("_update called on list");
             if (this.rendered) {
                 if (this.predicate(this.model)) {
                     if (!this.visible) {
@@ -457,7 +454,6 @@ var frontend = (function() {
         },
 
         _select: function() {
-            console.log("_select callback");
             var newSelection = (this.selection.get('selection') !== this.model.id) ?
                 this.model.id : undefined;
 
@@ -855,13 +851,19 @@ var frontend = (function() {
 
             this.imageTemplate = _.template($("#imageTemplate").html());
             this.infoTemplate = _.template($("#infopanelTemplate").html());
+            this.detailItemTemplate = _.template($("#entitydetailItemTemplate").html());
             this.content = options.content;
             this.contentDescription = undefined;
+            this.properties = options.properties,
 
             this.model.on("change", this._updateContentDescription);
             _.each(_.values(this.content), function(collection) {
                 collection.on("reset", this._updateContentDescription, this)
             }, this);
+        },
+
+        events: {
+            "click .imagedisplay"   : "_togglemetadata",
         },
 
         render: function() {
@@ -875,39 +877,60 @@ var frontend = (function() {
         _update: function() {
             if (this.attached) {
                 if (this.contentDescription) {
-                    if (this.$("a").length != 0 &&
-                            this.contentDescription.id === this.$("a").data("uri")) {
+                    if (this.$(".imagedisplay img").length != 0 &&
+                            this.contentDescription.id === this.$(".imagedisplay img").data("uri")) {
                         return;
                     }
 
-                    /*
                     console.log("Content");
                     console.log(this.content);
                     console.log("ContentDescription");
                     console.log(this.contentDescription);
                     console.log("Model");
                     console.log(this.model);
-                    console.trace();
-*/
+                    console.log("Properties");
+                    console.log(this.properties);
+
                     document.title = "QldaArch: " + this.contentDescription.get(DCT_TITLE);
 
-                    this.$(".mainimage").append(this.imageTemplate({
-                        label: this.contentDescription.get(QA_LABEL),
+                    this.$(".imagedisplay").append(this.imageTemplate({
+                        label: this.contentDescription.get(DCT_TITLE),
                         systemlocation: this.contentDescription.get(QA_SYSTEM_LOCATION),
                         uri: this.contentDescription.id,
                     }));
 
                     var that = this;
-                    this.$(".mainimage div.info").remove();
-                    this.$(".mainimage").children("a:first").fadeOut("slow", function() {
-                        that.$(".columntitle").text(that.contentDescription.get(DCT_TITLE));
-                        that.$(".mainimage").children("a:last").fadeIn("slow", function() {
-                            $(this).siblings().remove();
-                        });
+                    this.$(".imagedisplay div.info").remove();
+                    this.$(".imagedisplay").children("img:first")
+                        .fadeOut("slow", function() {
+                            that.$(".columntitle").text(that.contentDescription.get(DCT_TITLE));
+                            that.$(".imagedisplay").children("img:last")
+                                .fadeIn("slow", function() {
+                                    $(this).siblings("img").remove();
+                            });
                     });
+                    this.$(".propertylist").empty();
+                    _(this.contentDescription.predicates()).each(function(property) {
+                        var propMeta = this.properties.get(property);
+                        if (propMeta.get(QA_DISPLAY)) {
+                            this.$(".propertylist").append(this.detailItemTemplate({
+                                label: propMeta.get(QA_LABEL),
+                                value: this.contentDescription.get(property),
+                            }));
+                        }
+                    }, this);
+
+                    var link = 'http://qldarch.net/omeka/archive/files/' +
+                        this.contentDescription.get(QA_SYSTEM_LOCATION);
+
+                    this.$(".propertylist").append(this.detailItemTemplate({
+                        label: this.properties.get(QA_SYSTEM_LOCATION).get(QA_LABEL),
+                        value: '<a target="_blank" href="' + link + '">' + link + '</a>',
+                    }));
                 } else {
                     this.$(".columntitle").text("Unknown Image");
-                    this.$(".mainimage").html(this.infoTemplate({
+                    this.$(".imagedisplay div.info").remove();
+                    this.$(".imagedisplay").prepend(this.infoTemplate({
                         message: "Content not found (" + this.model.get('selection') + ")",
                     }));
                 }
@@ -934,6 +957,11 @@ var frontend = (function() {
                 this.contentDescription = undefined;
                 this._update();
             }
+        },
+
+        _togglemetadata: function() {
+            console.log("_toggle called");
+            $(".imagemetadata").fadeToggle();
         },
     });
 
@@ -1234,6 +1262,7 @@ var frontend = (function() {
         var imageContentView = new ImageContentView({
             router: router,
             model: contentSearchModel,
+            properties: properties,
             content: {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": photographs,
                 "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing": linedrawings
@@ -1329,7 +1358,6 @@ var frontend = (function() {
 
     var QldarchRouter = Backbone.Router.extend({
         initialize: function(options) {
-            console.log("Router: initialized");
             Backbone.history.on("route", this.onroute, this);
         },
 
@@ -1350,7 +1378,6 @@ var frontend = (function() {
         currentRoute: {},
 
         onroute: function(router, route, params) {
-            console.log("route called: " + route);
             this.currentRoute.route = route;
             this.currentRoute.params = params;
         },
