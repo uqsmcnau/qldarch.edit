@@ -174,7 +174,9 @@ var frontend = (function() {
             }
 
             this.attached = true;
+            console.log("Calling append from ToplevelView append");
             this._update();
+            console.log("Called append from ToplevelView append");
 
             return this;
         },
@@ -234,15 +236,17 @@ var frontend = (function() {
             this.content = options.content;
             this.search = options.search;
             this.selection = options.selection;
+            this.contentViews = [];
             if (options.initialize) { options.initialize.call(this); }
         },
 
         render: function() {
             ToplevelView.prototype.render.call(this);
             this.$el.html(this.template());
-            this.model.each(function(artifactType) {
+
+            this.contentViews = this.model.map(function(artifactType) {
                 if (artifactType.id && this.content[artifactType.id]) {
-                    var contentView = new ContentTypeView({
+                    return new ContentTypeView({
                         router: this.router,
                         model: this._subViewModel(artifactType),
                         type: artifactType,
@@ -250,10 +254,18 @@ var frontend = (function() {
                         search: this.search,
                         selection: this.selection,
                     });
-                    this.$('#contentdiv').append(contentView.render().el);
                 }
             }, this);
+
+            _(this.contentViews).each(function(view) {
+                this.$('#contentdiv').append(view.render().el);
+            }, this);
+
             return this;
+        },
+
+        _update: function() {
+            _(this.contentViews).each(function(view) { view._update(); });
         },
 
         _subViewModel: function(type) {
@@ -283,6 +295,11 @@ var frontend = (function() {
             this.rendered = false;
             this.visible = false;
             this.predicate = this._defaultPredicate;
+            this.itemViews = [];
+
+            this.recordroute = true;
+            this.router.on('route:viewimage', function () { this.recordroute = false }, this);
+            this.router.on('route:frontpage', function () { this.recordroute = true }, this);
         },
         
         events: { // Not used here, but maintained to prepare for refactoring with EntityTV.
@@ -297,6 +314,7 @@ var frontend = (function() {
 
             this.model.each(function(entityItem) {
                 var itemView = new ContentItemView({
+                    typeview: this,
                     router: this.router,
                     model: entityItem,
                     selection: this.selection,
@@ -323,6 +341,7 @@ var frontend = (function() {
         },
 
         _update: function() {
+            console.log("_update called on list");
             if (this.rendered) {
                 if (this.predicate(this.model)) {
                     if (!this.visible) {
@@ -344,6 +363,7 @@ var frontend = (function() {
             var searchstring = this.search.get('searchstring');
             _.each(this.itemviews, function(itemview) {
                 itemview.setPredicate(itemview.partialStringPredicator(searchstring));
+                itemview._update();
             }, this);
         },
 
@@ -372,6 +392,7 @@ var frontend = (function() {
             this.router = options.router;
             this.selection = options.selection;
             this.type = options.type;
+            this.typeview = options.typeview;
 
             _.bindAll(this);
             if (options.initialize) { options.initialize.call(this); }
@@ -381,9 +402,7 @@ var frontend = (function() {
             this.visible = false;
             this.predicate = this._defaultPredicate;
             this.selection.on("change", this._update);
-            this.recordroute = false;
-            this.router.on('route:viewimage', function () { this.recordroute = false }, this);
-            this.router.on('route:frontpage', function () { this.recordroute = true }, this);
+            this.offset = 0;
         },
         
         events: {
@@ -418,6 +437,7 @@ var frontend = (function() {
             }
             if (this.selection.get("selection") === this.model.id) {
                 this.$el.addClass("selected");
+                this.$el.parents(".contentlist").scrollTop(this.offset);
             } else {
                 this.$el.removeClass("selected");
             }
@@ -437,8 +457,11 @@ var frontend = (function() {
         },
 
         _select: function() {
+            console.log("_select callback");
             var newSelection = (this.selection.get('selection') !== this.model.id) ?
                 this.model.id : undefined;
+
+            this.offset = this.$el.parents(".contentlist").scrollTop();
 
             this.selection.set({
                 'selection': newSelection,
@@ -446,12 +469,10 @@ var frontend = (function() {
             });
             
             if (newSelection) {
-                console.log(this.router.currentRoute.route);
-                console.log(this.router.contentViews[this.type.id]);
                 if (this.router.currentRoute.route !== this.router.contentViews[this.type.id]) {
                     this.router.navigate(this.router.contentViews[this.type.id] + "/" +
                             this.selection.serialize(),
-                            { trigger: true, replace: !this.recordroute });
+                            { trigger: true, replace: !this.typeview.recordroute });
                 }
             } else {
                 this.router.navigate("", { trigger: true, replace: false });
@@ -786,6 +807,7 @@ var frontend = (function() {
 
         _update: function() {
             if (this.entity) {
+                document.title = "QldArch: " + this.entity.get(QA_LABEL);
                 this.$("h2").text("About " + this.entity.get(QA_LABEL));
                 var $propertylist = this.$(".propertylist");
                 $propertylist.empty();
@@ -858,6 +880,7 @@ var frontend = (function() {
                         return;
                     }
 
+                    /*
                     console.log("Content");
                     console.log(this.content);
                     console.log("ContentDescription");
@@ -865,6 +888,8 @@ var frontend = (function() {
                     console.log("Model");
                     console.log(this.model);
                     console.trace();
+*/
+                    document.title = "QldaArch: " + this.contentDescription.get(DCT_TITLE);
 
                     this.$(".mainimage").append(this.imageTemplate({
                         label: this.contentDescription.get(QA_LABEL),
@@ -953,6 +978,8 @@ var frontend = (function() {
                             this.contentDescription.id === this.$(".audiodiv").data("uri")) {
                         return;
                     }
+
+                    document.title = this.contentDescription.get(DCT_TITLE);
 
                     var audiocontrolid = _.uniqueId("audiocontrol");
                     this.$(".interviewplayer div.info").remove();
@@ -1232,6 +1259,7 @@ var frontend = (function() {
                 searchModel.set(searchModel.defaults);
             }
             contentSearchModel.set(contentSearchModel.defaults);
+            document.title = "Digital Archive of Queensland Architecture";
 
             $("#column123,#column12,#column23").hide();
             contentpaneView.detach();
