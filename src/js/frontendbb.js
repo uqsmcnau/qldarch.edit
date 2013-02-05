@@ -46,6 +46,7 @@ var frontend = (function() {
     var DCT_TITLE = "http://purl.org/dc/terms/title";
 
     var successDelay = 2000;
+    var logmultiple = true;
 
     var properties = { };
     var types = { };
@@ -307,7 +308,7 @@ var frontend = (function() {
         render: function() {
             this.$el.html(this.template({
                 uri: this.type.id,
-                label: this.type.get(QA_LABEL)
+                label: this.type.get1(QA_LABEL, logmultiple)
             }));
 
             this.model.each(function(entityItem) {
@@ -375,7 +376,6 @@ var frontend = (function() {
         },
 
         _setinput: function() {
-            //this.$("input").val(this.search.get('searchstring'));
             this._update();
         },
 
@@ -408,7 +408,7 @@ var frontend = (function() {
 
         render: function() {
             this.$el.html(this.template({
-                label: this._labeltext(this.model.get(DCT_TITLE))
+                label: this._labeltext(this.model.get1(DCT_TITLE, logmultiple))
             }));
 
             this.rendered = true;
@@ -494,10 +494,14 @@ var frontend = (function() {
                 var found = false;
                 _.each(val.split(/\W/), function(word) {
                     if (word !== "" && (
-                        this.model.get(DCT_TITLE) &&
-                        this.model.get(DCT_TITLE).toLowerCase().indexOf(word.toLowerCase()) != -1 ||
-                        this.model.get(RDFS_LABEL) &&
-                        this.model.get(RDFS_LABEL).toLowerCase().indexOf(word.toLowerCase()) != -1)) {
+                        this.model.get1(DCT_TITLE) &&
+                        _.any(this.model.geta(DCT_TITLE), function(title) {
+                            return title.toLowerCase().indexOf(word.toLowerCase()) != -1;
+                        }) ||
+                        this.model.get1(RDFS_LABEL) &&
+                        _.any(this.model.geta(RDFS_LABEL), function(label) {
+                            return label.toLowerCase().indexOf(word.toLowerCase()) != -1;
+                        }))) {
                             
                         found = true;
                     }
@@ -544,7 +548,7 @@ var frontend = (function() {
                 name: "entity subcollection",
                 tracksort: false,
                 predicate: function(model) {
-                        return model.get(RDF_TYPE) === type.id;
+                        return _(model.geta(RDF_TYPE)).contains(type.id);
                     },
                 comparator: QA_LABEL,
             });
@@ -581,7 +585,7 @@ var frontend = (function() {
         render: function() {
             this.$el.html(this.template({
                 uri: this.type.id,
-                label: this.type.get(QA_LABEL)
+                label: this.type.get1(QA_LABEL, true)
             }));
 
             this.model.each(function(entityItem) {
@@ -673,7 +677,7 @@ var frontend = (function() {
 
         render: function() {
             this.$el.html(this.template({
-                label: this.model.get(QA_LABEL)
+                label: this.model.get1(QA_LABEL, true)
             }));
 
             this.rendered = true;
@@ -720,10 +724,14 @@ var frontend = (function() {
                 var found = false;
                 _.each(val.split(/\W/), function(word) {
                     if (word !== "" && (
-                        this.model.get(QA_LABEL) &&
-                        this.model.get(QA_LABEL).toLowerCase().indexOf(word.toLowerCase()) != -1 ||
-                        this.model.get(RDFS_LABEL) &&
-                        this.model.get(RDFS_LABEL).toLowerCase().indexOf(word.toLowerCase()) != -1)) {
+                        this.model.get1(QA_LABEL) &&
+                        _.any(this.model.geta(QA_LABEL), function(label) {
+                            return label.toLowerCase().indexOf(word.toLowerCase()) != -1;
+                        }) ||
+                        this.model.get1(RDFS_LABEL) &&
+                        _.any(this.model.geta(RDFS_LABEL), function(label) {
+                            return label.toLowerCase().indexOf(word.toLowerCase()) != -1;
+                        }))) {
                             
                         found = true;
                     }
@@ -803,16 +811,16 @@ var frontend = (function() {
 
         _update: function() {
             if (this.entity) {
-                document.title = "QldArch: " + this.entity.get(QA_LABEL);
-                this.$("h2").text("About " + this.entity.get(QA_LABEL));
+                document.title = "QldArch: " + this.entity.get1(QA_LABEL, true);
+                this.$("h2").text("About " + this.entity.get1(QA_LABEL));
                 var $propertylist = this.$(".propertylist");
                 $propertylist.empty();
                 _.each(this.entity.predicates(), function(predicate) {
                     var property = this.properties.get(predicate);
-                    if (property.get(QA_DISPLAY)) {
+                    if (property.get1(QA_DISPLAY, true, true)) {
                         $propertylist.append(this.itemTemplate({
-                            label: this.properties.get(predicate).get(QA_LABEL),
-                            value: this.entity.get(predicate),
+                            label: this.properties.get(predicate).get1(QA_LABEL, true),
+                            value: this.entity.get1(predicate, logmultiple),
                         }));
                     }
                 }, this);
@@ -891,11 +899,11 @@ var frontend = (function() {
                     console.log("Properties");
                     console.log(this.properties);
 
-                    document.title = "QldaArch: " + this.contentDescription.get(DCT_TITLE);
+                    document.title = "QldaArch: " + this.contentDescription.get1(DCT_TITLE, logmultiple);
 
                     this.$(".imagedisplay").append(this.imageTemplate({
-                        label: this.contentDescription.get(DCT_TITLE),
-                        systemlocation: this.contentDescription.get(QA_SYSTEM_LOCATION),
+                        label: this.contentDescription.get1(DCT_TITLE),
+                        systemlocation: this.contentDescription.get1(QA_SYSTEM_LOCATION, true, true),
                         uri: this.contentDescription.id,
                     }));
 
@@ -903,7 +911,7 @@ var frontend = (function() {
                     this.$(".imagedisplay div.info").remove();
                     this.$(".imagedisplay").children("img:first")
                         .fadeOut("slow", function() {
-                            that.$(".columntitle").text(that.contentDescription.get(DCT_TITLE));
+                            that.$(".columntitle").text(that.contentDescription.get1(DCT_TITLE));
                             that.$(".imagedisplay").children("img:last")
                                 .fadeIn("slow", function() {
                                     $(this).siblings("img").remove();
@@ -912,10 +920,10 @@ var frontend = (function() {
                     this.$(".propertylist").empty();
                     _(this.contentDescription.predicates()).each(function(property) {
                         var propMeta = this.properties.get(property);
-                        if (propMeta.get(QA_DISPLAY)) {
+                        if (propMeta.get1(QA_DISPLAY, true, true)) {
                             this.$(".propertylist").append(this.detailItemTemplate({
-                                label: propMeta.get(QA_LABEL),
-                                value: this.contentDescription.get(property),
+                                label: propMeta.get1(QA_LABEL, logmultiple),
+                                value: this.contentDescription.get1(property, logmultiple),
                             }));
                         }
                     }, this);
@@ -924,7 +932,7 @@ var frontend = (function() {
                         this.contentDescription.get(QA_SYSTEM_LOCATION);
 
                     this.$(".propertylist").append(this.detailItemTemplate({
-                        label: this.properties.get(QA_SYSTEM_LOCATION).get(QA_LABEL),
+                        label: this.properties.get(QA_SYSTEM_LOCATION).get1(QA_LABEL, logmultiple),
                         value: '<a target="_blank" href="' + link + '">' + link + '</a>',
                     }));
                 } else {
@@ -1007,18 +1015,18 @@ var frontend = (function() {
                         return;
                     }
 
-                    document.title = this.contentDescription.get(DCT_TITLE);
+                    document.title = this.contentDescription.get1(DCT_TITLE, logmultiple);
 
                     var audiocontrolid = _.uniqueId("audiocontrol");
                     this.$(".interviewplayer div.info").remove();
-                    this.$(".columntitle").text(this.contentDescription.get(DCT_TITLE));
+                    this.$(".columntitle").text(this.contentDescription.get1(DCT_TITLE));
                     this.$(".interviewplayer").html(this.transcriptTemplate({
                         uri: this.contentDescription.id,
                         audiocontrolid: audiocontrolid,
-                        audiosrc: this.contentDescription.get(QA_EXTERNAL_LOCATION),
+                        audiosrc: this.contentDescription.get1(QA_EXTERNAL_LOCATION, true, true),
                     }));
                     this.$(".transcript").html(this.spinnerTemplate());
-                    var transcriptURL = this.contentDescription.get(QA_TRANSCRIPT_LOCATION);
+                    var transcriptURL = this.contentDescription.get(QA_TRANSCRIPT_LOCATION, true, true);
                     if (transcriptURL) {
                         var that = this;
                         $.getJSON(transcriptURL).success(function(transcript) {
@@ -1191,7 +1199,7 @@ var frontend = (function() {
             name: "artifacts",
             tracksort: false,
             predicate: function(model) {
-                    return model.get(RDFS_SUBCLASS_OF) === QA_DIGITAL_THING;
+                    return _(model.geta(RDFS_SUBCLASS_OF)).contains(QA_DIGITAL_THING);
                 },
 
             comparator: QA_DISPLAY_PRECIDENCE,
@@ -1201,10 +1209,15 @@ var frontend = (function() {
             name: "proper",
             tracksort: false,
             predicate: function(model) {
-                    return model.get(RDFS_SUBCLASS_OF) !== QA_DIGITAL_THING;
+                    return !_(model.geta(RDFS_SUBCLASS_OF)).contains(QA_DIGITAL_THING);
                 },
 
             comparator: QA_DISPLAY_PRECIDENCE,
+        });
+
+        interviews.on("reset", function(collection) {
+            console.log("\tRESET:INTERVIEWS: " + collection.length);
+            console.log(collection);
         });
 
         /*

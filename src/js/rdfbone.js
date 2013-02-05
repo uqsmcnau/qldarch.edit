@@ -1,4 +1,5 @@
 (function(Backbone, $, _, undefined) {
+    var Model = Backbone.Model;
     var RDFDescription = Backbone.Model.extend({
         idAttribute: "uri",
 
@@ -13,7 +14,27 @@
 
         objects: function() {
             return _.chain(this.toJSON()).values().flatten().value();
-        }
+        },
+
+        get: function(name) {
+            return Model.prototype.get.call(this, name);
+        },
+
+        geta: function(name) {
+            var result = Model.prototype.get.call(this, name);
+            return _.isArray(result) ? result : [ result ];
+        },
+
+        get1: function(name, logmultiple, logtrace) {
+            var result = this.geta(name);
+            if (logmultiple && result.length > 1) {
+                console.log("Multiple values found for " + this.id + " predicate(" + name + "): ['"
+                        + result.join("', '") + "']");
+                if (logtrace) console.trace();
+            }
+            return result[0];
+        },
+
     });
 
     // This should probably be a sub-class rather than sub-type of Collection.
