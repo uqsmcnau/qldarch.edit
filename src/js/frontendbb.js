@@ -371,8 +371,9 @@ var frontend = (function() {
         },
 
         _defaultPredicate: function(model) {
-            var searchtypes = this.search.get('searchtypes');
-            return _.contains(searchtypes, 'all') || _.contains(searchtypes, this.options.type.id);
+            return true;
+//            var searchtypes = this.search.get('searchtypes');
+//            return _.contains(searchtypes, 'all') || _.contains(searchtypes, this.options.type.id);
         },
 
         _setinput: function() {
@@ -890,15 +891,6 @@ var frontend = (function() {
                         return;
                     }
 
-                    console.log("Content");
-                    console.log(this.content);
-                    console.log("ContentDescription");
-                    console.log(this.contentDescription);
-                    console.log("Model");
-                    console.log(this.model);
-                    console.log("Properties");
-                    console.log(this.properties);
-
                     document.title = "QldaArch: " + this.contentDescription.get1(DCT_TITLE, logmultiple);
 
                     this.$(".imagedisplay").append(this.imageTemplate({
@@ -968,7 +960,6 @@ var frontend = (function() {
         },
 
         _togglemetadata: function() {
-            console.log("_toggle called");
             $(".imagemetadata").fadeToggle();
         },
     });
@@ -996,7 +987,8 @@ var frontend = (function() {
         },
 
         events: {
-            "keyup input.searchbox"   : "searchTranscript"
+            "keyup input.searchbox"   : "searchTranscript",
+            "click .returnbutton" : "toFrontpage"
         },
 
         render: function() {
@@ -1141,15 +1133,20 @@ var frontend = (function() {
                 }
                 this.$(".resultlist").empty();
                 _.each(results, function(result) {
-                    $(this.transcriptResultTemplate({
+                    var obj = $(this.transcriptResultTemplate({
                         speaker: result.speaker,
                         time: result.time,
-                        transcript: result.transcript,
-                    })).appendTo(this.$(".resultlist")).click(function() {
+                        transcript: _.escape(result.transcript),
+                    }).replace(/^\s*/, ''));
+                    obj.appendTo(this.$(".resultlist")).click(function() {
                             $('.subtitle[data-time="' + result.time + '"]').click();
                         });
                 }, this);
             }
+        },
+
+        toFrontpage: function() {
+            this.router.navigate("", { trigger: true, replace: false });
         },
     });
 
@@ -1215,11 +1212,7 @@ var frontend = (function() {
             comparator: QA_DISPLAY_PRECIDENCE,
         });
 
-        interviews.on("reset", function(collection) {
-            console.log("\tRESET:INTERVIEWS: " + collection.length);
-            console.log(collection);
-        });
-
+    
         /*
         searchModel.on("change", function(model) {
             console.log("\tCHANGE:SEARCHMODEL: " + JSON.stringify(model.toJSON()));
@@ -1228,11 +1221,11 @@ var frontend = (function() {
         photographs.on("reset", function(collection) {
             console.log("\tRESET:PHOTOGRAPHS: " + collection.length);
         });
-
+*/
         entities.on("reset", function(collection) {
             console.log("\tRESET:ENTITIES: " + collection.length);
         });
-*/
+
         var contentView = new DigitalContentView({
             router: router,
             id: "maincontent",
