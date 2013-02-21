@@ -32,6 +32,7 @@ var frontend = (function() {
     var QA_EXTERNAL_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#externalLocation";
     var QA_TRANSCRIPT_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#transcriptLocation";
     var QA_DISPLAY_PRECIDENCE = "http://qldarch.net/ns/rdf/2012-06/terms#displayPrecedence";
+    var QA_PREFERRED_IMAGE = "http://qldarch.net/ns/rdf/2012-06/terms#preferredImage";
 
     var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
     var RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
@@ -757,6 +758,14 @@ var frontend = (function() {
             ToplevelView.prototype.initialize.call(this, options);
 
             this.infoTemplate = _.template($("#infopanelTemplate").html());
+            this.imageTemplate = _.template($("#imageTemplate").html());
+
+            this.entities = options.entities;
+            this.photographs = options.photographs;
+
+            this.state = undefined;
+
+            this.model.on("change", this._updateContentDescription);
         },
 
         events: {
@@ -769,18 +778,64 @@ var frontend = (function() {
             this.$el.html(this.template());
             this._update();
             this.$(".button:first").click();
+
+            this._update();
             return this;
         },
 
         _selecttab: function(event) {
-            this.$(".content").html(this.infoTemplate({
-                message: $(event.target).attr("type") + " Tab disabled pending deploying relatedTo inferencing",
-            }));
+            this.state = $(event.target).attr("type");
+
+            this._update();
         },
 
         _update: function() {
+            if (this.state === "Content") {
+                console.log("Ping");
+                if (this.contentDescription) {
+                    this.$(".content").html(this.imageTemplate({
+                        label: this.contentDescription.get1(DCT_TITLE),
+                        systemlocation: this.contentDescription.get1(QA_SYSTEM_LOCATION, true, true),
+                        uri: this.contentDescription.id,
+                    }));
+                    this.$(".content img").fadeIn("slow");
+                } else {
+                    this.$(".content").html(this.infoTemplate({
+                        message: "No image available for architect",
+                    }));
+                }
+            } else {
+                this.$(".content").html(this.infoTemplate({
+                    message: this.state + " Tab disabled pending deploying relatedTo inferencing",
+                }));
+            }
         },
 
+        // FIXME: This is slightly ridiculous. I should introduce the ViewModel concept of
+        // derivied for views and then this can be a direct model application.
+        _updateContentDescription: function() {
+            this.contentDescription = undefined;
+            var entityId = this.model.get('entity');
+            console.log("entityId");
+            console.log(entityId);
+            if (entityId) {
+                var entity = this.entities.get(entityId);
+                console.log("entity");
+                console.log(entity);
+                if (entity) {
+                    var preferredImageURI = entity.get1(QA_PREFERRED_IMAGE);
+                    console.log("preferredImageURI");
+                    console.log(preferredImageURI);
+                    if (preferredImageURI) {
+                        console.log("this.photographs");
+                        console.log(this.photographs);
+                        this.contentDescription = this.photographs.get(preferredImageURI);
+                        console.log("this.contentDescription");
+                        console.log(this.contentDescription);
+                    }
+                }
+            }
+        },
     });
 
     var EntityDetailView = ToplevelView.extend({
@@ -818,11 +873,15 @@ var frontend = (function() {
                 $propertylist.empty();
                 _.each(this.entity.predicates(), function(predicate) {
                     var property = this.properties.get(predicate);
-                    if (property.get1(QA_DISPLAY, true, true)) {
-                        $propertylist.append(this.itemTemplate({
-                            label: this.properties.get(predicate).get1(QA_LABEL, true),
-                            value: this.entity.get1(predicate, logmultiple),
-                        }));
+                    if (property) {
+                        if (property.get1(QA_DISPLAY, true, true)) {
+                            $propertylist.append(this.itemTemplate({
+                                label: this.properties.get(predicate).get1(QA_LABEL, true),
+                                value: this.entity.get1(predicate, logmultiple),
+                            }));
+                        }
+                    } else {
+                        console.log("Property (" + predicate + ") not found in ontology");
                     }
                 }, this);
             } else {
@@ -912,7 +971,9 @@ var frontend = (function() {
                     this.$(".propertylist").empty();
                     _(this.contentDescription.predicates()).each(function(property) {
                         var propMeta = this.properties.get(property);
-                        if (propMeta.get1(QA_DISPLAY, true, true)) {
+                        if (!propMeta) {
+                            console.log("Property not found in ontology: " + property);
+                        } else if (propMeta.get1(QA_DISPLAY, true, true)) {
                             this.$(".propertylist").append(this.detailItemTemplate({
                                 label: propMeta.get1(QA_LABEL, logmultiple),
                                 value: this.contentDescription.get1(property, logmultiple),
@@ -1164,6 +1225,8 @@ var frontend = (function() {
 
         var contentSearchModel = new ContentSearchModel();
 
+        var entityRelatedContentModel = new ContentSearchModel();
+
         var properties = new RDFGraph([], {
             url: function() { return JSON_ROOT + "properties" },
         });
@@ -1256,6 +1319,10 @@ var frontend = (function() {
         var contentpaneView = new ContentPaneView({
             router: router,
             id: "contentpane",
+            related: entityRelatedContentModel,
+            model: entitySearchModel,
+            entities: entities,
+            photographs: photographs,
         });
 
         var entityDetailView = new EntityDetailView({
@@ -1263,6 +1330,7 @@ var frontend = (function() {
             model: entitySearchModel,
             entities: entities,
             properties: properties,
+            related: entityRelatedContentModel,
         });
 
         var imageContentView = new ImageContentView({
@@ -1272,6 +1340,16 @@ var frontend = (function() {
             content: {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": photographs,
                 "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing": linedrawings
+            },
+        });
+
+        var entityContentView = new ImageContentView({
+            router: router,
+            model: entityRelatedContentModel,
+            entityModel: entitySearchModel,
+            properties: properties,
+            content: {
+                "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": photographs,
             },
         });
 
