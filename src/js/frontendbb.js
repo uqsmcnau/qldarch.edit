@@ -37,6 +37,7 @@ var frontend = (function() {
     var QA_RELATED_TO = "http://qldarch.net/ns/rdf/2012-06/terms#relatedTo";
 
     var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
+    var OWL_OBJECT_PROPERTY = "http://www.w3.org/2002/07/owl#ObjectProperty";
     var RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
     var RDFS_SUBCLASS_OF = "http://www.w3.org/2000/01/rdf-schema#subClassOf";
     var RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
@@ -1060,10 +1061,18 @@ var frontend = (function() {
                         if (!propMeta) {
                             console.log("Property not found in ontology: " + property);
                         } else if (propMeta.get1(QA_DISPLAY, true, true)) {
-                            this.$(".propertylist").append(this.detailItemTemplate({
-                                label: propMeta.get1(QA_LABEL, logmultiple),
-                                value: this.contentDescription.get1(property, logmultiple),
-                            }));
+                            var value = this.contentDescription.get1(property, logmultiple),
+                            if (propMeta.geta("RDF_TYPE").contains(OWL_OBJECT_PROPERTY)) {
+                                this.$(".propertylist").append(this.detailItemTemplate({
+                                    label: propMeta.get1(QA_LABEL, logmultiple),
+                                    value: entities.get.(value).get1(QA_LABEL, logmultiple);
+                                }));
+                            } else {
+                                this.$(".propertylist").append(this.detailItemTemplate({
+                                    label: propMeta.get1(QA_LABEL, logmultiple),
+                                    value: value,
+                                }));
+                            }
                         }
                     }, this);
 
