@@ -1065,7 +1065,7 @@ var frontend = (function() {
                             if (propMeta.geta(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
                                 this.$(".propertylist").append(this.detailItemTemplate({
                                     label: propMeta.get1(QA_LABEL, logmultiple),
-                                    value: entities.get(value).get1(QA_LABEL, logmultiple);
+                                    value: entities.get(value).get1(QA_LABEL, logmultiple),
                                 }));
                             } else {
                                 this.$(".propertylist").append(this.detailItemTemplate({
