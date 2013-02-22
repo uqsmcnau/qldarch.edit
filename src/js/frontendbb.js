@@ -1062,7 +1062,7 @@ var frontend = (function() {
                             console.log("Property not found in ontology: " + property);
                         } else if (propMeta.get1(QA_DISPLAY, true, true)) {
                             var value = this.contentDescription.get1(property, logmultiple);
-                            if (propMeta.geta(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
+                            if (propMeta.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
                                 this.$(".propertylist").append(this.detailItemTemplate({
                                     label: propMeta.get1(QA_LABEL, logmultiple),
                                     value: entities.get(value).get1(QA_LABEL, logmultiple),

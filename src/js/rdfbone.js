@@ -25,6 +25,10 @@
             return _.isArray(result) ? result : [ result ];
         },
 
+        geta_: function(name) {
+            return _(geta(name));
+        },
+
         get1: function(name, logmultiple, logtrace) {
             var result = this.geta(name);
             if (logmultiple && result.length > 1) {
