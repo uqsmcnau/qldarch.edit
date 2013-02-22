@@ -1064,10 +1064,16 @@ var frontend = (function() {
                         } else if (propMeta.get1(QA_DISPLAY, true, true)) {
                             var value = this.contentDescription.get1(property, logmultiple);
                             if (propMeta.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
-                                this.$(".propertylist").append(this.detailItemTemplate({
-                                    label: propMeta.get1(QA_LABEL, logmultiple),
-                                    value: this.entities.get(value).get1(QA_LABEL, logmultiple),
-                                }));
+                                if (this.entities.get(value) &&
+                                        this.entities.get(value).get1(QA_LABEL)) {
+                                    this.$(".propertylist").append(this.detailItemTemplate({
+                                        label: propMeta.get1(QA_LABEL, logmultiple),
+                                        value: this.entities.get(value).get1(QA_LABEL, logmultiple),
+                                    }));
+                                } else {
+                                    console.log("ObjectProperty(" + property + ") failed resolve");
+                                    console.log(this.entities.get(value));
+                                }
                             } else {
                                 this.$(".propertylist").append(this.detailItemTemplate({
                                     label: propMeta.get1(QA_LABEL, logmultiple),
