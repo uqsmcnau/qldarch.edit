@@ -33,6 +33,8 @@ var frontend = (function() {
     var QA_TRANSCRIPT_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#transcriptLocation";
     var QA_DISPLAY_PRECIDENCE = "http://qldarch.net/ns/rdf/2012-06/terms#displayPrecedence";
     var QA_PREFERRED_IMAGE = "http://qldarch.net/ns/rdf/2012-06/terms#preferredImage";
+    var QA_SUMMARY = "http://qldarch.net/ns/rdf/2012-06/terms#summary";
+    var QA_RELATED_TO = "http://qldarch.net/ns/rdf/2012-06/terms#relatedTo";
 
     var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
     var RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
@@ -237,6 +239,10 @@ var frontend = (function() {
             this.search = options.search;
             this.selection = options.selection;
             this.contentViews = [];
+            this.entitySearch = options.entitySearch;
+            this.entities = options.entities;
+            this.model.on("reset", this.render, this);
+
             if (options.initialize) { options.initialize.call(this); }
         },
 
@@ -253,6 +259,8 @@ var frontend = (function() {
                         router: this.router,
                         search: this.search,
                         selection: this.selection,
+                        entitySearch: this.entitySearch,
+                        entities: this.entities,
                     });
                 }
             }, this);
@@ -286,6 +294,8 @@ var frontend = (function() {
             this.type = options.type;
             this.search = options.search;
             this.selection = options.selection;
+            this.entitySearch = options.entitySearch;
+            this.entities = options.entities;
             this.itemviews = {};
 
             this.model.on("reset", this.render);
@@ -358,12 +368,18 @@ var frontend = (function() {
         },
 
         _cascadeUpdate: function() {
-            var searchtypes = this.search.get('searchtypes');
-            var searchstring = this.search.get('searchstring');
-            _.each(this.itemviews, function(itemview) {
-                itemview.setPredicate(itemview.partialStringPredicator(searchstring));
-                itemview._update();
-            }, this);
+            var entity = this.entitySearch.get('entity');
+            if (entity) {
+                _.each(this.itemviews, function(itemview) {
+                    itemview.setPredicate(itemview.relatedToPredicator(this.entities.get(entity)));
+                }, this);
+            } else {
+                var searchtypes = this.search.get('searchtypes');
+                var searchstring = this.search.get('searchstring');
+                _.each(this.itemviews, function(itemview) {
+                    itemview.setPredicate(itemview.partialStringPredicator(searchstring));
+                }, this);
+            }
         },
 
         setPredicate: function(predicate) {
@@ -510,6 +526,18 @@ var frontend = (function() {
                 }, this);
 
                 return found;
+            };
+        },
+
+        relatedToPredicator: function(entity) {
+            return function() {
+                if (_.any(this.model.geta(QA_RELATED_TO), function(related) {
+                    return related === entity.id;
+                }, this)) {
+                    return true;
+                } else {
+                    return false;
+                }
             };
         },
     });
@@ -749,6 +777,74 @@ var frontend = (function() {
         },
     });
 
+    var EntitySummaryView = Backbone.View.extend({
+        className: "entitysummary",
+
+        initialize: function(options) {
+            options || (options = {});
+
+            _.bindAll(this);
+            this.summaryTemplate = _.template($("#entitysummaryTemplate").html());
+            this.infoTemplate = _.template($("#infopanelTemplate").html());
+
+            this.entities = options.entities;
+            this.photographs = options.photographs;
+
+            this.entity = undefined;
+
+            this._updateContentDescription();
+            this.model.on("change", this._update);
+        },
+
+        render: function() {
+            this._update();
+
+            return this;
+        },
+
+        _update: function() {
+            this._updateContentDescription();
+            if (this.entity && this.contentDescription) {
+                this.$el.html(this.summaryTemplate({
+                    uri: this.contentDescription.id,
+                    systemlocation: this.contentDescription.get1(QA_SYSTEM_LOCATION, true, true),
+                    label: this.contentDescription.get1(DCT_TITLE),
+                    name: this.entity.get1(QA_LABEL),
+                    description: this.entity.get1(QA_SUMMARY),
+                }));
+            } else if (this.entity && this.entity.get1(QA_SUMMARY)) {
+                this.$el.html(this.summaryTemplate({
+                    uri: "",
+                    systemlocation: "",
+                    label: "",
+                    name: this.entity.get1(QA_LABEL),
+                    description: this.entity.get1(QA_SUMMARY),
+                }));
+                this.$(".summary .summaryImage").hide();
+            } else {
+                this.$el.html(this.infoTemplate({
+                    message: "Individual summary not available",
+                }));
+            }
+        },
+
+        // FIXME: This is slightly ridiculous. I should introduce the ViewModel concept of
+        // derivied for views and then this can be a direct model application.
+        _updateContentDescription: function(model) {
+            this.contentDescription = undefined;
+            var entityId = this.model.get('entity');
+            if (entityId) {
+                this.entity = this.entities.get(entityId);
+                if (this.entity) {
+                    var preferredImageURI = this.entity.get1(QA_PREFERRED_IMAGE);
+                    if (preferredImageURI) {
+                        this.contentDescription = this.photographs.get(preferredImageURI);
+                    }
+                }
+            }
+        },
+    });
+
     var ContentPaneView = ToplevelView.extend({
         className: "contentpane",
         template: "#contentpaneTemplate",
@@ -758,13 +854,14 @@ var frontend = (function() {
             ToplevelView.prototype.initialize.call(this, options);
 
             this.infoTemplate = _.template($("#infopanelTemplate").html());
-            this.imageTemplate = _.template($("#imageTemplate").html());
 
             this.entities = options.entities;
             this.photographs = options.photographs;
 
             this.state = undefined;
+            this.entity = undefined;
 
+            this._updateContentDescription();
             this.model.on("change", this._updateContentDescription);
         },
 
@@ -776,10 +873,17 @@ var frontend = (function() {
             ToplevelView.prototype.render.call(this);
 
             this.$el.html(this.template());
-            this._update();
-            this.$(".button:first").click();
 
-            this._update();
+            this.summaryView = new EntitySummaryView({
+                    router: this.router,
+                    model: this.model,
+                    entities: this.entities,
+                    photographs: this.photographs,
+                });
+            this.$('.summary').html(this.summaryView.render().el);
+
+            this.$(".button:first").click(); // Calls this._update();
+
             return this;
         },
 
@@ -791,19 +895,9 @@ var frontend = (function() {
 
         _update: function() {
             if (this.state === "Content") {
-                console.log("Ping");
-                if (this.contentDescription) {
-                    this.$(".content").html(this.imageTemplate({
-                        label: this.contentDescription.get1(DCT_TITLE),
-                        systemlocation: this.contentDescription.get1(QA_SYSTEM_LOCATION, true, true),
-                        uri: this.contentDescription.id,
-                    }));
-                    this.$(".content img").fadeIn("slow");
-                } else {
-                    this.$(".content").html(this.infoTemplate({
-                        message: "No image available for architect",
-                    }));
-                }
+                this.$(".content").html(this.infoTemplate({
+                    message: this.state + " Tab disabled pending deploying relatedTo inferencing",
+                }));
             } else {
                 this.$(".content").html(this.infoTemplate({
                     message: this.state + " Tab disabled pending deploying relatedTo inferencing",
@@ -816,28 +910,19 @@ var frontend = (function() {
         _updateContentDescription: function() {
             this.contentDescription = undefined;
             var entityId = this.model.get('entity');
-            console.log("entityId");
-            console.log(entityId);
             if (entityId) {
-                var entity = this.entities.get(entityId);
-                console.log("entity");
-                console.log(entity);
-                if (entity) {
-                    var preferredImageURI = entity.get1(QA_PREFERRED_IMAGE);
-                    console.log("preferredImageURI");
-                    console.log(preferredImageURI);
+                this.entity = this.entities.get(entityId);
+                if (this.entity) {
+                    var preferredImageURI = this.entity.get1(QA_PREFERRED_IMAGE);
                     if (preferredImageURI) {
-                        console.log("this.photographs");
-                        console.log(this.photographs);
                         this.contentDescription = this.photographs.get(preferredImageURI);
-                        console.log("this.contentDescription");
-                        console.log(this.contentDescription);
                     }
                 }
             }
         },
     });
 
+/*
     var EntityDetailView = ToplevelView.extend({
         template: "#entitydetailTemplate",
 
@@ -908,6 +993,7 @@ var frontend = (function() {
             }
         },
     });
+*/
 
     var ImageContentView = ToplevelView.extend({
         className: "imagepane",
@@ -1277,18 +1363,35 @@ var frontend = (function() {
 
     
         /*
+        entitySearchModel.on("change", function(model) {
+            console.log("\tCHANGE:ENTITYSEARCHMODEL: " + JSON.stringify(model.toJSON()));
+        });
         searchModel.on("change", function(model) {
             console.log("\tCHANGE:SEARCHMODEL: " + JSON.stringify(model.toJSON()));
         });
-
+        contentSearchModel.on("change", function(model) {
+            console.log("\tCHANGE:CONTENTSEARCHMODEL: " + JSON.stringify(model.toJSON()));
+        });
         photographs.on("reset", function(collection) {
             console.log("\tRESET:PHOTOGRAPHS: " + collection.length);
         });
-*/
         entities.on("reset", function(collection) {
             console.log("\tRESET:ENTITIES: " + collection.length);
         });
+        displayedEntities.on("reset", function(collection) {
+            console.log("\tRESET:DISPLAYED_ENTITIES: " + collection.length);
+            console.log(collection);
+        });
+        artifacts.on("reset", function(collection) {
+            console.log("\tRESET:ARTIFACTS: " + collection.length);
+            console.log(collection);
+        });
+        artifacts.on("add", function(model, collection) {
+            console.log("\tADD:ARTIFACTS: " + collection.length);
+            console.log(collection);
+        });
 
+*/
         var contentView = new DigitalContentView({
             router: router,
             id: "maincontent",
@@ -1300,9 +1403,8 @@ var frontend = (function() {
             },
             search: searchModel,
             selection: contentSearchModel,
-            initialize: function() {
-                artifacts.on("reset", this.render, this);
-            }
+            entitySearch: entitySearchModel,
+            entities: entities,
         });
 
         var entityView = new EntityContentView({
@@ -1325,6 +1427,7 @@ var frontend = (function() {
             photographs: photographs,
         });
 
+/*
         var entityDetailView = new EntityDetailView({
             router: router,
             model: entitySearchModel,
@@ -1332,7 +1435,7 @@ var frontend = (function() {
             properties: properties,
             related: entityRelatedContentModel,
         });
-
+*/
         var imageContentView = new ImageContentView({
             router: router,
             model: contentSearchModel,
@@ -1372,12 +1475,13 @@ var frontend = (function() {
                 searchModel.set(searchModel.defaults);
             }
             contentSearchModel.set(contentSearchModel.defaults);
+            entitySearchModel.set(entitySearchModel.defaults);
             document.title = "Digital Archive of Queensland Architecture";
 
             $("#column123,#column12,#column23").hide();
             contentpaneView.detach();
             imageContentView.detach();
-            entityDetailView.detach();
+//            entityDetailView.detach();
             transcriptView.detach();
             searchView.append("#column1");
             contentView.append("#column2");
@@ -1395,7 +1499,7 @@ var frontend = (function() {
             imageContentView.detach();
             transcriptView.detach();
             contentpaneView.attach("#column12");
-            entityDetailView.append("#column3");
+//            entityDetailView.append("#column3");
             contentView.append("#column3");
             $("#column12,#column3").show();
         }, entitySearchModel);
@@ -1407,7 +1511,7 @@ var frontend = (function() {
             searchView.detach();
             entityView.detach();
             contentpaneView.detach();
-            entityDetailView.detach();
+//            entityDetailView.detach();
             transcriptView.detach();
             contentView.append("#column1");
             imageContentView.append("#column23");
@@ -1421,7 +1525,7 @@ var frontend = (function() {
             searchView.detach();
             entityView.detach();
             contentpaneView.detach();
-            entityDetailView.detach();
+//            entityDetailView.detach();
             contentView.detach();
             imageContentView.detach();
             transcriptView.append("#column123");

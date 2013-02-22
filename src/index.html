@@ -82,7 +82,7 @@
             </div>
         </script>
         <script type="text/template" id="contentpaneTemplate">
-            <h2 class="columntitle"></h2>
+            <div class="summary span-16"></div>
             <div class="contentpanetabs span-16">
                 <span type="Content" class="button tab">Related Content</span>
                 <span type="Network" class="button tab">Related Network</span>
@@ -102,6 +102,15 @@
                 <span class="propertyvalue span-5 last" type="text"><%= value %></span>
             </div>
         </script>
+        <script type="text/template" id="entitysummaryTemplate">
+            <h2><%= name %></h2>
+            <div class="summaryImage span-8">
+                <img data-uri="<%= uri %>" src="http://qldarch.net/omeka/archive/files/<%= systemlocation %>" title="<%= label %>"/>
+            </div>
+            <div class="summaryDescription span-8 last">
+                <span class="biotext"><%= description %></span>
+            </div>
+        </script>
         <script type="text/template" id="imagecontentTemplate">
             <h2 class="columntitle">Image</h2>
             <div class="imagedisplay" class="span-16 last">
@@ -111,7 +120,7 @@
             </div>
         </script>
         <script type="text/template" id="imageTemplate">
-            <img style="display:none" data-uri="<%= uri %>" src="http://qldarch.net/omeka/archive/files/<%= systemlocation %>" alt="<%= label %>"/>
+            <img style="display:none" data-uri="<%= uri %>" src="http://qldarch.net/omeka/archive/files/<%= systemlocation %>" title="<%= label %>"/>
         </script>
         <script type="text/template" id="infopanelTemplate">
             <div class="info"><%= message %></div>
@@ -134,12 +143,12 @@
             </div>
             <div class="span-16 last">
                 <div class="contentpanetabs span-16">
-                    <span type="Search" class="button tab">Search Transcript</span>
+                    <span type="Current" class="button tab">Search Current Transcript</span>
                 </div>
                 <div class="content span-16">
                     <div class="searchtranscriptpane span-16 last" style="margin-top:-10px">
                         <div class="span-16 last">
-                            <input class="searchbox span-8" type="text" value="" placeHolder="Search Transcript"/>
+                            <input class="searchbox span-8" type="text" value="" placeHolder="Search Current Transcript"/>
                         </div>
                         <div class="searchresults span-16 last">
                             <div class="entitylisttitle">Utterances</div>
@@ -150,10 +159,17 @@
             </div>
         </script>
         <script type="text/template" id="spinnerTemplate">
-            <img src="img/spinner.gif" alt="Spinner GIF" style="margin-left:100px;margin-top:50px;margin-bottom:50px"/>
+            <img src="img/spinner.gif" title="Spinner GIF" style="margin-left:100px;margin-top:50px;margin-bottom:50px"/>
         </script>
         <script type="text/template" id="transcriptresultTemplate">
             <div class="transcriptref">
+                <span class="transcriptlabel"><%= speaker %> @ <%= time %></span>
+                <span class="transcripttext"><%= transcript %></span>
+            </div>
+        </script>
+        <script type="text/template" id="alltranscriptsresultTemplate">
+            <div class="transcriptref">
+                <span class="transcriptlabel"><%= interview %></span>
                 <span class="transcriptlabel"><%= speaker %> @ <%= time %></span>
                 <span class="transcripttext"><%= transcript %></span>
             </div>
