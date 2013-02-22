@@ -1009,7 +1009,8 @@ var frontend = (function() {
             this.detailItemTemplate = _.template($("#entitydetailItemTemplate").html());
             this.content = options.content;
             this.contentDescription = undefined;
-            this.properties = options.properties,
+            this.properties = options.properties;
+            this.entities = options.entities;
 
             this.model.on("change", this._updateContentDescription);
             _.each(_.values(this.content), function(collection) {
@@ -1065,7 +1066,7 @@ var frontend = (function() {
                             if (propMeta.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
                                 this.$(".propertylist").append(this.detailItemTemplate({
                                     label: propMeta.get1(QA_LABEL, logmultiple),
-                                    value: entities.get(value).get1(QA_LABEL, logmultiple),
+                                    value: this.entities.get(value).get1(QA_LABEL, logmultiple),
                                 }));
                             } else {
                                 this.$(".propertylist").append(this.detailItemTemplate({
@@ -1453,6 +1454,7 @@ var frontend = (function() {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": photographs,
                 "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing": linedrawings
             },
+            entities: entities,
         });
 
         var entityContentView = new ImageContentView({
