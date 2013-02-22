@@ -26,7 +26,7 @@
         },
 
         geta_: function(name) {
-            return this._(geta(name));
+            return _(this.geta(name));
         },
 
         get1: function(name, logmultiple, logtrace) {
