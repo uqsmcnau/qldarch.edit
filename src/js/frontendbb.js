@@ -31,7 +31,7 @@ var frontend = (function() {
     var QA_SYSTEM_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#systemLocation";
     var QA_EXTERNAL_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#externalLocation";
     var QA_TRANSCRIPT_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#transcriptLocation";
-    var QA_DISPLAY_PRECIDENCE = "http://qldarch.net/ns/rdf/2012-06/terms#displayPrecedence";
+    var QA_DISPLAY_PRECEDENCE = "http://qldarch.net/ns/rdf/2012-06/terms#displayPrecedence";
     var QA_PREFERRED_IMAGE = "http://qldarch.net/ns/rdf/2012-06/terms#preferredImage";
     var QA_SUMMARY = "http://qldarch.net/ns/rdf/2012-06/terms#summary";
     var QA_RELATED_TO = "http://qldarch.net/ns/rdf/2012-06/terms#relatedTo";
@@ -49,7 +49,7 @@ var frontend = (function() {
 
     var DCT_TITLE = "http://purl.org/dc/terms/title";
 
-    var MAX_PRECIDENCE = 1000000;
+    var MAX_PRECEDENCE = 1000000;
     var successDelay = 2000;
     var logmultiple = true;
 
@@ -1065,8 +1065,8 @@ var frontend = (function() {
                             console.log("Property not found in ontology: " + property);
                         } else if (propMeta.get1(QA_DISPLAY, true, true)) {
                             var value = this.contentDescription.get1(property, logmultiple);
-                            var precidence = propMeta.get1(QA_DISPLAY_PRECIDENCE);
-                            precidence = precidence ? precidence : MAX_PRECIDENCE;
+                            var precedence = propMeta.get1(QA_DISPLAY_PRECEDENCE);
+                            precedence = precedence ? precedence : MAX_PRECEDENCE;
 
                             if (propMeta.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
                                 if (this.entities.get(value) &&
@@ -1074,7 +1074,7 @@ var frontend = (function() {
                                     return {
                                         label: propMeta.get1(QA_LABEL, logmultiple),
                                         value: this.entities.get(value).get1(QA_LABEL, logmultiple),
-                                        precidence: precidence,
+                                        precedence: precedence,
                                     };
                                 } else {
                                     console.log("ObjectProperty(" + property + ") failed resolve");
@@ -1084,12 +1084,12 @@ var frontend = (function() {
                                 return {
                                     label: propMeta.get1(QA_LABEL, logmultiple),
                                     value: value,
-                                    precidence: precidence,
+                                    precedence: precedence,
                                 };
                             }
                         }
                     }, this);
-                    _.sortBy(metadata, 'precidence').each(function(entry) {
+                    _.sortBy(metadata, 'precedence').each(function(entry) {
                         this.$(".propertylist").append(this.detailItemTemplate(entry));
                     });
 
@@ -1374,7 +1374,7 @@ var frontend = (function() {
                     return _(model.geta(RDFS_SUBCLASS_OF)).contains(QA_DIGITAL_THING);
                 },
 
-            comparator: QA_DISPLAY_PRECIDENCE,
+            comparator: QA_DISPLAY_PRECEDENCE,
         });
 
         var proper = new SubCollection(displayedEntities, {
@@ -1384,7 +1384,7 @@ var frontend = (function() {
                     return !_(model.geta(RDFS_SUBCLASS_OF)).contains(QA_DIGITAL_THING);
                 },
 
-            comparator: QA_DISPLAY_PRECIDENCE,
+            comparator: QA_DISPLAY_PRECEDENCE,
         });
 
     
