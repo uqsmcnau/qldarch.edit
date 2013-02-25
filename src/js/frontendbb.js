@@ -49,6 +49,7 @@ var frontend = (function() {
 
     var DCT_TITLE = "http://purl.org/dc/terms/title";
 
+    var MAX_PRECIDENCE = 1000000;
     var successDelay = 2000;
     var logmultiple = true;
 
@@ -1057,31 +1058,40 @@ var frontend = (function() {
                             });
                     });
                     this.$(".propertylist").empty();
-                    _(this.contentDescription.predicates()).each(function(property) {
+
+                    var metadata = _(this.contentDescription.predicates()).map(function(property) {
                         var propMeta = this.properties.get(property);
                         if (!propMeta) {
                             console.log("Property not found in ontology: " + property);
                         } else if (propMeta.get1(QA_DISPLAY, true, true)) {
                             var value = this.contentDescription.get1(property, logmultiple);
+                            var precidence = propMeta.get1(QA_DISPLAY_PRECIDENCE);
+                            precidence = precidence ? precidence : MAX_PRECIDENCE;
+
                             if (propMeta.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
                                 if (this.entities.get(value) &&
                                         this.entities.get(value).get1(QA_LABEL)) {
-                                    this.$(".propertylist").append(this.detailItemTemplate({
+                                    return {
                                         label: propMeta.get1(QA_LABEL, logmultiple),
                                         value: this.entities.get(value).get1(QA_LABEL, logmultiple),
-                                    }));
+                                        precidence: precidence,
+                                    };
                                 } else {
                                     console.log("ObjectProperty(" + property + ") failed resolve");
                                     console.log(this.entities.get(value));
                                 }
                             } else {
-                                this.$(".propertylist").append(this.detailItemTemplate({
+                                return {
                                     label: propMeta.get1(QA_LABEL, logmultiple),
                                     value: value,
-                                }));
+                                    precidence: precidence,
+                                };
                             }
                         }
                     }, this);
+                    _.sortBy(metadata, 'precidence').each(function(entry) {
+                        this.$(".propertylist").append(this.detailItemTemplate(entry));
+                    });
 
                     var link = 'http://qldarch.net/omeka/archive/files/' +
                         this.contentDescription.get(QA_SYSTEM_LOCATION);
