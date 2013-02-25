@@ -1089,9 +1089,10 @@ var frontend = (function() {
                             }
                         }
                     }, this);
-                    _.sortBy(metadata, 'precedence').each(function(entry) {
+
+                    _.chain(metadata).filter(_.identity).sortBy('precedence').each(function(entry) {
                         this.$(".propertylist").append(this.detailItemTemplate(entry));
-                    });
+                    }, this);
 
                     var link = 'http://qldarch.net/omeka/archive/files/' +
                         this.contentDescription.get(QA_SYSTEM_LOCATION);
