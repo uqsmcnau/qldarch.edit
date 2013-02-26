@@ -129,10 +129,6 @@
 
     _.extend(UnionCollection.prototype, Collection.prototype, {
         _doReset : function(collection, options) {
-            console.log("resetting union");
-            console.log(this.baseCollections);
-            console.log(_.pluck(this.baseCollections[0], 'models'));
-            console.log(_.union(_.pluck(this.baseCollections, 'models')));
             this.reset(_.union(_.pluck(this.baseCollections, 'models')), options);
         },
 
