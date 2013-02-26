@@ -540,8 +540,9 @@ var frontend = (function() {
             options || (options = {});
             ToplevelView.prototype.initialize.call(this, options);
 
-            this.content = options.content;
+            this.entities = options.entities;
             this.search = options.search;
+            this.content = options.content;
             if (options.initialize) { options.initialize.call(this); }
         },
         
@@ -556,6 +557,7 @@ var frontend = (function() {
                         type: entityType,
                         router: this.router,
                         search: this.search,
+                        content: this.content,
                     });
                     this.$('#entitydiv').append(entityView.render().el);
                 }
@@ -565,7 +567,7 @@ var frontend = (function() {
         },
 
         _subViewModel: function(type) {
-            return new SubCollection(this.content, {
+            return new SubCollection(this.entities, {
                 name: "entity subcollection",
                 tracksort: false,
                 predicate: function(model) {
@@ -588,6 +590,7 @@ var frontend = (function() {
 
             this.type = options.type;
             this.search = options.search;
+            this.content = options.content;
             this.itemviews = {};
 
             this.model.on("reset", this.render);
@@ -613,6 +616,7 @@ var frontend = (function() {
                 var itemView = new EntityItemView({
                     router: this.router,
                     model: entityItem,
+                    content: this.content,
                 });
                 this.itemviews[entityItem.id] = itemView;
                 this.$('.entitylist').append(itemView.render().el);
@@ -683,6 +687,8 @@ var frontend = (function() {
             this.template = _.template($("#itemTemplate").html());
             this.router = options.router;
 
+            this.content = options.content;
+
             _.bindAll(this);
             if (options.initialize) { options.initialize.call(this); }
 
@@ -739,15 +745,29 @@ var frontend = (function() {
             return _.bind(function() {
                 var val = $.trim(value);
 
-                return !val || _.any(val.split(/\W/), function(word) {
-                    return word !== "" &&
-                        _.chain(this.model.attributes).keys().any(function(key) {
-                            var lcword = word.toLowerCase();
-                            return _.any(this.model.geta(key), function(label) {
-                                return label.toLowerCase().indexOf(lcword) != -1;
-                            }, this);
-                        }, this).value();
-                }, this);
+                return !val ||
+                    _.any(val.split(/\W/), function(word) {
+                        return word !== "" &&
+                            _.chain(this.model.attributes).keys().any(function(key) {
+                                var lcword = word.toLowerCase();
+                                return _.any(this.model.geta(key), function(label) {
+                                    return label.toLowerCase().indexOf(lcword) != -1;
+                                }, this);
+                            }, this).value();
+                    }, this) ||
+                    _.any(this.model.geta(QA_RELATED_TO), function(related) {
+                        var relatedEntity = this.content.get(related);
+                        return relatedEntity &&
+                            _.any(val.split(/\W/), function(word) {
+                                return word !== "" &&
+                                    _.chain(this.model.attributes).keys().any(function(key) {
+                                        var lcword = word.toLowerCase();
+                                        return _.any(this.model.geta(key), function(label) {
+                                            return label.toLowerCase().indexOf(lcword) != -1;
+                                        }, this);
+                                    }, this).value();
+                            },  relatedEntity);
+                    });
             }, this);
         },
 
@@ -1366,7 +1386,11 @@ var frontend = (function() {
             comparator: QA_DISPLAY_PRECEDENCE,
         });
 
+        var allcontent = new UnionCollection([interviews, photographs, linedrawings]);
     
+        allcontent.on("reset", function(collection) {
+            console.log("\tRESET:ALLCONTENT: " + collection.length);
+        });
         /*
         entitySearchModel.on("change", function(model) {
             console.log("\tCHANGE:ENTITYSEARCHMODEL: " + JSON.stringify(model.toJSON()));
@@ -1416,7 +1440,8 @@ var frontend = (function() {
             router: router,
             id: "mainentities",
             model: proper,
-            content: entities,
+            entities: entities,
+            content: allcontent,
             search: searchModel,
             initialize: function() {
                 proper.on("reset", this.render, this);
