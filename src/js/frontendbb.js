@@ -505,30 +505,19 @@ var frontend = (function() {
         },
 
         partialStringPredicator: function(value) {
-            return function() {
+            return _.bind(function() {
                 var val = $.trim(value);
-                if (!val) {
-                    return true;
-                }
 
-                var found = false;
-                _.each(val.split(/\W/), function(word) {
-                    if (word !== "" && (
-                        this.model.get1(DCT_TITLE) &&
-                        _.any(this.model.geta(DCT_TITLE), function(title) {
-                            return title.toLowerCase().indexOf(word.toLowerCase()) != -1;
-                        }) ||
-                        this.model.get1(RDFS_LABEL) &&
-                        _.any(this.model.geta(RDFS_LABEL), function(label) {
-                            return label.toLowerCase().indexOf(word.toLowerCase()) != -1;
-                        }))) {
-                            
-                        found = true;
-                    }
+                return !val || _.any(val.split(/\W/), function(word) {
+                    return word !== "" &&
+                        _.chain(this.model.attributes).keys().any(function(key) {
+                            var lcword = word.toLowerCase();
+                            return _.any(this.model.geta(key), function(label) {
+                                return label.toLowerCase().indexOf(lcword) != -1;
+                            }, this);
+                        }, this).value();
                 }, this);
-
-                return found;
-            };
+            }, this);
         },
 
         relatedToPredicator: function(entity) {
@@ -747,30 +736,19 @@ var frontend = (function() {
         },
 
         partialStringPredicator: function(value) {
-            return function() {
+            return _.bind(function() {
                 var val = $.trim(value);
-                if (!val) {
-                    return true;
-                }
 
-                var found = false;
-                _.each(val.split(/\W/), function(word) {
-                    if (word !== "" && (
-                        this.model.get1(QA_LABEL) &&
-                        _.any(this.model.geta(QA_LABEL), function(label) {
-                            return label.toLowerCase().indexOf(word.toLowerCase()) != -1;
-                        }) ||
-                        this.model.get1(RDFS_LABEL) &&
-                        _.any(this.model.geta(RDFS_LABEL), function(label) {
-                            return label.toLowerCase().indexOf(word.toLowerCase()) != -1;
-                        }))) {
-                            
-                        found = true;
-                    }
+                return !val || _.any(val.split(/\W/), function(word) {
+                    return word !== "" &&
+                        _.chain(this.model.attributes).keys().any(function(key) {
+                            var lcword = word.toLowerCase();
+                            return _.any(this.model.geta(key), function(label) {
+                                return label.toLowerCase().indexOf(lcword) != -1;
+                            }, this);
+                        }, this).value();
                 }, this);
-
-                return found;
-            };
+            }, this);
         },
 
         _select: function() {
