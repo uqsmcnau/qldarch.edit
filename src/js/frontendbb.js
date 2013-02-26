@@ -767,7 +767,7 @@ var frontend = (function() {
                                         }, this);
                                     }, this).value();
                             },  relatedEntity);
-                    });
+                    }, this);
             }, this);
         },
 
