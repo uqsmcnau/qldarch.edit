@@ -202,11 +202,14 @@ var frontend = (function() {
 
         initialize: function(options) {
             ToplevelView.prototype.initialize.call(this, options);
+            this.proper = options.proper;
+
             options.model.on("change:searchstring", this._update);
         },
         
         events: {
-            "keyup input"   : "_keyup"
+            "keyup input"   : "_keyup",
+            "change select" : "_keyup",
         },
 
         render: function() {
@@ -218,9 +221,10 @@ var frontend = (function() {
         },
 
         _keyup: function() {
+            console.log(this.$("select").val());
             this.model.set({
                 'searchstring': this.$("input").val(),
-                'searchtypes': ['all'],
+                'searchtypes': [this.$("select").val()],
             });
         },
 
@@ -1326,12 +1330,6 @@ var frontend = (function() {
         var router = new QldarchRouter();
 
         var searchModel = new SearchModel();
-        var searchView = new GeneralSearchView({
-            id: "mainsearch",
-            model: searchModel,
-            router: router
-        });
-
         var entitySearchModel = new EntitySearchModel();
 
         var contentSearchModel = new ContentSearchModel();
@@ -1421,6 +1419,14 @@ var frontend = (function() {
         });
 
 */
+
+        var searchView = new GeneralSearchView({
+            id: "mainsearch",
+            model: searchModel,
+            proper: proper,
+            router: router
+        });
+
         var contentView = new DigitalContentView({
             router: router,
             id: "maincontent",
