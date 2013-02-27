@@ -203,11 +203,12 @@ var frontend = (function() {
         initialize: function(options) {
             ToplevelView.prototype.initialize.call(this, options);
             this.proper = options.proper;
+            this.proper.each(function(f) { console.log(f); });
 
             this.optionTemplate = _.template($("#searchtypeoptionTemplate").html());
 
             this.model.on("change:searchstring", this._update);
-            this.proper.on("reset", this._render);
+            this.proper.on("reset", this.render);
         },
         
         events: {
@@ -219,6 +220,13 @@ var frontend = (function() {
             ToplevelView.prototype.render.call(this);
 
             this.$el.html(this.template(this.model.toJSON()));
+            this.proper.each(function(entity) {
+                this.$("select").append(this.optionTemplate({
+                    label: entity.get1(QA_LABEL),
+                    value: entity.id,
+                }));
+            }, this);
+
             this._update();
             return this;
         },
@@ -232,13 +240,6 @@ var frontend = (function() {
         },
 
         _update: function() {
-            this.proper.each(function(entity) {
-                this.$("select").append(this.optionTemplate({
-                    label: entity.get1(QA_LABEL),
-                    value: entity.id,
-                }));
-            }, this);
-
             this.$("input").val(this.model.get("searchstring"));
             this.$("select").val(this.model.get("searchtypes")[0]);
         },
@@ -1397,10 +1398,10 @@ var frontend = (function() {
 
         var allcontent = new UnionCollection([interviews, photographs, linedrawings]);
     
+        /*
         allcontent.on("reset", function(collection) {
             console.log("\tRESET:ALLCONTENT: " + collection.length);
         });
-        /*
         entitySearchModel.on("change", function(model) {
             console.log("\tCHANGE:ENTITYSEARCHMODEL: " + JSON.stringify(model.toJSON()));
         });
@@ -1428,7 +1429,10 @@ var frontend = (function() {
             console.log("\tADD:ARTIFACTS: " + collection.length);
             console.log(collection);
         });
-
+        proper.on("reset", function(collection) {
+            console.log("\tRESET:DISPLAYED_ENTITIES: " + collection.length);
+            console.log(collection);
+        });
 */
 
         var searchView = new GeneralSearchView({
