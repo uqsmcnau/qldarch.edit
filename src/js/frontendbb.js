@@ -204,7 +204,10 @@ var frontend = (function() {
             ToplevelView.prototype.initialize.call(this, options);
             this.proper = options.proper;
 
-            options.model.on("change:searchstring", this._update);
+            this.optionTemplate = _.template($("#searchtypeoptionTemplate").html());
+
+            this.model.on("change:searchstring", this._update);
+            this.proper.on("reset", this._render);
         },
         
         events: {
@@ -229,7 +232,15 @@ var frontend = (function() {
         },
 
         _update: function() {
+            this.proper.each(function(entity) {
+                this.$("select").append(this.optionTemplate({
+                    label: entity.get1(QA_LABEL),
+                    value: entity.id,
+                }));
+            }, this);
+
             this.$("input").val(this.model.get("searchstring"));
+            this.$("select").val(this.model.get("searchtypes")[0]);
         },
 
     });
