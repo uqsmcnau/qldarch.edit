@@ -129,7 +129,7 @@
 
     _.extend(UnionCollection.prototype, Collection.prototype, {
         _doReset : function(collection, options) {
-            this.reset(_.union(_.pluck(this.baseCollections, 'models')), options);
+            this.reset(_.flatten(_.pluck(this.baseCollections, 'models')), options);
         },
 
         _doAdd : function(model, collection, options) {

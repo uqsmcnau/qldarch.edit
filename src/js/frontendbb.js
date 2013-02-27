@@ -760,9 +760,9 @@ var frontend = (function() {
                         return relatedEntity &&
                             _.any(val.split(/\W/), function(word) {
                                 return word !== "" &&
-                                    _.chain(this.model.attributes).keys().any(function(key) {
+                                    _.chain(this.attributes).keys().any(function(key) {
                                         var lcword = word.toLowerCase();
-                                        return _.any(this.model.geta(key), function(label) {
+                                        return _.any(this.geta(key), function(label) {
                                             return label.toLowerCase().indexOf(lcword) != -1;
                                         }, this);
                                     }, this).value();
