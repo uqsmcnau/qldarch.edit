@@ -23,8 +23,8 @@ var frontend = (function() {
 
         force: function(f) { return _.result({}, f); },
 
-        flatmap: function(l, f) {
-            return _.chain(l).flatten().map(f).reject(_.isUndefined).value();
+        flatmap: function(l, f, t) {
+            return _.chain(l).flatten().map(f, t).reject(_.isUndefined).value();
         },
     });
 
@@ -863,7 +863,7 @@ var frontend = (function() {
                         var relatedImagesURIs = this.entity.geta(QA_RELATED_TO);
                         var relatedImages = _.flatmap(relatedImagesURIs, function(uri) {
                             return this.photographs.get(uri);
-                        });
+                        }, this);
                         console.log(relatedImages);
                     }
                 }
