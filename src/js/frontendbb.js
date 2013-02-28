@@ -22,6 +22,10 @@ var frontend = (function() {
         },
 
         force: function(f) { return _.result({}, f); },
+
+        flatmap: function(l, f) {
+            return _.chain(l).flatten().map(f).reject(_.isUndefined).value();
+        },
     });
 
     var JSON_ROOT = "/ws/rest/";
@@ -855,6 +859,12 @@ var frontend = (function() {
                     var preferredImageURI = this.entity.get1(QA_PREFERRED_IMAGE);
                     if (preferredImageURI) {
                         this.contentDescription = this.photographs.get(preferredImageURI);
+                    } else {
+                        var relatedImagesURIs = this.entity.geta(QA_RELATED_TO);
+                        var relatedImages = _.flatmap(relatedImagesURIs, function(uri) {
+                            return this.photographs.get(uri);
+                        });
+                        console.log(relatedImages);
                     }
                 }
             }
