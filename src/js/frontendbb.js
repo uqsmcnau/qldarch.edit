@@ -898,6 +898,13 @@ var frontend = (function() {
                 uri: this.type.id,
                 label: this.type.get1(QA_LABEL),
             }));
+
+            _.take(this.images, 3).each(function(image) {
+                this.$(".contentbox").append(_.imageTemplate({
+                    systemlocation: image.get1(QA_SYSTEM_LOCATION, true, true),
+                    title: image.get1(DCT_TITLE),
+                }));
+            });
             console.log(this.images);
         },
     });
