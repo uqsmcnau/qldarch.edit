@@ -180,6 +180,17 @@
                 <span class="transcripttext"><%= transcript %></span>
             </div>
         </script>
+        <script type="text/template" id="relatedcontentTemplate">
+            <div class="relatedcontentbox" data-uri="<%= uri %>">
+                <div class="contentlisttitle span-16"><%= label %></div>
+                <div class="contentbox"></div>
+            </div>
+        </script>
+        <script type="text/template" id="relatedimageTemplate">
+            <div class="relatedimage span-5">
+                <img src="<%= location %>" title="<%= title %>" style="width:100%"/>
+            </div>
+        </script>
         <script type="text/javascript">
             $(function() {
                 frontend.frontendOnReady();

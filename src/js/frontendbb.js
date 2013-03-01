@@ -871,6 +871,35 @@ var frontend = (function() {
         },
     });
 
+    var RelatedImagesView = Backbone.View.extend({
+        className: "relatedcontent",
+
+        initialize: function(options) {
+            options || (options = {});
+
+            _.bindAll(this);
+            this.frameTemplate = _.template($("#relatedcontentTemplate").html());
+            this.imageTemplate = _.template($("#relatedimageTemplate").html());
+
+            this.images = options.images;
+            this.type = options.type;
+        },
+
+        render: function() {
+            this._update();
+
+            return this;
+        },
+
+        _update: function() {
+            this.$el.html(this.frameTemplate({
+                uri: type.id,
+                label: type.get1(QA_LABEL),
+            }));
+            console.log(this.images);
+        },
+    });
+
     var ContentPaneView = ToplevelView.extend({
         className: "contentpane",
         template: "#contentpaneTemplate",
@@ -883,11 +912,26 @@ var frontend = (function() {
 
             this.entities = options.entities;
             this.photographs = options.photographs;
+            this.artifacts = options.artifacts;
 
             this.state = undefined;
             this.entity = undefined;
 
             this._updateContentDescription();
+
+            var that = this;
+            this.relatedPhotographView = new RelatedImagesView({
+                images: new SubCollection(this.photographs, {
+                    name: "related_photographs",
+                    tracksort: true,
+                    predicate: function(model) {
+                            return that.entity &&
+                                _(that.entity.geta(QA_RELATED_TO)).contains(model.id);
+                        },
+                    });
+                type: this.artifacts.get(QA_PHOTOGRAPH_TYPE),
+            });
+
             this.model.on("change", this._updateContentDescription);
         },
 
@@ -921,9 +965,7 @@ var frontend = (function() {
 
         _update: function() {
             if (this.state === "Content") {
-                this.$(".content").html(this.infoTemplate({
-                    message: this.state + " Tab disabled pending deploying relatedTo inferencing",
-                }));
+                this.$(".content").html(this.relatedPhotographView.render().$el));
             } else {
                 this.$(".content").html(this.infoTemplate({
                     message: this.state + " Tab disabled pending deploying relatedTo inferencing",
@@ -1486,6 +1528,7 @@ var frontend = (function() {
             model: entitySearchModel,
             entities: entities,
             photographs: photographs,
+            artifacts: artifacts,
         });
 
 /*
