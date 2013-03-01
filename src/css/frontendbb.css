@@ -255,6 +255,10 @@ div.contentpanetabs {
     width: 100%;
 }
 
+.summary {
+    padding-bottom: 10px;
+}
+
 .summary img {
     width: 100%;
 }
