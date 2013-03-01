@@ -883,6 +883,7 @@ var frontend = (function() {
 
             this.images = options.images;
             this.type = options.type;
+            this.images.on("reset", this._update, this);
         },
 
         render: function() {
@@ -892,9 +893,10 @@ var frontend = (function() {
         },
 
         _update: function() {
+            console.log(this);
             this.$el.html(this.frameTemplate({
-                uri: type.id,
-                label: type.get1(QA_LABEL),
+                uri: this.type.id,
+                label: this.type.get1(QA_LABEL),
             }));
             console.log(this.images);
         },
@@ -918,19 +920,6 @@ var frontend = (function() {
             this.entity = undefined;
 
             this._updateContentDescription();
-
-            var that = this;
-            this.relatedPhotographView = new RelatedImagesView({
-                images: new SubCollection(this.photographs, {
-                    name: "related_photographs",
-                    tracksort: true,
-                    predicate: function(model) {
-                            return that.entity &&
-                                _(that.entity.geta(QA_RELATED_TO)).contains(model.id);
-                        },
-                    });
-                type: this.artifacts.get(QA_PHOTOGRAPH_TYPE),
-            });
 
             this.model.on("change", this._updateContentDescription);
         },
@@ -965,7 +954,19 @@ var frontend = (function() {
 
         _update: function() {
             if (this.state === "Content") {
-                this.$(".content").html(this.relatedPhotographView.render().$el));
+                var that = this;
+                var relatedPhotographView = new RelatedImagesView({
+                    images: new SubCollection(this.photographs, {
+                        name: "related_photographs",
+                        tracksort: true,
+                        predicate: function(model) {
+                                return that.entity &&
+                                    _(that.entity.geta(QA_RELATED_TO)).contains(model.id);
+                            },
+                        }),
+                    type: this.artifacts.get(QA_PHOTOGRAPH_TYPE),
+                });
+                this.$(".content").html(relatedPhotographView.render().$el);
             } else {
                 this.$(".content").html(this.infoTemplate({
                     message: this.state + " Tab disabled pending deploying relatedTo inferencing",
