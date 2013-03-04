@@ -1001,6 +1001,7 @@ var frontend = (function() {
 
             this.entities = options.entities;
             this.photographs = options.photographs;
+            this.linedrawings = options.linedrawings;
             this.artifacts = options.artifacts;
 
             this.state = undefined;
@@ -1053,7 +1054,20 @@ var frontend = (function() {
                         }),
                     type: this.artifacts.get(QA_PHOTOGRAPH_TYPE),
                 });
-                this.$(".content").html(this.relatedPhotographView.render().$el);
+                this.relatedLineDrawingView = new RelatedImagesView({
+                    images: new SubCollection(this.linedrawings, {
+                        name: "related_linedrawings",
+                        tracksort: true,
+                        predicate: function(model) {
+                                return that.entity &&
+                                    _(that.entity.geta(QA_RELATED_TO)).contains(model.id);
+                            },
+                        }),
+                    type: this.artifacts.get(QA_LINEDRAWING_TYPE),
+                });
+                this.$(".content").empty();
+                this.$(".content").append(this.relatedPhotographView.render().$el);
+                this.$(".content").append(this.relatedLineDrawingView.render().$el);
             } else {
                 this.$(".content").html(this.infoTemplate({
                     message: this.state + " Tab disabled pending deploying relatedTo inferencing",
@@ -1064,6 +1078,9 @@ var frontend = (function() {
         _beforeDetach: function() {
             if (this.relatedPhotographView) {
                 this.relatedPhotographView._beforeDetach();
+            }
+            if (this.relatedLineDrawingView) {
+                this.relatedLineDrawingView._beforeDetach();
             }
         },
 
@@ -1622,6 +1639,7 @@ var frontend = (function() {
             model: entitySearchModel,
             entities: entities,
             photographs: photographs,
+            linedrawings: linedrawings,
             artifacts: artifacts,
         });
 
