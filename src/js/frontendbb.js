@@ -207,7 +207,6 @@ var frontend = (function() {
         initialize: function(options) {
             ToplevelView.prototype.initialize.call(this, options);
             this.proper = options.proper;
-            this.proper.each(function(f) { console.log(f); });
 
             this.optionTemplate = _.template($("#searchtypeoptionTemplate").html());
 
@@ -236,7 +235,6 @@ var frontend = (function() {
         },
 
         _keyup: function() {
-            console.log(this.$("select").val());
             this.model.set({
                 'searchstring': this.$("input").val(),
                 'searchtypes': [this.$("select").val()],
@@ -864,7 +862,6 @@ var frontend = (function() {
                         var relatedImages = _.flatmap(relatedImagesURIs, function(uri) {
                             return this.photographs.get(uri);
                         }, this);
-                        console.log(relatedImages);
                     }
                 }
             }
@@ -893,19 +890,17 @@ var frontend = (function() {
         },
 
         _update: function() {
-            console.log(this);
             this.$el.html(this.frameTemplate({
                 uri: this.type.id,
                 label: this.type.get1(QA_LABEL),
             }));
-
-            _.take(this.images, 3).each(function(image) {
-                this.$(".contentbox").append(_.imageTemplate({
+            
+            _(this.images.take(3)).each(function(image) {
+                this.$(".contentbox").append(this.imageTemplate({
                     systemlocation: image.get1(QA_SYSTEM_LOCATION, true, true),
                     title: image.get1(DCT_TITLE),
                 }));
-            });
-            console.log(this.images);
+            }, this);
         },
     });
 
