@@ -191,6 +191,7 @@ var frontend = (function() {
 
         detach: function() {
             if (this.attached) {
+                this._beforeDetach();
                 this.$el = this.$el.detach();
             }
             this.attached = false;
@@ -199,6 +200,7 @@ var frontend = (function() {
         },
 
         _update: function() { },
+        _beforeDetach: function() {},
     });
 
     var GeneralSearchView = ToplevelView.extend({
@@ -876,11 +878,11 @@ var frontend = (function() {
 
             _.bindAll(this);
             this.frameTemplate = _.template($("#relatedcontentTemplate").html());
-            this.imageTemplate = _.template($("#relatedimageTemplate").html());
 
             this.images = options.images;
             this.type = options.type;
             this.images.on("reset", this._update, this);
+            this.imageViews = [];
         },
 
         render: function() {
@@ -894,13 +896,95 @@ var frontend = (function() {
                 uri: this.type.id,
                 label: this.type.get1(QA_LABEL),
             }));
-            
-            _(this.images.take(3)).each(function(image) {
-                this.$(".contentbox").append(this.imageTemplate({
-                    systemlocation: image.get1(QA_SYSTEM_LOCATION, true, true),
-                    title: image.get1(DCT_TITLE),
-                }));
-            }, this);
+
+
+            var that = this;
+            this.$(".relatedimage").each(function(index, imagediv) {
+                var imageView = new RotatingimageView({
+                    images: that.images,
+                    index: index,
+                    initialDelay: (2000 * index),
+                });
+                that.imageViews.push(imageView);
+                $(this).html(imageView.render().el);
+            });
+        },
+
+        _beforeDetach: function() {
+            _.each(this.imageViews, function(view) {
+                view._beforeDetach();
+            });
+        },
+    });
+
+    var RotatingImageView = Backbone.View.extend({
+        className: "rotatingImage",
+
+        initialize: function(options) {
+            options || (options = {});
+
+            _.bindAll(this);
+            this.imageTemplate = _.template($("#imageTemplate").html());
+
+            this.images = options.images;
+            this.index = options.initialIndex;
+            this.initialDelay = options.initialDelay;
+            this.active = false;
+        },
+
+        render: function() {
+            this._update();
+
+            return this;
+        },
+
+        _update: function() {
+            if (!this.active) {
+                this.active = true;
+                this._fadeInImage(this.initialDelay);
+            }
+        },
+
+        _fadeOutImage: function() {
+            if (this.active) {
+                var that = this;
+                this.$("img").fadeOut("slow", function() {
+                    that._fadeInImage(0);
+                });
+            }
+        },
+
+        _fadeInImage: function(delay) {
+            if (this.active) {
+                this.index = (this.index + 3 < this.images.length) ?
+                    this.index + 3 :
+                    this.index % 3;
+
+                var image = this.images.at(this.index);
+                if (image) {
+                    this.$el.html(this.imageTemplate({
+                        uri: image.id,
+                        systemlocation: image.get1(QA_SYSTEM_LOCATION, true, true),
+                        label: image.get1(DCT_TITLE),
+                    }));
+
+                    var that = this;
+                    _.delay(function() {
+                        that.$("img").fadeIn("slow", function() {
+                            _.delay(that._fadeOutImage, 6000);
+                        });
+                    }, delay);
+                } else {
+                    console.log("No image found in collection: " + this.index);
+                    console.log(this.collection);
+                }
+            }
+        },
+
+        _beforeDetach: function() {
+            this.active = false;
+            this.undelegateEvents();
+            this.remove();
         },
     });
 
@@ -957,7 +1041,7 @@ var frontend = (function() {
         _update: function() {
             if (this.state === "Content") {
                 var that = this;
-                var relatedPhotographView = new RelatedImagesView({
+                this.relatedPhotographView = new RelatedImagesView({
                     images: new SubCollection(this.photographs, {
                         name: "related_photographs",
                         tracksort: true,
@@ -973,6 +1057,12 @@ var frontend = (function() {
                 this.$(".content").html(this.infoTemplate({
                     message: this.state + " Tab disabled pending deploying relatedTo inferencing",
                 }));
+            }
+        },
+
+        _beforeDetach: function() {
+            if (this.relatedPhotographView) {
+                this.relatedPhotographView._beforeDetach();
             }
         },
 
