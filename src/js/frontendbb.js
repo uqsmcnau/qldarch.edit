@@ -900,9 +900,9 @@ var frontend = (function() {
 
             var that = this;
             this.$(".relatedimage").each(function(index, imagediv) {
-                var imageView = new RotatingimageView({
+                var imageView = new RotatingImageView({
                     images: that.images,
-                    index: index,
+                    initialIndex: index,
                     initialDelay: (2000 * index),
                 });
                 that.imageViews.push(imageView);
@@ -949,6 +949,7 @@ var frontend = (function() {
             if (this.active) {
                 var that = this;
                 this.$("img").fadeOut("slow", function() {
+                    $(this).remove();
                     that._fadeInImage(0);
                 });
             }
@@ -976,7 +977,7 @@ var frontend = (function() {
                     }, delay);
                 } else {
                     console.log("No image found in collection: " + this.index);
-                    console.log(this.collection);
+                    console.log(this.images);
                 }
             }
         },
@@ -1052,7 +1053,7 @@ var frontend = (function() {
                         }),
                     type: this.artifacts.get(QA_PHOTOGRAPH_TYPE),
                 });
-                this.$(".content").html(relatedPhotographView.render().$el);
+                this.$(".content").html(this.relatedPhotographView.render().$el);
             } else {
                 this.$(".content").html(this.infoTemplate({
                     message: this.state + " Tab disabled pending deploying relatedTo inferencing",

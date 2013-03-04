@@ -263,6 +263,10 @@ div.contentpanetabs {
     width: 100%;
 }
 
+.relatedimage img {
+    width: 100%;
+}
+
 .imagedisplay {
     position: relative;
 }
