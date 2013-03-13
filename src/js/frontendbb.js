@@ -485,6 +485,9 @@ var frontend = (function() {
         _cascadeUpdate: function() {},
 
         _labeltext: function(label) {
+            if (_.isUndefined(label)) {
+                return "Label unavailable";
+            }
             if (label.length < 40) return label;
             var rawcut = Math.floor(label.length/2);
             var lower = Math.min(18, rawcut);
@@ -507,7 +510,10 @@ var frontend = (function() {
             });
             
             if (newSelection) {
-                if (this.router.currentRoute.route !== this.router.contentViews[this.type.id]) {
+                if (this.router.contentViews[this.type.id] &&
+                        (this.router.currentRoute.route !==
+                             this.router.contentViews[this.type.id])) {
+
                     this.router.navigate(this.router.contentViews[this.type.id] + "/" +
                             this.selection.serialize(),
                             { trigger: true, replace: !this.typeview.recordroute });
@@ -1766,6 +1772,7 @@ var frontend = (function() {
             photographs.fetch();
             interviews.fetch();
             linedrawings.fetch();
+            articles.fetch();
         });
     }
 
