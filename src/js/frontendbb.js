@@ -288,7 +288,9 @@ var frontend = (function() {
             }, this);
 
             _(this.contentViews).each(function(view) {
-                this.$('#contentdiv').append(view.render().el);
+                if (view) {
+                    this.$('#contentdiv').append(view.render().el);
+                }
             }, this);
 
             return this;
@@ -1534,6 +1536,11 @@ var frontend = (function() {
             comparator: DCT_TITLE,
         });
 
+        var articles = new RDFGraph([], {
+            url: function() { return JSON_ROOT + "articleSummary" },
+            comparator: DCT_TITLE,
+        });
+
         var entities = new RDFGraph([], {
             url: function() { return JSON_ROOT + "entities" },
             comparator: QA_LABEL,
@@ -1612,7 +1619,8 @@ var frontend = (function() {
             content: {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Interview": interviews,
                 "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": photographs,
-                "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing": linedrawings
+                "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing": linedrawings,
+                "http://qldarch.net/ns/rdf/2012-06/terms#Article": articles,
             },
             search: searchModel,
             selection: contentSearchModel,
