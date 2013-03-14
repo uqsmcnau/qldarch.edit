@@ -347,15 +347,18 @@ var frontend = (function() {
             }));
 
             this.model.each(function(entityItem) {
-                var itemView = new ContentItemView({
-                    typeview: this,
-                    router: this.router,
-                    model: entityItem,
-                    selection: this.selection,
-                    type: this.type,
-                });
-                this.itemviews[entityItem.id] = itemView;
-                this.$('.contentlist').append(itemView.render().el);
+                if (this.type.id === QA_INTERVIEW_TYPE ||
+                    entityItem.get1(QA_SYSTEM_LOCATION, true, true)) {
+                    var itemView = new ContentItemView({
+                        typeview: this,
+                        router: this.router,
+                        model: entityItem,
+                        selection: this.selection,
+                        type: this.type,
+                    });
+                    this.itemviews[entityItem.id] = itemView;
+                    this.$('.contentlist').append(itemView.render().el);
+                }
             }, this);
 
             this._update();
