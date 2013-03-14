@@ -427,7 +427,6 @@ var frontend = (function() {
         className: "contententry",
         initialize: function(options) {
             options || (options = {});
-            this.template = _.template($("#itemTemplate").html());
             this.router = options.router;
             this.selection = options.selection;
             this.type = options.type;
@@ -449,7 +448,7 @@ var frontend = (function() {
         },
 
         render: function() {
-            this.$el.html(this._labeltext(this.model.get1(DCT_TITLE, logmultiple), 40));
+            this.$el.text(this._labeltext(this.model.get1(DCT_TITLE, logmultiple), 40));
 
             this.rendered = true;
             this.visible = true;
@@ -491,9 +490,10 @@ var frontend = (function() {
             var rawcut = Math.floor(label.length/2);
             var lower = Math.min(half, rawcut);
             var upper = Math.max(Math.floor(label.length/2), label.length - half);
-            var front = label.substr(0, lower);
-            var back = label.substr(upper);
-            var result = front + '&hellip;' + back;
+            var front = label.substr(0, lower).replace(/\W*$/,'');
+            var back = label.substr(upper).replace(/^\W*/, '');
+            // \u22EF is the midline-ellipsis; \u2026 is the baseline-ellipsis.
+            var result = front + '\u2026' + back;
             return result;
         },
 
@@ -711,7 +711,6 @@ var frontend = (function() {
         className: "entityentry",
         initialize: function(options) {
             options || (options = {});
-            this.template = _.template($("#itemTemplate").html());
             this.router = options.router;
 
             this.content = options.content;
@@ -1221,7 +1220,7 @@ var frontend = (function() {
                         return;
                     }
 
-                    document.title = "QldaArch: " + this.contentDescription.get1(DCT_TITLE, logmultiple);
+                    document.title = "QldArch: " + this.contentDescription.get1(DCT_TITLE, logmultiple);
 
                     this.$(".imagedisplay").append(this.imageTemplate({
                         label: this.contentDescription.get1(DCT_TITLE),
@@ -1506,6 +1505,179 @@ var frontend = (function() {
         },
     });
 
+    var PdfContentView = ToplevelView.extend({
+        className: "imagepane",
+        template: "#imagecontentTemplate",
+
+        initialize: function(options) {
+            options || (options = {});
+            ToplevelView.prototype.initialize.call(this, options);
+
+            this.pdfTemplate = _.template($("#pdfTemplate").html());
+            this.infoTemplate = _.template($("#infopanelTemplate").html());
+            this.detailItemTemplate = _.template($("#entitydetailItemTemplate").html());
+            this.content = options.content;
+            this.contentDescription = undefined;
+            this.properties = options.properties;
+            this.entities = options.entities;
+
+            this.model.on("change", this._updateContentDescription);
+            _.each(_.values(this.content), function(collection) {
+                collection.on("reset", this._updateContentDescription, this)
+            }, this);
+        },
+
+        events: {
+            "click .imagedisplay"   : "_togglemetadata",
+        },
+
+        render: function() {
+            ToplevelView.prototype.render.call(this);
+
+            this.$el.html(this.template());
+            this._update();
+            return this;
+        },
+
+        _update: function() {
+            if (this.attached) {
+                if (this.contentDescription && this.contentDescription.get1(QA_SYSTEM_LOCATION)) {
+                    /*
+                    if (this.$(".imagedisplay img").length != 0 &&
+                            this.contentDescription.id === this.$(".imagedisplay img").data("uri")) {
+                        return;
+                    }
+                    */
+
+                    document.title = "QldArch: " + this.contentDescription.get1(DCT_TITLE, logmultiple);
+
+                    this.$(".columntitle").text(this.contentDescription.get1(DCT_TITLE));
+                    this.$(".imagedisplay").append(this.pdfTemplate({
+                        uri: this.contentDescription.id,
+                    }));
+                    this.$(".imagedisplay div.info").remove();
+
+                    PDFJS.disableWorker = true;
+                    var url = "http://localhost/omeka/archive/files/" + 
+                        this.contentDescription.get1(QA_SYSTEM_LOCATION, true, true);
+                    var that = this;
+                    PDFJS.getDocument(url).then(function displayFirstPage(pdf) {
+                        pdf.getPage(1).then(function displayPage(page) {
+                            var scale = 1.0;
+                            var viewport = page.getViewport(scale);
+
+                            // Prepare canvaas using PDF page dimensions.
+                            var canvas = that.$("canvas").get(0);
+                            var context = canvas.getContext("2d");
+                            canvas.height = viewport.height;
+                            canvas.width = viewport.width;
+
+                            page.render({
+                                canvasContext: context, 
+                                viewport: viewport,
+                            });
+                        });
+                    });
+
+/*
+                    this.$(".imagedisplay").append(this.imageTemplate({
+                        label: this.contentDescription.get1(DCT_TITLE),
+                        systemlocation: this.contentDescription.get1(QA_SYSTEM_LOCATION, true, true),
+                        uri: this.contentDescription.id,
+                    }));
+
+                    var that = this;
+                    this.$(".imagedisplay div.info").remove();
+                    this.$(".imagedisplay").children("img:first")
+                        .fadeOut("slow", function() {
+                            that.$(".columntitle").text(that.contentDescription.get1(DCT_TITLE));
+                            that.$(".imagedisplay").children("img:last")
+                                .fadeIn("slow", function() {
+                                    $(this).siblings("img").remove();
+                            });
+                    });
+*/
+                    this.$(".propertylist").empty();
+                    var metadata = _(this.contentDescription.predicates()).map(function(property) {
+                        var propMeta = this.properties.get(property);
+                        if (!propMeta) {
+                            console.log("Property not found in ontology: " + property);
+                        } else if (propMeta.get1(QA_DISPLAY, true, true)) {
+                            var value = this.contentDescription.get1(property, logmultiple);
+                            var precedence = propMeta.get1(QA_DISPLAY_PRECEDENCE);
+                            precedence = precedence ? precedence : MAX_PRECEDENCE;
+
+                            if (propMeta.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
+                                if (this.entities.get(value) &&
+                                        this.entities.get(value).get1(QA_LABEL)) {
+                                    return {
+                                        label: propMeta.get1(QA_LABEL, logmultiple),
+                                        value: this.entities.get(value).get1(QA_LABEL, logmultiple),
+                                        precedence: precedence,
+                                    };
+                                } else {
+                                    console.log("ObjectProperty(" + property + ") failed resolve");
+                                    console.log(this.entities.get(value));
+                                }
+                            } else {
+                                return {
+                                    label: propMeta.get1(QA_LABEL, logmultiple),
+                                    value: value,
+                                    precedence: precedence,
+                                };
+                            }
+                        }
+                    }, this);
+
+                    _.chain(metadata).filter(_.identity).sortBy('precedence').each(function(entry) {
+                        this.$(".propertylist").append(this.detailItemTemplate(entry));
+                    }, this);
+
+                    var link = 'http://qldarch.net/omeka/archive/files/' +
+                        this.contentDescription.get(QA_SYSTEM_LOCATION);
+
+                    this.$(".propertylist").append(this.detailItemTemplate({
+                        label: this.properties.get(QA_SYSTEM_LOCATION).get1(QA_LABEL, logmultiple),
+                        value: '<a target="_blank" href="' + link + '">' + link + '</a>',
+                    }));
+                } else {
+                    this.$(".columntitle").text("Pdf not found");
+                    this.$(".imagedisplay div.info").remove();
+                    this.$(".imagedisplay canvas").remove();
+                    this.$(".imagedisplay").prepend(this.infoTemplate({
+                        message: "Content not found (" + this.model.get('selection') + ")",
+                    }));
+                }
+            }
+        },
+
+        // FIXME: This is slightly ridiculous. I should introduce the ViewModel concept of
+        // derivied for views and then this can be a direct model application.
+        _updateContentDescription: function() {
+            var contentId = this.model.get('selection');
+            var type = this.model.get('type');
+            if (contentId && type && _.contains(_(this.content).keys(), type)) {
+                var newContent = this.content[type].get(contentId);
+                if (newContent) {
+                    if (newContent !== this.contentDescription) {
+                        this.contentDescription = newContent;
+                        this._update();
+                    }
+                } else {
+                    this.contentDescription = undefined;
+                    this._update();
+                }
+            } else {
+                this.contentDescription = undefined;
+                this._update();
+            }
+        },
+
+        _togglemetadata: function() {
+            $(".imagemetadata").fadeToggle();
+        },
+    });
+
     function frontendOnReady() {
         var router = new QldarchRouter();
 
@@ -1669,19 +1841,9 @@ var frontend = (function() {
             properties: properties,
             content: {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": photographs,
-                "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing": linedrawings
+                "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing": linedrawings,
             },
             entities: entities,
-        });
-
-        var entityContentView = new ImageContentView({
-            router: router,
-            model: entityRelatedContentModel,
-            entityModel: entitySearchModel,
-            properties: properties,
-            content: {
-                "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": photographs,
-            },
         });
 
         var transcriptView = new TranscriptView({
@@ -1690,6 +1852,16 @@ var frontend = (function() {
             content: {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Interview": interviews,
             },
+        });
+
+        var pdfContentView = new PdfContentView({
+            router: router,
+            model: contentSearchModel,
+            properties: properties,
+            content: {
+                "http://qldarch.net/ns/rdf/2012-06/terms#Article": articles,
+            },
+            entities: entities,
         });
 
         searchModel.on("change", function(searchModel) {
@@ -1709,7 +1881,7 @@ var frontend = (function() {
             $("#column123,#column12,#column23").hide();
             contentpaneView.detach();
             imageContentView.detach();
-//            entityDetailView.detach();
+            pdfContentView.detach();
             transcriptView.detach();
             searchView.append("#column1");
             contentView.append("#column2");
@@ -1725,9 +1897,9 @@ var frontend = (function() {
             searchView.detach();
             entityView.detach();
             imageContentView.detach();
+            pdfContentView.detach();
             transcriptView.detach();
             contentpaneView.attach("#column12");
-//            entityDetailView.append("#column3");
             contentView.append("#column3");
             $("#column12,#column3").show();
         }, entitySearchModel);
@@ -1739,10 +1911,24 @@ var frontend = (function() {
             searchView.detach();
             entityView.detach();
             contentpaneView.detach();
-//            entityDetailView.detach();
             transcriptView.detach();
             contentView.append("#column1");
             imageContentView.append("#column23");
+            pdfContentView.detach();
+            $("#column1,#column23").show();
+        }, contentSearchModel);
+
+        router.on('route:viewpdf', function(id) {
+            contentSearchModel.set(contentSearchModel.deserialize(id));
+
+            $("#column123,#column2,#column3").hide();
+            searchView.detach();
+            entityView.detach();
+            contentpaneView.detach();
+            transcriptView.detach();
+            imageContentView.detach();
+            contentView.append("#column1");
+            pdfContentView.append("#column23");
             $("#column1,#column23").show();
         }, contentSearchModel);
 
@@ -1753,9 +1939,9 @@ var frontend = (function() {
             searchView.detach();
             entityView.detach();
             contentpaneView.detach();
-//            entityDetailView.detach();
             contentView.detach();
             imageContentView.detach();
+            pdfContentView.detach();
             transcriptView.append("#column123");
             $("#column123").show();
         }, contentSearchModel);
@@ -1784,12 +1970,14 @@ var frontend = (function() {
             "entity(/*id)": "viewentity",
             "viewimage(/*id)": "viewimage",
             "interview(/*id)": "interview",
+            "viewpdf(/*id)": "viewpdf",
         },
 
         contentViews: {
             "http://qldarch.net/ns/rdf/2012-06/terms#Interview": "interview",
             "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": "viewimage",
             "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing": "viewimage",
+            "http://qldarch.net/ns/rdf/2012-06/terms#Article": "viewpdf",
         },
 
         currentRoute: {},

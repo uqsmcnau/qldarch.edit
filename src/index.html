@@ -19,6 +19,8 @@
         <script type="text/javascript" src="js/wordgrams.js"></script>
         <script type="text/javascript" src="js/storyjs-embed.js"></script>
         <script type="text/javascript" src="js/backbone.js"></script>
+        <script type="text/javascript"
+            src="https://raw.github.com/mozilla/pdf.js/gh-pages/build/pdf.js"></script>
 
         <script type="text/javascript" src="js/networkgraph.js"></script>
 
@@ -123,6 +125,9 @@
         </script>
         <script type="text/template" id="imageTemplate">
             <img style="display:none" data-uri="<%= uri %>" src="http://qldarch.net/omeka/archive/files/<%= systemlocation %>" title="<%= label %>"/>
+        </script>
+        <script type="text/template" id="pdfTemplate">
+            <canvas data-uri="<%= uri %>"></canvas>
         </script>
         <script type="text/template" id="infopanelTemplate">
             <div class="info"><%= message %></div>
