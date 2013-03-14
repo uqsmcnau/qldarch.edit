@@ -449,9 +449,7 @@ var frontend = (function() {
         },
 
         render: function() {
-            this.$el.html(this.template({
-                label: this._labeltext(this.model.get1(DCT_TITLE, logmultiple))
-            }));
+            this.$el.html(this._labeltext(this.model.get1(DCT_TITLE, logmultiple), 40));
 
             this.rendered = true;
             this.visible = true;
@@ -484,14 +482,15 @@ var frontend = (function() {
 
         _cascadeUpdate: function() {},
 
-        _labeltext: function(label) {
+        _labeltext: function(label, maxlength) {
             if (_.isUndefined(label)) {
                 return "Label unavailable";
             }
-            if (label.length < 40) return label;
+            var half = (maxlength / 2) - 2;
+            if (label.length < maxlength) return label;
             var rawcut = Math.floor(label.length/2);
-            var lower = Math.min(18, rawcut);
-            var upper = Math.max(Math.floor(label.length/2), label.length - 18);
+            var lower = Math.min(half, rawcut);
+            var upper = Math.max(Math.floor(label.length/2), label.length - half);
             var front = label.substr(0, lower);
             var back = label.substr(upper);
             var result = front + '&hellip;' + back;
@@ -731,9 +730,7 @@ var frontend = (function() {
         },
 
         render: function() {
-            this.$el.html(this.template({
-                label: this.model.get1(QA_LABEL, true)
-            }));
+            this.$el.text(this.model.get1(QA_LABEL, true));
 
             this.rendered = true;
             this.visible = true;
