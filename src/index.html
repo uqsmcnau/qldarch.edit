@@ -19,6 +19,8 @@
         <script type="text/javascript" src="js/wordgrams.js"></script>
         <script type="text/javascript" src="js/storyjs-embed.js"></script>
         <script type="text/javascript" src="js/backbone.js"></script>
+        <script type="text/javascript"
+            src="https://raw.github.com/mozilla/pdf.js/gh-pages/build/pdf.js"></script>
 
         <script type="text/javascript" src="js/networkgraph.js"></script>
 
@@ -54,12 +56,9 @@
         </script>
         <script type="text/template" id="contenttypeTemplate">
             <div class="contenttype" data-uri="<%= uri %>">
-                <div class="contentlisttitle span-8"><%= label %></div>
+                <div class="contentlisttitle"><%= label %></div>
                 <div class="contentlist"></div>
             </div>
-        </script>
-        <script type="text/template" id="itemTemplate">
-            <%= label %>
         </script>
         <script type="text/template" id="searchdivTemplate">
             <h2 class="columntitle span-8 last">General Search</h2>
@@ -80,7 +79,6 @@
         </script>
         <script type="text/template" id="entitytypeTemplate">
             <div class="entity" data-uri="<%= uri %>">
-                <input class="searchbox span-5" type="text" placeHolder="Search <%= label %>"/>
                 <div class="entityworking span-8 last">
                     <div class="entitylisttitle"><%= label %></div>
                     <div class="entitylist"></div>
@@ -127,6 +125,9 @@
         </script>
         <script type="text/template" id="imageTemplate">
             <img style="display:none" data-uri="<%= uri %>" src="http://qldarch.net/omeka/archive/files/<%= systemlocation %>" title="<%= label %>"/>
+        </script>
+        <script type="text/template" id="pdfTemplate">
+            <canvas data-uri="<%= uri %>"></canvas>
         </script>
         <script type="text/template" id="infopanelTemplate">
             <div class="info"><%= message %></div>
