@@ -52,6 +52,7 @@ var frontend = (function() {
     var QA_DIGITAL_THING = "http://qldarch.net/ns/rdf/2012-06/terms#DigitalThing";
 
     var DCT_TITLE = "http://purl.org/dc/terms/title";
+    var DCT_FORMAT = "http://purl.org/dc/terms/format";
 
     var MAX_PRECEDENCE = 1000000;
     var successDelay = 2000;
@@ -255,7 +256,7 @@ var frontend = (function() {
     });
 
     var DigitalContentView = ToplevelView.extend({
-        template: "#digitalContentTemplate",
+        template: "#contentTemplate",
 
         initialize: function(options) {
             options || (options = {});
@@ -293,7 +294,8 @@ var frontend = (function() {
 
             _(this.contentViews).each(function(view) {
                 if (view) {
-                    this.$('#contentdiv').append(view.render().el);
+                    this.$(".columntitle").text("Digital Content");
+                    this.$('.contentdiv').append(view.render().el);
                 }
             }, this);
 
@@ -340,27 +342,23 @@ var frontend = (function() {
             this.router.on('route:frontpage', function () { this.recordroute = true }, this);
         },
         
-        events: { // Not used here, but maintained to prepare for refactoring with EntityTV.
-            "keyup input"   : "_keyup"
-        },
-
         render: function() {
             this.$el.html(this.template({
                 uri: this.type.id,
                 label: this.type.get1(QA_LABEL, logmultiple)
             }));
 
-            this.model.each(function(entityItem) {
-                if (this.type.id === QA_INTERVIEW_TYPE ||
-                    entityItem.get1(QA_SYSTEM_LOCATION, true, true)) {
+            this.model.each(function(contentItem) {
+                var format = contentItem.get(DCT_FORMAT);
+                if (this._includeItem(contentItem, this.type.id)) {
                     var itemView = new ContentItemView({
                         typeview: this,
                         router: this.router,
-                        model: entityItem,
+                        model: contentItem,
                         selection: this.selection,
                         type: this.type,
                     });
-                    this.itemviews[entityItem.id] = itemView;
+                    this.itemviews[contentItem.id] = itemView;
                     this.$('.contentlist').append(itemView.render().el);
                 }
             }, this);
@@ -374,11 +372,13 @@ var frontend = (function() {
             return this;
         },
 
-        _keyup: function() {
-            this.search.set({
-                'searchstring': this.$("input").val(),
-                'searchtypes': [this.type.id],
-            });
+        _includeItem: function(contentItem, typeid) {
+            if (typeid === QA_INTERVIEW_TYPE) return true;
+            if (!contentItem.get1(QA_SYSTEM_LOCATION, true, true)) return false;
+            if (_.contains([QA_LINEDRAWING_TYPE, QA_PHOTOGRAPH_TYPE], typeid)) {
+                return (contentItem.get1(DCT_FORMAT) === "image/jpeg");
+            }
+            return true;
         },
 
         _update: function() {
@@ -419,9 +419,10 @@ var frontend = (function() {
         },
 
         _defaultPredicate: function(model) {
-            return true;
-//            var searchtypes = this.search.get('searchtypes');
-//            return _.contains(searchtypes, 'all') || _.contains(searchtypes, this.options.type.id);
+            var searchtypes = this.search.get('searchtypes');
+            return _.contains(searchtypes, 'all') ||
+                _.contains(searchtypes, 'fulltext') ||
+                _.contains(searchtypes, this.options.type.id);
         },
 
         _setinput: function() {
@@ -568,7 +569,7 @@ var frontend = (function() {
     });
 
     var EntityContentView = ToplevelView.extend({
-        template: "#entityContentTemplate",
+        template: "#contentTemplate",
 
         initialize: function(options) {
             options || (options = {});
@@ -593,7 +594,8 @@ var frontend = (function() {
                         search: this.search,
                         content: this.content,
                     });
-                    this.$('#entitydiv').append(entityView.render().el);
+                    this.$(".columntitle").text("People and Things");
+                    this.$('.contentdiv').append(entityView.render().el);
                 }
             }, this);
 
@@ -616,7 +618,7 @@ var frontend = (function() {
         className: 'typeview',
         initialize: function(options) {
             options || (options = {});
-            this.template = _.template($("#entitytypeTemplate").html());
+            this.template = _.template($("#contenttypeTemplate").html());
             this.router = options.router;
 
             _.bindAll(this);
@@ -636,10 +638,6 @@ var frontend = (function() {
             this.predicate = this._defaultPredicate;
         },
         
-        events: {
-            "keyup input"   : "_keyup"
-        },
-
         render: function() {
             this.$el.html(this.template({
                 uri: this.type.id,
@@ -653,7 +651,7 @@ var frontend = (function() {
                     content: this.content,
                 });
                 this.itemviews[entityItem.id] = itemView;
-                this.$('.entitylist').append(itemView.render().el);
+                this.$('.contentlist').append(itemView.render().el);
             }, this);
 
             this._update();
@@ -663,13 +661,6 @@ var frontend = (function() {
             this.visible = true;
 
             return this;
-        },
-
-        _keyup: function() {
-            this.search.set({
-                'searchstring': this.$("input").val(),
-                'searchtypes': [this.type.id],
-            });
         },
 
         _update: function() {
@@ -704,7 +695,9 @@ var frontend = (function() {
 
         _defaultPredicate: function(model) {
             var searchtypes = this.search.get('searchtypes');
-            return _.contains(searchtypes, 'all') || _.contains(searchtypes, this.options.type.id);
+            return _.contains(searchtypes, 'all') ||
+                _.contains(searchtypes, 'fulltext') ||
+                _.contains(searchtypes, this.options.type.id);
         },
 
         _setinput: function() {
@@ -1685,6 +1678,226 @@ var frontend = (function() {
         },
     });
 
+    var FulltextResult = Backbone.Model.extend({
+        initialize: function() {
+        },
+    });
+
+    var FulltextSearchCollection = function(options) {
+        options || (options = {});
+        console.log(options);
+        Backbone.Collection.call(this, [], options);
+    }
+    _.extend(FulltextSearchCollection.prototype, Backbone.Collection.prototype, {
+        model: FulltextResult,
+
+        parse: function(results) {
+            console.log(results);
+            return results.response.docs;
+        },
+
+        initialize: function(models, options) {
+            _.bindAll(this);
+            this.solrURL = options.solrURL ? options.solrURL
+                : "http://localhost/solr/collection1/select",
+            this.debounce = options.debounce ? options.debounce
+                : 5000;
+            this.search = options.search;
+
+            this.search.on("change", _.debounce(this._refresh, this.debounce));
+            this._refresh();
+
+            this.on("reset", function() {
+                console.log(this);
+            }, this);
+        },
+
+        _refresh: function() {
+            var searchtypes = this.search.get('searchtypes');
+            var searchstring = this.search.get('searchstring');
+            if (!_.contains(searchtypes, 'fulltext')) {
+                console.log("searchtypes does not contain fulltext");
+                return;
+            }
+            var newURL = this.buildURL(searchstring);
+            console.log("newURL=" + newURL);
+            if (this.url !== newURL) {
+                this.url = newURL;
+                this.fetch();
+            }
+        },
+
+        buildURL: function(searchstring) {
+            return this.solrURL +
+                "?q=" +
+                encodeURIComponent("transcript:" + searchstring) +
+                "&wt=json";
+        },
+    });
+    FulltextSearchCollection.extend = Backbone.Collection.extend;
+
+    // FIXME: MAKE WORK
+    var FulltextResultsView = ToplevelView.extend({
+        template: "#contentTemplate",
+
+        initialize: function(options) {
+            options || (options = {});
+            ToplevelView.prototype.initialize.call(this, options);
+
+            this.content = options.content;
+
+            this.model.on("change:searchtypes", this._update);
+
+            if (options.initialize) { options.initialize.call(this); }
+        },
+
+        render: function() {
+            ToplevelView.prototype.render.call(this);
+            this.$el.html(this.template());
+
+            if (_.isUndefined(this.fulltextView)) {
+                this.fulltextView = new FulltextTypeView({
+                    router: this.router,
+                    model: new FulltextSearchCollection({
+                                search: this.model,
+                           }),
+                });
+            }
+
+            this.$(".columntitle").text("Fulltext Search Results");
+            this.$('.contentdiv').append(this.fulltextView.render().el);
+
+            return this;
+        },
+
+        _update: function() {
+            console.log("FulltextResultsView::_update");
+            console.log(this.model);
+            if (this.fulltextView) this.fulltextView._update();
+            if (_.contains(this.model.get('searchtypes'), 'fulltext')) {
+                this.$el.show();
+            } else {
+                this.$el.hide();
+            }
+        },
+    });
+
+    var FulltextTypeView = Backbone.View.extend({
+        className: 'typeview',
+        initialize: function(options) {
+            _.bindAll(this);
+
+            options || (options = {});
+            if (options.initialize) { options.initialize.call(this); }
+
+            this.template = _.template($("#contenttypeTemplate").html());
+            this.router = options.router;
+
+            this.model.on("reset", this.render);
+
+            this.$placeholder = $('<span display="none" data-uri="' + QA_INTERVIEW_TYPE + '"/>');
+            this.rendered = false;
+            this.visible = false;
+        },
+        
+        render: function() {
+            this.$el.html(this.template({
+                uri: QA_INTERVIEW_TYPE, // FIXME: This should probably be TRANSCRIPT_TYPE
+                label: "Transcripts",
+            }));
+
+            this.model.each(function(result) {
+                var itemView = new FulltextItemView({
+                    router: this.router,
+                    model: result,
+                });
+                this.$('.contentlist').append(itemView.render().el);
+            }, this);
+
+            this._update();
+
+            this.rendered = true;
+            this.visible = true;
+
+            return this;
+        },
+
+        _update: function() {
+            if (this.rendered) {
+                if (!this.visible) {
+                    this.$placeholder.after(this.$el).detach();
+                    this.visible = true;
+                }
+            }
+        },
+    });
+
+    var FulltextItemView = Backbone.View.extend({
+        className: "contententry",
+
+        initialize: function(options) {
+            options || (options = {});
+            _.bindAll(this);
+
+            if (options.initialize) { options.initialize.call(this); }
+            this.router = options.router;
+
+            this.$placeholder = $('<span display="none" data-uri="' + this.model.id + '"/>');
+            this.rendered = false;
+            this.visible = false;
+        },
+        
+        events: {
+            "click"   : "_select"
+        },
+
+        render: function() {
+            this.$el.text(this._labeltext(this.model.get("transcript"), 120));
+
+            this.rendered = true;
+            this.visible = true;
+
+            return this;
+        },
+
+        _update: function() {
+            if (this.rendered) {
+                if (this.predicate(this.model)) {
+                    if (!this.visible) {
+                        this.$placeholder.after(this.$el).detach();
+                        this.visible = true;
+                    }
+                } else {
+                    if (this.visible) {
+                        this.$el.after(this.$placeholder).detach();
+                        this.visible = false;
+                    }
+                }
+            }
+        },
+
+        _labeltext: function(label, maxlength) {
+            if (_.isUndefined(label)) {
+                return "Label unavailable";
+            }
+            var half = (maxlength / 2) - 2;
+            if (label.length < maxlength) return label;
+            var rawcut = Math.floor(label.length/2);
+            var lower = Math.min(half, rawcut);
+            var upper = Math.max(Math.floor(label.length/2), label.length - half);
+            var front = label.substr(0, lower).replace(/\W*$/,'');
+            var back = label.substr(upper).replace(/^\W*/, '');
+            // \u22EF is the midline-ellipsis; \u2026 is the baseline-ellipsis.
+            var result = front + '\u2026' + back;
+            return result;
+        },
+
+        _select: function() {
+            console.log("Selected: " + this.model.id);
+        },
+    });
+
+
     function frontendOnReady() {
         var router = new QldarchRouter();
 
@@ -1822,6 +2035,12 @@ var frontend = (function() {
             }
         });
 
+        var fulltextView = new FulltextResultsView({
+            router: router,
+            id: "fulltextpane",
+            model: searchModel,
+        });
+
         var contentpaneView = new ContentPaneView({
             router: router,
             id: "contentpane",
@@ -1891,6 +2110,7 @@ var frontend = (function() {
             pdfContentView.detach();
             transcriptView.detach();
             searchView.append("#column1");
+            fulltextView.append("#column1");
             contentView.append("#column2");
             entityView.append("#column3");
             $("#column1,#column2,#column3").show();
@@ -1902,6 +2122,7 @@ var frontend = (function() {
 
             $("#column123,#column1,#column2,#column23").hide();
             searchView.detach();
+            fulltextView.detach();
             entityView.detach();
             imageContentView.detach();
             pdfContentView.detach();
@@ -1916,6 +2137,7 @@ var frontend = (function() {
 
             $("#column123,#column2,#column3").hide();
             searchView.detach();
+            fulltextView.detach();
             entityView.detach();
             contentpaneView.detach();
             transcriptView.detach();
@@ -1930,6 +2152,7 @@ var frontend = (function() {
 
             $("#column123,#column2,#column3").hide();
             searchView.detach();
+            fulltextView.detach();
             entityView.detach();
             contentpaneView.detach();
             transcriptView.detach();
@@ -1944,6 +2167,7 @@ var frontend = (function() {
 
             $("#column12,#column1,#column2,#column3, #column23").hide();
             searchView.detach();
+            fulltextView.detach();
             entityView.detach();
             contentpaneView.detach();
             contentView.detach();
