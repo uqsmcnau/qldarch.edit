@@ -231,6 +231,10 @@ var frontend = (function() {
                     value: entity.id,
                 }));
             }, this);
+            this.$("select").append(this.optionTemplate({
+                label: "Fulltext",
+                value: "fulltext",
+            }));
 
             this._update();
             return this;
