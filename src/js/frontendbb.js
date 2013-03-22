@@ -34,6 +34,7 @@ var frontend = (function() {
     var QA_EDITABLE = "http://qldarch.net/ns/rdf/2012-06/terms#editable";
     var QA_SYSTEM_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#systemLocation";
     var QA_EXTERNAL_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#externalLocation";
+    var QA_HAS_TRANSCRIPT = "http://qldarch.net/ns/rdf/2012-06/terms#hasTranscript";
     var QA_TRANSCRIPT_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#transcriptLocation";
     var QA_DISPLAY_PRECEDENCE = "http://qldarch.net/ns/rdf/2012-06/terms#displayPrecedence";
     var QA_PREFERRED_IMAGE = "http://qldarch.net/ns/rdf/2012-06/terms#preferredImage";
@@ -47,6 +48,7 @@ var frontend = (function() {
     var RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
 
     var QA_INTERVIEW_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Interview";
+    var QA_TRANSCRIPT_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Transcript";
     var QA_PHOTOGRAPH_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Photograph";
     var QA_LINEDRAWING_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing";
     var QA_DIGITAL_THING = "http://qldarch.net/ns/rdf/2012-06/terms#DigitalThing";
@@ -210,6 +212,7 @@ var frontend = (function() {
         initialize: function(options) {
             ToplevelView.prototype.initialize.call(this, options);
             this.proper = options.proper;
+            this.suppressUpdate = false;
 
             this.optionTemplate = _.template($("#searchtypeoptionTemplate").html());
 
@@ -219,7 +222,7 @@ var frontend = (function() {
         
         events: {
             "keyup input"   : "_keyup",
-            "change select" : "_keyup",
+            "change select" : "_select",
         },
 
         render: function() {
@@ -241,18 +244,31 @@ var frontend = (function() {
             return this;
         },
 
-        _keyup: function() {
+        _keyup: function(event) {
+            if (event.keyCode == 13) {
+                this.model.trigger('performsearch');
+            } else {
+                this.suppressUpdate = true;
+                this.model.set({
+                    'searchstring': this.$("input").val(),
+                    'searchtypes': [this.$("select").val()],
+                });
+            }
+        },
+
+        _select: function(event) {
             this.model.set({
-                'searchstring': this.$("input").val(),
                 'searchtypes': [this.$("select").val()],
             });
         },
 
         _update: function() {
-            this.$("input").val(this.model.get("searchstring"));
-            this.$("select").val(this.model.get("searchtypes")[0]);
+            if (!this.suppressUpdate) {
+                this.$("input").val(this.model.get("searchstring"));
+                this.$("select").val(this.model.get("searchtypes")[0]);
+            }
+            this.suppressUpdate = false;
         },
-
     });
 
     var DigitalContentView = ToplevelView.extend({
@@ -339,6 +355,7 @@ var frontend = (function() {
 
             this.recordroute = true;
             this.router.on('route:viewimage', function () { this.recordroute = false }, this);
+            this.router.on('route:viewentity', function () { this.recordroute = true }, this);
             this.router.on('route:frontpage', function () { this.recordroute = true }, this);
         },
         
@@ -523,7 +540,7 @@ var frontend = (function() {
 
                     this.router.navigate(this.router.contentViews[this.type.id] + "/" +
                             this.selection.serialize(),
-                            { trigger: true, replace: !this.typeview.recordroute });
+                            { trigger: true, replace: this.typeview.recordroute });
                 }
             } else {
                 this.router.navigate("", { trigger: true, replace: false });
@@ -1275,7 +1292,7 @@ var frontend = (function() {
                         this.$(".propertylist").append(this.detailItemTemplate(entry));
                     }, this);
 
-                    var link = 'http://qldarch.net/omeka/archive/files/' +
+                    var link = '/omeka/archive/files/' +
                         this.contentDescription.get(QA_SYSTEM_LOCATION);
 
                     this.$(".propertylist").append(this.detailItemTemplate({
@@ -1332,6 +1349,8 @@ var frontend = (function() {
             this.spinnerTemplate = _.template($("#spinnerTemplate").html());
             this.transcriptResultTemplate = _.template($("#transcriptresultTemplate").html());
             this.content = options.content;
+            this.fulltext = options.fulltext;
+            this.transcripts = options.transcripts;
             this.contentDescription = undefined;
             this.transcript = undefined;
 
@@ -1373,6 +1392,11 @@ var frontend = (function() {
                         audiosrc: this.contentDescription.get1(QA_EXTERNAL_LOCATION, true, true),
                     }));
                     this.$(".transcript").html(this.spinnerTemplate());
+// FIXME: This won't work until I have .json files submitted to Omeka.
+//                    var transcriptId = this.contentDescription.get1(QA_HAS_TRANSCRIPT, true, true);
+//                    var transcript = this.transcripts.get(transcriptId);
+//                    var transcriptURL = '/omeka/archive/files/' +
+//                        transcript.get(QA_SYSTEM_LOCATION);
                     var transcriptURL = this.contentDescription.get(QA_TRANSCRIPT_LOCATION, true, true);
                     if (transcriptURL) {
                         var that = this;
@@ -1401,10 +1425,15 @@ var frontend = (function() {
         // FIXME: This is slightly ridiculous. I should introduce the ViewModel concept of
         // derivied for views and then this can be a direct model application.
         _updateContentDescription: function() {
-            var contentId = this.model.get('selection');
             var type = this.model.get('type');
-            if (contentId && type && this.content[type]) {
-                var newContent = this.content[type].get(contentId);
+            var contentId = this.model.get('selection');
+            var searchresult = (type === QA_TRANSCRIPT_TYPE) ?
+                this.fulltext.get(contentId) : undefined;
+            var interviewId = searchresult ? searchresult.get('interview') : contentId;
+            this.offset = searchresult ? searchresult.id.match(/[^#]*#(.*)/)[1] : undefined;
+
+            if (interviewId && type && this.content[type]) {
+                var newContent = this.content[type].get(interviewId);
                 if (newContent) {
                     if (newContent !== this.contentDescription) {
                         this.contentDescription = newContent;
@@ -1469,6 +1498,11 @@ var frontend = (function() {
             }
 
             popcorn.play();
+
+            if (this.offset) {
+                var start = Math.max(0.5, Popcorn.util.toSeconds(this.offset)) - 0.5;
+                _.delay(function() { popcorn.currentTime(start); }, 2000);
+            }
         },
 
         searchTranscript: function(event) {
@@ -1542,13 +1576,6 @@ var frontend = (function() {
         _update: function() {
             if (this.attached) {
                 if (this.contentDescription && this.contentDescription.get1(QA_SYSTEM_LOCATION)) {
-                    /*
-                    if (this.$(".imagedisplay img").length != 0 &&
-                            this.contentDescription.id === this.$(".imagedisplay img").data("uri")) {
-                        return;
-                    }
-                    */
-
                     document.title = "QldArch: " + this.contentDescription.get1(DCT_TITLE, logmultiple);
 
                     this.$(".columntitle").text(this.contentDescription.get1(DCT_TITLE));
@@ -1558,7 +1585,7 @@ var frontend = (function() {
                     this.$(".imagedisplay div.info").remove();
 
                     PDFJS.disableWorker = true;
-                    var url = "http://localhost/omeka/archive/files/" + 
+                    var url = "/omeka/archive/files/" + 
                         this.contentDescription.get1(QA_SYSTEM_LOCATION, true, true);
                     var that = this;
                     PDFJS.getDocument(url).then(function displayFirstPage(pdf) {
@@ -1579,24 +1606,6 @@ var frontend = (function() {
                         });
                     });
 
-/*
-                    this.$(".imagedisplay").append(this.imageTemplate({
-                        label: this.contentDescription.get1(DCT_TITLE),
-                        systemlocation: this.contentDescription.get1(QA_SYSTEM_LOCATION, true, true),
-                        uri: this.contentDescription.id,
-                    }));
-
-                    var that = this;
-                    this.$(".imagedisplay div.info").remove();
-                    this.$(".imagedisplay").children("img:first")
-                        .fadeOut("slow", function() {
-                            that.$(".columntitle").text(that.contentDescription.get1(DCT_TITLE));
-                            that.$(".imagedisplay").children("img:last")
-                                .fadeIn("slow", function() {
-                                    $(this).siblings("img").remove();
-                            });
-                    });
-*/
                     this.$(".propertylist").empty();
                     var metadata = _(this.contentDescription.predicates()).map(function(property) {
                         var propMeta = this.properties.get(property);
@@ -1633,7 +1642,7 @@ var frontend = (function() {
                         this.$(".propertylist").append(this.detailItemTemplate(entry));
                     }, this);
 
-                    var link = 'http://qldarch.net/omeka/archive/files/' +
+                    var link = '/omeka/archive/files/' +
                         this.contentDescription.get(QA_SYSTEM_LOCATION);
 
                     this.$(".propertylist").append(this.detailItemTemplate({
@@ -1679,20 +1688,17 @@ var frontend = (function() {
     });
 
     var FulltextResult = Backbone.Model.extend({
-        initialize: function() {
-        },
+        initialize: function() { },
     });
 
     var FulltextSearchCollection = function(options) {
         options || (options = {});
-        console.log(options);
         Backbone.Collection.call(this, [], options);
     }
     _.extend(FulltextSearchCollection.prototype, Backbone.Collection.prototype, {
         model: FulltextResult,
 
         parse: function(results) {
-            console.log(results);
             return results.response.docs;
         },
 
@@ -1701,26 +1707,21 @@ var frontend = (function() {
             this.solrURL = options.solrURL ? options.solrURL
                 : "http://localhost/solr/collection1/select",
             this.debounce = options.debounce ? options.debounce
-                : 5000;
+                : 3000;
             this.search = options.search;
 
             this.search.on("change", _.debounce(this._refresh, this.debounce));
+            this.search.on("performsearch", _.debounce(this._refresh, this.debounce, true));
             this._refresh();
-
-            this.on("reset", function() {
-                console.log(this);
-            }, this);
         },
 
         _refresh: function() {
             var searchtypes = this.search.get('searchtypes');
             var searchstring = this.search.get('searchstring');
             if (!_.contains(searchtypes, 'fulltext')) {
-                console.log("searchtypes does not contain fulltext");
                 return;
             }
             var newURL = this.buildURL(searchstring);
-            console.log("newURL=" + newURL);
             if (this.url !== newURL) {
                 this.url = newURL;
                 this.fetch();
@@ -1736,7 +1737,6 @@ var frontend = (function() {
     });
     FulltextSearchCollection.extend = Backbone.Collection.extend;
 
-    // FIXME: MAKE WORK
     var FulltextResultsView = ToplevelView.extend({
         template: "#contentTemplate",
 
@@ -1745,6 +1745,9 @@ var frontend = (function() {
             ToplevelView.prototype.initialize.call(this, options);
 
             this.content = options.content;
+            this.selection = options.selection;
+            this.fulltext = options.fulltext;
+            this.interviews = options.interviews;
 
             this.model.on("change:searchtypes", this._update);
 
@@ -1758,9 +1761,9 @@ var frontend = (function() {
             if (_.isUndefined(this.fulltextView)) {
                 this.fulltextView = new FulltextTypeView({
                     router: this.router,
-                    model: new FulltextSearchCollection({
-                                search: this.model,
-                           }),
+                    model: this.fulltext,
+                    selection: this.selection,
+                    interviews: this.interviews,
                 });
             }
 
@@ -1771,8 +1774,6 @@ var frontend = (function() {
         },
 
         _update: function() {
-            console.log("FulltextResultsView::_update");
-            console.log(this.model);
             if (this.fulltextView) this.fulltextView._update();
             if (_.contains(this.model.get('searchtypes'), 'fulltext')) {
                 this.$el.show();
@@ -1792,6 +1793,8 @@ var frontend = (function() {
 
             this.template = _.template($("#contenttypeTemplate").html());
             this.router = options.router;
+            this.selection = options.selection;
+            this.interviews = options.interviews;
 
             this.model.on("reset", this.render);
 
@@ -1810,9 +1813,19 @@ var frontend = (function() {
                 var itemView = new FulltextItemView({
                     router: this.router,
                     model: result,
+                    selection: this.selection,
+                    type: QA_TRANSCRIPT_TYPE,
+                    interviews: this.interviews,
                 });
                 this.$('.contentlist').append(itemView.render().el);
             }, this);
+
+            var height = this.$(".contenttype").height();
+            if (height > 100) {
+                this.$(".contenttype").height(height*1.5);
+                var clheight = this.$(".contentlist").height();
+                this.$(".contentlist").height(clheight + height*0.5);
+            }
 
             this._update();
 
@@ -1841,10 +1854,15 @@ var frontend = (function() {
 
             if (options.initialize) { options.initialize.call(this); }
             this.router = options.router;
+            this.selection = options.selection;
+            this.type = options.type;
+            this.interviews = options.interviews;
+            this.template = _.template($("#fulltextEntry").html());
 
             this.$placeholder = $('<span display="none" data-uri="' + this.model.id + '"/>');
             this.rendered = false;
             this.visible = false;
+            this.offset = 0;
         },
         
         events: {
@@ -1852,7 +1870,12 @@ var frontend = (function() {
         },
 
         render: function() {
-            this.$el.text(this._labeltext(this.model.get("transcript"), 120));
+            var title = this.interviews.get(this.model.get("interview")).get1(DCT_TITLE);
+            title = title ? title : "Interview not found";
+            this.$el.html(this.template({
+                interview: title,
+                transcript: this._labeltext(this.model.get("transcript"), 110),
+            }));
 
             this.rendered = true;
             this.visible = true;
@@ -1893,7 +1916,25 @@ var frontend = (function() {
         },
 
         _select: function() {
-            console.log("Selected: " + this.model.id);
+            var newSelection = (this.selection.get('selection') !== this.model.id) ?
+                this.model.id : undefined;
+
+            this.offset = this.$el.parents(".contentlist").scrollTop();
+
+            this.selection.set({
+                'selection': newSelection,
+                'type': newSelection ? this.type : undefined,
+            });
+            
+            if (newSelection) {
+                var indicatedRoute = this.router.contentViews[this.type];
+                if (indicatedRoute && (indicatedRoute !== this.router.currentRoute.route)) {
+                    this.router.navigate(indicatedRoute + "/" +
+                            this.selection.serialize(), { trigger: true, replace: false });
+                }
+            } else {
+                this.router.navigate("", { trigger: true, replace: false });
+            }
         },
     });
 
@@ -1907,6 +1948,10 @@ var frontend = (function() {
         var contentSearchModel = new ContentSearchModel();
 
         var entityRelatedContentModel = new ContentSearchModel();
+
+        var fulltextSearchModel = new FulltextSearchCollection({
+            search: searchModel,
+        });
 
         var properties = new RDFGraph([], {
             url: function() { return JSON_ROOT + "properties" },
@@ -1928,6 +1973,11 @@ var frontend = (function() {
 
         var interviews = new RDFGraph([], {
             url: function() { return JSON_ROOT + "interviewSummary" },
+            comparator: DCT_TITLE,
+        });
+
+        var transcripts = new RDFGraph([], {
+            url: function() { return JSON_ROOT + "transcriptSummary" },
             comparator: DCT_TITLE,
         });
 
@@ -2039,6 +2089,9 @@ var frontend = (function() {
             router: router,
             id: "fulltextpane",
             model: searchModel,
+            selection: contentSearchModel,
+            fulltext: fulltextSearchModel,
+            interviews: interviews,
         });
 
         var contentpaneView = new ContentPaneView({
@@ -2077,7 +2130,10 @@ var frontend = (function() {
             model: contentSearchModel,
             content: {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Interview": interviews,
+                "http://qldarch.net/ns/rdf/2012-06/terms#Transcript": interviews,
             },
+            fulltext: fulltextSearchModel,
+            transcripts: transcripts,
         });
 
         var pdfContentView = new PdfContentView({
@@ -2185,6 +2241,7 @@ var frontend = (function() {
             entities.fetch();
             photographs.fetch();
             interviews.fetch();
+            transcripts.fetch();
             linedrawings.fetch();
             articles.fetch();
         });
@@ -2206,6 +2263,7 @@ var frontend = (function() {
 
         contentViews: {
             "http://qldarch.net/ns/rdf/2012-06/terms#Interview": "interview",
+            "http://qldarch.net/ns/rdf/2012-06/terms#Transcript": "interview",
             "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": "viewimage",
             "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing": "viewimage",
             "http://qldarch.net/ns/rdf/2012-06/terms#Article": "viewpdf",

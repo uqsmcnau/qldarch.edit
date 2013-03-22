@@ -98,6 +98,14 @@ h2.columntitle:not(:first-of-type) {
     background: #e5e5e5;
 }
 
+.interviewtext {
+    padding-left: 20px;
+}
+
+.fulltextitem * {
+    position: relative;
+}
+
 #entitydiv .searchbox {
     margin-top: 0px;
     margin-bottom: 0px;
