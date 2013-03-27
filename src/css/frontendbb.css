@@ -96,6 +96,7 @@ h2.columntitle:not(:first-of-type) {
 
 .contentlist :nth-of-type(2n-1) {
     background: #e5e5e5;
+    color: #333333;
 }
 
 .interviewtext {
@@ -121,6 +122,12 @@ h2.columntitle:not(:first-of-type) {
 
 .entityentry:hover,
 .contententry:hover {
+    background: #333333;
+    color: #e5e5e5;
+    cursor: default;
+}
+
+.interviewtext:hover {
     background: #333333;
     color: #e5e5e5;
     cursor: default;
