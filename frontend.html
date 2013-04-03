@@ -382,6 +382,37 @@
                 stroke-width: 3px;
                 stroke-opacity: .8;
             }
+
+            .metadataoverlay {
+                position: relative;
+                top: 0px;
+                left: 0px;
+                z-index: 2;
+                border: 1px solid lightgrey;
+                border-top: none;
+                padding-bottom: 5px;
+            }
+
+            .metadataoverlay.entitydescription {
+                padding-top: 5px;
+            }
+
+            .metadataoverlay .entitylisttitle {
+                margin-bottom: 5px;
+            }
+
+            .relatednetworkpane>svg {
+                position: relative;
+                top: -150px;
+            }
+
+            .relatednetworkpane>svg path.link.linktype1:first-child {
+                stroke: blue;
+            }
+
+            .indent {
+                text-indent: 10px;
+            }
         </style>
         <script type="text/javascript" src="js/underscore.js"></script>
         <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>

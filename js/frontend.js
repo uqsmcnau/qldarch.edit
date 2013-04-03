@@ -544,6 +544,26 @@ function displayRelatedNetworkPane(resource) {
             '<div class="linklegend span-8 last">' +
             '</div>' +
             '</div>');
+        var overlay = $(
+            '<div class="metadataoverlay entitydescription span-8">' +
+            '<div class="entitylisttitle">Graham Bligh employed by BVN</div>' +
+            '<div class="propertypair">' +
+            '<span class="propertylabel span-3">Period</span>' +
+            '<span class="propertyvalue span-5 last">1958 - 1958</span>' +
+            '</div>' +
+            '<div class="propertypair">' + 
+            '<span class="propertylabel indent span-3">evidence</span>' + 
+            '<span class="propertyvalue span-5 last"><a>Interview with Graham Bligh@10:23</a></span>' + 
+            '</div>' +
+            '<div class="propertypair">' + 
+            '<span class="propertylabel span-3">Period</span>' + 
+            '<span class="propertyvalue span-5 last">1961 - 2000</span>' +
+            '</div>' +
+            '<div class="propertypair">' +
+            '<span class="propertylabel indent span-3">evidence</span>' +
+            '<span class="propertyvalue span-5 last"><a>Interview with Graham Bligh@29:35</a></span>' +
+            '</div>' +
+            '</div>').appendTo(networkpane);
 
         displayNodeLegend(networkpane.find(".nodelegend"));
         displayLinkLegend(networkpane.find(".linklegend"));
