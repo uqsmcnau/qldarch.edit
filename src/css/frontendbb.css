@@ -56,7 +56,6 @@ h2.columntitle:not(:first-of-type) {
     font-size: 20px;
 }
 
-.entity,
 .contenttype {
     border-left: 1px solid lightgrey;
     border-right: 1px solid lightgrey;
@@ -67,23 +66,19 @@ h2.columntitle:not(:first-of-type) {
     height: 147px;
 }
 
-.typeview:last-of-type .entity,
 .typeview:last-of-type .contenttype {
     border-bottom: 1px solid lightgrey;
     margin-bottom: 10px;
 }
 
-.entity .span-8,
 .contentworking .span-8 {
     width: 306px;
 }
 
-.entitylisttitle,
 .contentlisttitle {
     padding-left: 10px;
 }
 
-.entitylist,
 .contentlist {
     position:relative;
     overflow-y: scroll;
@@ -95,17 +90,21 @@ h2.columntitle:not(:first-of-type) {
     text-align: left;
 }
 
-.entitylist {
-    height: 90px;
-}
-
 .contentlist {
     height:110px;
 }
 
-.entitylist :nth-of-type(2n-1),
 .contentlist :nth-of-type(2n-1) {
     background: #e5e5e5;
+    color: #333333;
+}
+
+.interviewtext {
+    padding-left: 20px;
+}
+
+.fulltextitem * {
+    position: relative;
 }
 
 #entitydiv .searchbox {
@@ -128,8 +127,10 @@ h2.columntitle:not(:first-of-type) {
     cursor: default;
 }
 
-.entityworking {
-    height: 124px;
+.interviewtext:hover {
+    background: #333333;
+    color: #e5e5e5;
+    cursor: default;
 }
 
 .entitydescription {
