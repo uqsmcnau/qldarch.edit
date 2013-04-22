@@ -155,8 +155,44 @@
 
     UnionCollection.extend = UnionCollection.extend;
 
+    var CachedRDFGraph = function(options) {
+        if (options.constructURL) this.constructURL = options.constructURL;
+    }
+
+    _.extend(CachedRDFGraph.prototype, RdfGraph.prototype, {
+        get: function(fileURI, callback, context) {
+            var model = RdfGraph.prototype.get.call(this, fileURI);
+            if (!_.isUndefined(model)) {
+                callback.call(context, model);
+            } else {
+                var that = this;
+                $.get(constructURL(fileURI))
+                    .done(function filesCallbackSuccess(data) {
+                        _.each(_.values(data), function fileCallback(file) {
+                            var rdf = new RDFDescription(file);
+                            this.add(rdf);
+                            callback.call(context, rdf);
+                        }, that);
+                    })
+                    .fail(function filesCallbackError(jqXHR) {
+                        console.log("ERROR fetching model: " + jqXHR.responseText);
+                        callback.call(context, undefined);
+                    });
+            }
+        }
+
+        constructURL: function(id) {
+            console.log("ERROR: no constructURL(id) not defined");
+            return id;
+        }
+    });
+
+    CachedModels.extend = _.extend;
+
+
     Backbone.RDFGraph = RDFGraph;
     Backbone.RDFDescription = RDFDescription;
     Backbone.SubCollection = SubCollection;
     Backbone.UnionCollection = UnionCollection;
+    Backbone.CachedRDFGraph = CachedRDFGraph;
 })(Backbone, $, _);

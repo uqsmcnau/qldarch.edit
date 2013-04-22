@@ -1,6 +1,7 @@
 var frontend = (function() {
     // Alias the Rdfbone extensions to Backbone
     var RDFGraph = Backbone.RDFGraph;
+    var CachedRDFGraph = Backbone.CachedRDFGraph;
     var RDFDescription = Backbone.RDFDescription;
     var SubCollection = Backbone.SubCollection;
     var UnionCollection = Backbone.UnionCollection;
@@ -40,6 +41,7 @@ var frontend = (function() {
     var QA_PREFERRED_IMAGE = "http://qldarch.net/ns/rdf/2012-06/terms#preferredImage";
     var QA_SUMMARY = "http://qldarch.net/ns/rdf/2012-06/terms#summary";
     var QA_RELATED_TO = "http://qldarch.net/ns/rdf/2012-06/terms#relatedTo";
+    var QA_HAS_FILE = "http://qldarch.net/ns/rdf/2012-06/terms#hasFile";
 
     var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
     var OWL_OBJECT_PROPERTY = "http://www.w3.org/2002/07/owl#ObjectProperty";
@@ -391,7 +393,7 @@ var frontend = (function() {
 
         _includeItem: function(contentItem, typeid) {
             if (typeid === QA_INTERVIEW_TYPE) return true;
-            if (!contentItem.get1(QA_SYSTEM_LOCATION, true, true)) return false;
+            if (!contentItem.get1(QA_HAS_FILE, false, false)) return false;
             if (_.contains([QA_LINEDRAWING_TYPE, QA_PHOTOGRAPH_TYPE], typeid)) {
                 return (contentItem.get1(DCT_FORMAT) === "image/jpeg");
             }
@@ -830,6 +832,7 @@ var frontend = (function() {
 
             this.entities = options.entities;
             this.photographs = options.photographs;
+            this.files = options.files;
 
             this.entity = undefined;
 
@@ -846,13 +849,16 @@ var frontend = (function() {
         _update: function() {
             this._updateContentDescription();
             if (this.entity && this.contentDescription) {
-                this.$el.html(this.summaryTemplate({
-                    uri: this.contentDescription.id,
-                    systemlocation: this.contentDescription.get1(QA_SYSTEM_LOCATION, true, true),
-                    label: this.contentDescription.get1(DCT_TITLE),
-                    name: this.entity.get1(QA_LABEL),
-                    description: this.entity.get1(QA_SUMMARY),
-                }));
+                files.get(this.contentDescription.get1(QA_HAS_FILE, true, true),
+                        function(file) {
+                            this.$el.html(this.summaryTemplate({
+                                uri: this.contentDescription.id,
+                                systemlocation: file.get1(QA_SYSTEM_LOCATION, true, true),
+                                label: this.contentDescription.get1(DCT_TITLE),
+                                name: this.entity.get1(QA_LABEL),
+                                description: this.entity.get1(QA_SUMMARY),
+                            }));
+                        }, this);
             } else if (this.entity && this.entity.get1(QA_SUMMARY)) {
                 this.$el.html(this.summaryTemplate({
                     uri: "",
@@ -902,6 +908,7 @@ var frontend = (function() {
 
             this.images = options.images;
             this.type = options.type;
+            this.files = options.files;
             this.images.on("reset", this._update, this);
             this.imageViews = [];
         },
@@ -922,6 +929,7 @@ var frontend = (function() {
             var that = this;
             this.$(".relatedimage").each(function(index, imagediv) {
                 var imageView = new RotatingImageView({
+                    files: files,
                     images: that.images,
                     initialIndex: index,
                     initialDelay: (2000 * index),
@@ -950,6 +958,7 @@ var frontend = (function() {
             this.images = options.images;
             this.index = options.initialIndex;
             this.initialDelay = options.initialDelay;
+            this.files = options.files;
             this.active = false;
         },
 
@@ -984,18 +993,21 @@ var frontend = (function() {
 
                 var image = this.images.at(this.index);
                 if (image) {
-                    this.$el.html(this.imageTemplate({
-                        uri: image.id,
-                        systemlocation: image.get1(QA_SYSTEM_LOCATION, true, true),
-                        label: image.get1(DCT_TITLE),
-                    }));
+                    this.files.get(image.get1(QA_HAS_FILE, true, true),
+                            function(file) {
+                                this.$el.html(this.imageTemplate({
+                                    uri: image.id,
+                                    systemlocation: file.get1(QA_SYSTEM_LOCATION, true, true),
+                                    label: image.get1(DCT_TITLE),
+                                }));
 
-                    var that = this;
-                    _.delay(function() {
-                        that.$("img").fadeIn("slow", function() {
-                            _.delay(that._fadeOutImage, 6000);
-                        });
-                    }, delay);
+                                var that = this;
+                                _.delay(function() {
+                                    that.$("img").fadeIn("slow", function() {
+                                        _.delay(that._fadeOutImage, 6000);
+                                    });
+                                }, delay);
+                            }, this);
                 } else {
                     console.log("No image found in collection: " + this.index);
                     console.log(this.images);
@@ -1024,6 +1036,7 @@ var frontend = (function() {
             this.photographs = options.photographs;
             this.linedrawings = options.linedrawings;
             this.artifacts = options.artifacts;
+            this.files = options.files;
 
             this.state = undefined;
             this.entity = undefined;
@@ -1047,6 +1060,7 @@ var frontend = (function() {
                     model: this.model,
                     entities: this.entities,
                     photographs: this.photographs,
+                    files: this.files,
                 });
             this.$('.summary').html(this.summaryView.render().el);
 
@@ -1074,6 +1088,7 @@ var frontend = (function() {
                             },
                         }),
                     type: this.artifacts.get(QA_PHOTOGRAPH_TYPE),
+                    files: this.files,
                 });
                 this.relatedLineDrawingView = new RelatedImagesView({
                     images: new SubCollection(this.linedrawings, {
@@ -1085,6 +1100,7 @@ var frontend = (function() {
                             },
                         }),
                     type: this.artifacts.get(QA_LINEDRAWING_TYPE),
+                    files: this.files,
                 });
                 this.$(".content").empty();
                 this.$(".content").append(this.relatedPhotographView.render().$el);
@@ -1232,73 +1248,8 @@ var frontend = (function() {
         _update: function() {
             if (this.attached) {
                 if (this.contentDescription) {
-                    if (this.$(".imagedisplay img").length != 0 &&
-                            this.contentDescription.id === this.$(".imagedisplay img").data("uri")) {
-                        return;
-                    }
-
-                    document.title = "QldArch: " + this.contentDescription.get1(DCT_TITLE, logmultiple);
-
-                    this.$(".imagedisplay").append(this.imageTemplate({
-                        label: this.contentDescription.get1(DCT_TITLE),
-                        systemlocation: this.contentDescription.get1(QA_SYSTEM_LOCATION, true, true),
-                        uri: this.contentDescription.id,
-                    }));
-
-                    var that = this;
-                    this.$(".imagedisplay div.info").remove();
-                    this.$(".imagedisplay").children("img:first")
-                        .fadeOut("slow", function() {
-                            that.$(".columntitle").text(that.contentDescription.get1(DCT_TITLE));
-                            that.$(".imagedisplay").children("img:last")
-                                .fadeIn("slow", function() {
-                                    $(this).siblings("img").remove();
-                            });
-                    });
-                    this.$(".propertylist").empty();
-
-                    var metadata = _(this.contentDescription.predicates()).map(function(property) {
-                        var propMeta = this.properties.get(property);
-                        if (!propMeta) {
-                            console.log("Property not found in ontology: " + property);
-                        } else if (propMeta.get1(QA_DISPLAY, true, true)) {
-                            var value = this.contentDescription.get1(property, logmultiple);
-                            var precedence = propMeta.get1(QA_DISPLAY_PRECEDENCE);
-                            precedence = precedence ? precedence : MAX_PRECEDENCE;
-
-                            if (propMeta.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
-                                if (this.entities.get(value) &&
-                                        this.entities.get(value).get1(QA_LABEL)) {
-                                    return {
-                                        label: propMeta.get1(QA_LABEL, logmultiple),
-                                        value: this.entities.get(value).get1(QA_LABEL, logmultiple),
-                                        precedence: precedence,
-                                    };
-                                } else {
-                                    console.log("ObjectProperty(" + property + ") failed resolve");
-                                    console.log(this.entities.get(value));
-                                }
-                            } else {
-                                return {
-                                    label: propMeta.get1(QA_LABEL, logmultiple),
-                                    value: value,
-                                    precedence: precedence,
-                                };
-                            }
-                        }
-                    }, this);
-
-                    _.chain(metadata).filter(_.identity).sortBy('precedence').each(function(entry) {
-                        this.$(".propertylist").append(this.detailItemTemplate(entry));
-                    }, this);
-
-                    var link = '/omeka/archive/files/' +
-                        this.contentDescription.get(QA_SYSTEM_LOCATION);
-
-                    this.$(".propertylist").append(this.detailItemTemplate({
-                        label: this.properties.get(QA_SYSTEM_LOCATION).get1(QA_LABEL, logmultiple),
-                        value: '<a target="_blank" href="' + link + '">' + link + '</a>',
-                    }));
+                    this.files.get(this.contentDescription.get1(QA_SYSTEM_LOCATION, true, true),
+                        this.displayImage, this);
                 } else {
                     this.$(".columntitle").text("Unknown Image");
                     this.$(".imagedisplay div.info").remove();
@@ -1307,6 +1258,75 @@ var frontend = (function() {
                     }));
                 }
             }
+        },
+
+        _displayImage: function(file) {
+            if (this.$(".imagedisplay img").length != 0 &&
+                    this.contentDescription.id === this.$(".imagedisplay img").data("uri")) {
+                return;
+            }
+
+            document.title = "QldArch: " + this.contentDescription.get1(DCT_TITLE, logmultiple);
+
+            this.$(".imagedisplay").append(this.imageTemplate({
+                label: this.contentDescription.get1(DCT_TITLE),
+                systemlocation: file.get1(QA_SYSTEM_LOCATION, true, true),
+                uri: this.contentDescription.id,
+            }));
+
+            var that = this;
+            this.$(".imagedisplay div.info").remove();
+            this.$(".imagedisplay").children("img:first")
+                .fadeOut("slow", function() {
+                    that.$(".columntitle").text(that.contentDescription.get1(DCT_TITLE));
+                    that.$(".imagedisplay").children("img:last")
+                        .fadeIn("slow", function() {
+                            $(this).siblings("img").remove();
+                    });
+            });
+            this.$(".propertylist").empty();
+
+            var metadata = _(this.contentDescription.predicates()).map(function(property) {
+                var propMeta = this.properties.get(property);
+                if (!propMeta) {
+                    console.log("Property not found in ontology: " + property);
+                } else if (propMeta.get1(QA_DISPLAY, true, true)) {
+                    var value = this.contentDescription.get1(property, logmultiple);
+                    var precedence = propMeta.get1(QA_DISPLAY_PRECEDENCE);
+                    precedence = precedence ? precedence : MAX_PRECEDENCE;
+
+                    if (propMeta.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
+                        if (this.entities.get(value) &&
+                                this.entities.get(value).get1(QA_LABEL)) {
+                            return {
+                                label: propMeta.get1(QA_LABEL, logmultiple),
+                                value: this.entities.get(value).get1(QA_LABEL, logmultiple),
+                                precedence: precedence,
+                            };
+                        } else {
+                            console.log("ObjectProperty(" + property + ") failed resolve");
+                            console.log(this.entities.get(value));
+                        }
+                    } else {
+                        return {
+                            label: propMeta.get1(QA_LABEL, logmultiple),
+                            value: value,
+                            precedence: precedence,
+                        };
+                    }
+                }
+            }, this);
+
+            _.chain(metadata).filter(_.identity).sortBy('precedence').each(function(entry) {
+                this.$(".propertylist").append(this.detailItemTemplate(entry));
+            }, this);
+
+            var link = '/omeka/archive/files/' + file.get(QA_SYSTEM_LOCATION);
+
+            this.$(".propertylist").append(this.detailItemTemplate({
+                label: this.properties.get(QA_SYSTEM_LOCATION).get1(QA_LABEL, logmultiple),
+                value: '<a target="_blank" href="' + link + '">' + link + '</a>',
+            }));
         },
 
         // FIXME: This is slightly ridiculous. I should introduce the ViewModel concept of
@@ -1554,6 +1574,7 @@ var frontend = (function() {
             this.contentDescription = undefined;
             this.properties = options.properties;
             this.entities = options.entities;
+            this.files = options.files;
 
             this.model.on("change", this._updateContentDescription);
             _.each(_.values(this.content), function(collection) {
@@ -1575,80 +1596,9 @@ var frontend = (function() {
 
         _update: function() {
             if (this.attached) {
-                if (this.contentDescription && this.contentDescription.get1(QA_SYSTEM_LOCATION)) {
-                    document.title = "QldArch: " + this.contentDescription.get1(DCT_TITLE, logmultiple);
-
-                    this.$(".columntitle").text(this.contentDescription.get1(DCT_TITLE));
-                    this.$(".imagedisplay").append(this.pdfTemplate({
-                        uri: this.contentDescription.id,
-                    }));
-                    this.$(".imagedisplay div.info").remove();
-
-                    PDFJS.disableWorker = true;
-                    var url = "/omeka/archive/files/" + 
-                        this.contentDescription.get1(QA_SYSTEM_LOCATION, true, true);
-                    var that = this;
-                    PDFJS.getDocument(url).then(function displayFirstPage(pdf) {
-                        pdf.getPage(1).then(function displayPage(page) {
-                            var scale = 1.0;
-                            var viewport = page.getViewport(scale);
-
-                            // Prepare canvaas using PDF page dimensions.
-                            var canvas = that.$("canvas").get(0);
-                            var context = canvas.getContext("2d");
-                            canvas.height = viewport.height;
-                            canvas.width = viewport.width;
-
-                            page.render({
-                                canvasContext: context, 
-                                viewport: viewport,
-                            });
-                        });
-                    });
-
-                    this.$(".propertylist").empty();
-                    var metadata = _(this.contentDescription.predicates()).map(function(property) {
-                        var propMeta = this.properties.get(property);
-                        if (!propMeta) {
-                            console.log("Property not found in ontology: " + property);
-                        } else if (propMeta.get1(QA_DISPLAY, true, true)) {
-                            var value = this.contentDescription.get1(property, logmultiple);
-                            var precedence = propMeta.get1(QA_DISPLAY_PRECEDENCE);
-                            precedence = precedence ? precedence : MAX_PRECEDENCE;
-
-                            if (propMeta.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
-                                if (this.entities.get(value) &&
-                                        this.entities.get(value).get1(QA_LABEL)) {
-                                    return {
-                                        label: propMeta.get1(QA_LABEL, logmultiple),
-                                        value: this.entities.get(value).get1(QA_LABEL, logmultiple),
-                                        precedence: precedence,
-                                    };
-                                } else {
-                                    console.log("ObjectProperty(" + property + ") failed resolve");
-                                    console.log(this.entities.get(value));
-                                }
-                            } else {
-                                return {
-                                    label: propMeta.get1(QA_LABEL, logmultiple),
-                                    value: value,
-                                    precedence: precedence,
-                                };
-                            }
-                        }
-                    }, this);
-
-                    _.chain(metadata).filter(_.identity).sortBy('precedence').each(function(entry) {
-                        this.$(".propertylist").append(this.detailItemTemplate(entry));
-                    }, this);
-
-                    var link = '/omeka/archive/files/' +
-                        this.contentDescription.get(QA_SYSTEM_LOCATION);
-
-                    this.$(".propertylist").append(this.detailItemTemplate({
-                        label: this.properties.get(QA_SYSTEM_LOCATION).get1(QA_LABEL, logmultiple),
-                        value: '<a target="_blank" href="' + link + '">' + link + '</a>',
-                    }));
+                if (this.contentDescription && this.contentDescription.get1(QA_HAS_FILE)) {
+                    this.files.get(this.contentDescription.get1(QA_HAS_FILE),
+                            this._displayPdf, this);
                 } else {
                     this.$(".columntitle").text("Pdf not found");
                     this.$(".imagedisplay div.info").remove();
@@ -1658,6 +1608,80 @@ var frontend = (function() {
                     }));
                 }
             }
+        },
+
+        _displayPdf: function(file) {
+            document.title = "QldArch: " + this.contentDescription.get1(DCT_TITLE, logmultiple);
+
+            this.$(".columntitle").text(this.contentDescription.get1(DCT_TITLE));
+            this.$(".imagedisplay").append(this.pdfTemplate({
+                uri: this.contentDescription.id,
+            }));
+            this.$(".imagedisplay div.info").remove();
+
+            PDFJS.disableWorker = true;
+            var url = "/omeka/archive/files/" + file.get1(QA_SYSTEM_LOCATION, true, true);
+            var that = this;
+            PDFJS.getDocument(url).then(function displayFirstPage(pdf) {
+                pdf.getPage(1).then(function displayPage(page) {
+                    var scale = 1.0;
+                    var viewport = page.getViewport(scale);
+
+                    // Prepare canvaas using PDF page dimensions.
+                    var canvas = that.$("canvas").get(0);
+                    var context = canvas.getContext("2d");
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    page.render({
+                        canvasContext: context, 
+                        viewport: viewport,
+                    });
+                });
+            });
+
+            this.$(".propertylist").empty();
+            var metadata = _(this.contentDescription.predicates()).map(function(property) {
+                var propMeta = this.properties.get(property);
+                if (!propMeta) {
+                    console.log("Property not found in ontology: " + property);
+                } else if (propMeta.get1(QA_DISPLAY, true, true)) {
+                    var value = this.contentDescription.get1(property, logmultiple);
+                    var precedence = propMeta.get1(QA_DISPLAY_PRECEDENCE);
+                    precedence = precedence ? precedence : MAX_PRECEDENCE;
+
+                    if (propMeta.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
+                        if (this.entities.get(value) &&
+                                this.entities.get(value).get1(QA_LABEL)) {
+                            return {
+                                label: propMeta.get1(QA_LABEL, logmultiple),
+                                value: this.entities.get(value).get1(QA_LABEL, logmultiple),
+                                precedence: precedence,
+                            };
+                        } else {
+                            console.log("ObjectProperty(" + property + ") failed resolve");
+                            console.log(this.entities.get(value));
+                        }
+                    } else {
+                        return {
+                            label: propMeta.get1(QA_LABEL, logmultiple),
+                            value: value,
+                            precedence: precedence,
+                        };
+                    }
+                }
+            }, this);
+
+            _.chain(metadata).filter(_.identity).sortBy('precedence').each(function(entry) {
+                this.$(".propertylist").append(this.detailItemTemplate(entry));
+            }, this);
+
+            var link = '/omeka/archive/files/' + file.get(QA_SYSTEM_LOCATION);
+
+            this.$(".propertylist").append(this.detailItemTemplate({
+                label: this.properties.get(QA_SYSTEM_LOCATION).get1(QA_LABEL, logmultiple),
+                value: '<a target="_blank" href="' + link + '">' + link + '</a>',
+            }));
         },
 
         // FIXME: This is slightly ridiculous. I should introduce the ViewModel concept of
@@ -1991,6 +2015,12 @@ var frontend = (function() {
             comparator: QA_LABEL,
         });
 
+        var files = new CachedRDFGraph({
+            constructURL: function(id) {
+                return JSON_ROOT + "fileSummary?ID=" + encodeURIComponent(id);
+            }
+        });
+
         var artifacts = new SubCollection(displayedEntities, {
             name: "artifacts",
             tracksort: false,
@@ -2103,6 +2133,7 @@ var frontend = (function() {
             photographs: photographs,
             linedrawings: linedrawings,
             artifacts: artifacts,
+            files: files,
         });
 
 /*
@@ -2144,6 +2175,7 @@ var frontend = (function() {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Article": articles,
             },
             entities: entities,
+            files: files,
         });
 
         searchModel.on("change", function(searchModel) {
