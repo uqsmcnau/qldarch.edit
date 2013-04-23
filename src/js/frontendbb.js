@@ -79,7 +79,7 @@ var frontend = (function() {
     var SearchModel = Backbone.Model.extend({
         defaults: {
             'searchstring': "",
-            'searchtypes': ['all']
+            'searchtypes': ['fulltext']
         },
 
         initialize: function() {
@@ -97,7 +97,7 @@ var frontend = (function() {
 
         deserialize: function(string) {
             var first = string.split("/");
-            var second = first[1] ? first[1].split(",") : [ 'all' ];
+            var second = first[1] ? first[1].split(",") : [ 'fulltext' ];
             return {
                 'searchstring': decodeURIComponent(first[0]),
                 'searchtypes': _.map(second, decodeURIComponent),
@@ -244,10 +244,6 @@ var frontend = (function() {
                     value: entity.id,
                 }));
             }, this);
-            this.$("select").append(this.optionTemplate({
-                label: "Fulltext",
-                value: "fulltext",
-            }));
 
             this._update();
             return this;
@@ -856,7 +852,7 @@ var frontend = (function() {
         _update: function() {
             this._updateContentDescription();
             if (this.entity && this.contentDescription) {
-                files.get(this.contentDescription.geta(QA_HAS_FILE),
+                this.files.get(this.contentDescription.geta(QA_HAS_FILE),
                         function(files) {
                             var file = selectFileByMimeType(files, "image/jpeg");
                             if (file) {
@@ -948,7 +944,8 @@ var frontend = (function() {
             var that = this;
             this.$(".relatedimage").each(function(index, imagediv) {
                 var imageView = new RotatingImageView({
-                    files: files,
+                    files: that.files,
+                    type: that.type,
                     images: that.images,
                     initialIndex: index,
                     initialDelay: (2000 * index),
@@ -976,13 +973,17 @@ var frontend = (function() {
 
             this.images = options.images;
             this.index = options.initialIndex;
+            this.initialIndex = options.initialIndex;
             this.initialDelay = options.initialDelay;
+            this.type = options.type;
             this.files = options.files;
             this.active = false;
         },
 
         render: function() {
-            this._update();
+            if (!this.active) {
+                this._update();
+            }
 
             return this;
         },
@@ -999,7 +1000,9 @@ var frontend = (function() {
                 var that = this;
                 this.$("img").fadeOut("slow", function() {
                     $(this).remove();
-                    that._fadeInImage(0);
+                    if (that.active) {
+                        that._fadeInImage(0);
+                    }
                 });
             }
         },
@@ -1029,7 +1032,8 @@ var frontend = (function() {
                                         });
                                     }, delay);
                                 } else {
-                                    console.log("No image/jpeg found for " + image.id);
+                                    console.log("No image/jpeg found for " + image.id + " " +
+                                        this.initialIndex + " " + this.type.id);
                                 }
                             }, this);
                 } else {
@@ -1787,7 +1791,7 @@ var frontend = (function() {
         _refresh: function() {
             var searchtypes = this.search.get('searchtypes');
             var searchstring = this.search.get('searchstring');
-            if (!_.contains(searchtypes, 'fulltext')) {
+            if (!_.contains(searchtypes, 'fulltext') || !searchstring) {
                 return;
             }
             var newURL = this.buildURL(searchstring);
@@ -1798,10 +1802,16 @@ var frontend = (function() {
         },
 
         buildURL: function(searchstring) {
+            var query = encodeURIComponent(searchstring.indexOf(":") < 0 ?
+                searchstring :
+                _(searchstring.split(/\s+/))
+                    .map(function(s) { return "transcript:" + s; })
+                    .join(" "));
+                
             return this.solrURL +
                 "?q=" +
-                encodeURIComponent("transcript:" + searchstring) +
-                "&wt=json";
+                query +
+                "&wt=json&rows=100";
         },
     });
     FulltextSearchCollection.extend = Backbone.Collection.extend;
@@ -1844,7 +1854,8 @@ var frontend = (function() {
 
         _update: function() {
             if (this.fulltextView) this.fulltextView._update();
-            if (_.contains(this.model.get('searchtypes'), 'fulltext')) {
+            if (_.contains(this.model.get('searchtypes'), 'fulltext') &&
+                    this.model.get('searchstring')) {
                 this.$el.show();
             } else {
                 this.$el.hide();
@@ -1939,15 +1950,22 @@ var frontend = (function() {
         },
 
         render: function() {
-            var title = this.interviews.get(this.model.get("interview")).get1(DCT_TITLE);
-            title = title ? title : "Interview not found";
-            this.$el.html(this.template({
-                interview: title,
-                transcript: this._labeltext(this.model.get("transcript"), 110),
-            }));
+            console.log(this.model)
+            var interview = this.model.get("interview");
+            if (interview) {
+                var title = this.interviews.get(this.model.get("interview")).get1(DCT_TITLE);
+                title = title ? title : "Interview not found";
+                this.$el.html(this.template({
+                    interview: title,
+                    transcript: this._labeltext(this.model.get("transcript"), 110),
+                }));
 
-            this.rendered = true;
-            this.visible = true;
+                this.rendered = true;
+                this.visible = true;
+            } else {
+                console.log("Non-interview found in results");
+                console.log(this.model);
+            }
 
             return this;
         },
@@ -2065,8 +2083,6 @@ var frontend = (function() {
                 if (ids.length == 1) {
                     return JSON_ROOT + "fileSummary?ID=" + encodeURIComponent(ids[0]);
                 } else {
-                    console.log("constructURL");
-                    console.log(ids);
                     var rawids = _.reduce(ids, function(memo, id) {
                         match = id.match(/http:\/\/qldarch.net\/omeka\/files\/show\/([0-9]*)/);
                         if (match) {
@@ -2143,6 +2159,10 @@ var frontend = (function() {
             console.log(collection);
         });
 */
+        fulltextSearchModel.on("reset", function(collection) {
+            console.log("\tRESET:FulltextSearchModel: " + collection.length);
+            console.log(collection);
+        });
 
         var searchView = new GeneralSearchView({
             id: "mainsearch",

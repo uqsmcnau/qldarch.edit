@@ -162,11 +162,6 @@
 
     _.extend(CachedRDFGraph.prototype, RDFGraph.prototype, {
         get: function(fileURIs, callback, context) {
-            console.log("CachedRDFGraph");
-            console.log(fileURIs);
-            console.log(callback);
-            console.log(context);
-            console.trace();
             var uris = _.flatten(fileURIs);
             var models = _.reduce(uris, function(memo, uri) {
                 var model = RDFGraph.prototype.get.call(this, uri);
@@ -179,23 +174,17 @@
             }, { cached: [], uncached: [] }, this);
 
             if (models.uncached.length == 0) {
-                callback.call(context, uri);
+                callback.call(context, models.cached);
             } else {
                 var url = this.constructURL(models.uncached);
-                console.log("Fetching: " + url);
                 var that = this;
                 $.get(url)
                     .done(function filesCallbackSuccess(data) {
-                        console.log("Fetch success");
-                        console.log(data);
-                        console.log(models.cached);
                         _.each(_.values(data), function fileCallback(file) {
                             var rdf = new RDFDescription(file);
                             this.add(rdf);
                             models.cached.push(rdf);
                         }, that);
-                        console.log(models.cached);
-                        console.log("Calling callback");
                         callback.call(context, models.cached);
                     })
                     .fail(function filesCallbackError(jqXHR) {
