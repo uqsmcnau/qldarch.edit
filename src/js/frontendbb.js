@@ -29,6 +29,12 @@ var frontend = (function() {
         },
     });
 
+    function selectFileByMimeType(files, mimetype) {
+        return _.find(files, function(file) {
+            return mimetype === file.get1(QA_BASIC_MIME_TYPE, true, true);
+        });
+    }
+
     var JSON_ROOT = "/ws/rest/";
     var QA_DISPLAY = "http://qldarch.net/ns/rdf/2012-06/terms#display";
     var QA_LABEL = "http://qldarch.net/ns/rdf/2012-06/terms#label";
@@ -42,6 +48,7 @@ var frontend = (function() {
     var QA_SUMMARY = "http://qldarch.net/ns/rdf/2012-06/terms#summary";
     var QA_RELATED_TO = "http://qldarch.net/ns/rdf/2012-06/terms#relatedTo";
     var QA_HAS_FILE = "http://qldarch.net/ns/rdf/2012-06/terms#hasFile";
+    var QA_BASIC_MIME_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#basicMimeType";
 
     var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
     var OWL_OBJECT_PROPERTY = "http://www.w3.org/2002/07/owl#ObjectProperty";
@@ -849,15 +856,18 @@ var frontend = (function() {
         _update: function() {
             this._updateContentDescription();
             if (this.entity && this.contentDescription) {
-                files.get(this.contentDescription.get1(QA_HAS_FILE, true, true),
-                        function(file) {
-                            this.$el.html(this.summaryTemplate({
-                                uri: this.contentDescription.id,
-                                systemlocation: file.get1(QA_SYSTEM_LOCATION, true, true),
-                                label: this.contentDescription.get1(DCT_TITLE),
-                                name: this.entity.get1(QA_LABEL),
-                                description: this.entity.get1(QA_SUMMARY),
-                            }));
+                files.get(this.contentDescription.geta(QA_HAS_FILE),
+                        function(files) {
+                            var file = selectFileByMimeType(files, "image/jpeg");
+                            if (file) {
+                                this.$el.html(this.summaryTemplate({
+                                    uri: this.contentDescription.id,
+                                    systemlocation: file.get1(QA_SYSTEM_LOCATION, true, true),
+                                    label: this.contentDescription.get1(DCT_TITLE),
+                                    name: this.entity.get1(QA_LABEL),
+                                    description: this.entity.get1(QA_SUMMARY),
+                                }));
+                            }
                         }, this);
             } else if (this.entity && this.entity.get1(QA_SUMMARY)) {
                 this.$el.html(this.summaryTemplate({
@@ -875,6 +885,15 @@ var frontend = (function() {
             }
         },
 
+        _displayAnArticle: function(files) {
+            var file = selectFileByMimeType(files, "application/pdf");
+            if (file) {
+                this._displayPdf(file);
+                return true;
+            } else {
+                return false;
+            }
+        },
         // FIXME: This is slightly ridiculous. I should introduce the ViewModel concept of
         // derivied for views and then this can be a direct model application.
         _updateContentDescription: function(model) {
@@ -993,20 +1012,25 @@ var frontend = (function() {
 
                 var image = this.images.at(this.index);
                 if (image) {
-                    this.files.get(image.get1(QA_HAS_FILE, true, true),
-                            function(file) {
-                                this.$el.html(this.imageTemplate({
-                                    uri: image.id,
-                                    systemlocation: file.get1(QA_SYSTEM_LOCATION, true, true),
-                                    label: image.get1(DCT_TITLE),
-                                }));
+                    this.files.get(image.geta(QA_HAS_FILE),
+                            function(files) {
+                                var file = selectFileByMimeType(files, "image/jpeg");
+                                if (file) {
+                                    this.$el.html(this.imageTemplate({
+                                        uri: image.id,
+                                        systemlocation: file.get1(QA_SYSTEM_LOCATION, true, true),
+                                        label: image.get1(DCT_TITLE),
+                                    }));
 
-                                var that = this;
-                                _.delay(function() {
-                                    that.$("img").fadeIn("slow", function() {
-                                        _.delay(that._fadeOutImage, 6000);
-                                    });
-                                }, delay);
+                                    var that = this;
+                                    _.delay(function() {
+                                        that.$("img").fadeIn("slow", function() {
+                                            _.delay(that._fadeOutImage, 6000);
+                                        });
+                                    }, delay);
+                                } else {
+                                    console.log("No image/jpeg found for " + image.id);
+                                }
                             }, this);
                 } else {
                     console.log("No image found in collection: " + this.index);
@@ -1226,6 +1250,7 @@ var frontend = (function() {
             this.contentDescription = undefined;
             this.properties = options.properties;
             this.entities = options.entities;
+            this.files = options.files;
 
             this.model.on("change", this._updateContentDescription);
             _.each(_.values(this.content), function(collection) {
@@ -1247,9 +1272,9 @@ var frontend = (function() {
 
         _update: function() {
             if (this.attached) {
-                if (this.contentDescription) {
-                    this.files.get(this.contentDescription.get1(QA_SYSTEM_LOCATION, true, true),
-                        this.displayImage, this);
+                if (this.contentDescription && this.contentDescription.geta(QA_HAS_FILE)) {
+                    this.files.get(this.contentDescription.geta(QA_HAS_FILE),
+                        this._displayImages, this);
                 } else {
                     this.$(".columntitle").text("Unknown Image");
                     this.$(".imagedisplay div.info").remove();
@@ -1257,6 +1282,16 @@ var frontend = (function() {
                         message: "Content not found (" + this.model.get('selection') + ")",
                     }));
                 }
+            }
+        },
+
+        _displayImages: function(files) {
+            var file = selectFileByMimeType(files, "image/jpeg");
+            if (file) {
+                this._displayImage(file);
+                return true;
+            } else {
+                return false;
             }
         },
 
@@ -1597,8 +1632,8 @@ var frontend = (function() {
         _update: function() {
             if (this.attached) {
                 if (this.contentDescription && this.contentDescription.get1(QA_HAS_FILE)) {
-                    this.files.get(this.contentDescription.get1(QA_HAS_FILE),
-                            this._displayPdf, this);
+                    this.files.get(this.contentDescription.geta(QA_HAS_FILE),
+                            this._displayAnArticle, this);
                 } else {
                     this.$(".columntitle").text("Pdf not found");
                     this.$(".imagedisplay div.info").remove();
@@ -1607,6 +1642,16 @@ var frontend = (function() {
                         message: "Content not found (" + this.model.get('selection') + ")",
                     }));
                 }
+            }
+        },
+
+        _displayAnArticle: function(files) {
+            var file = selectFileByMimeType(files, "application/pdf");
+            if (file) {
+                this._displayPdf(file);
+                return true;
+            } else {
+                return false;
             }
         },
 
@@ -2015,10 +2060,29 @@ var frontend = (function() {
             comparator: QA_LABEL,
         });
 
-        var files = new CachedRDFGraph({
-            constructURL: function(id) {
-                return JSON_ROOT + "fileSummary?ID=" + encodeURIComponent(id);
-            }
+        var files = new CachedRDFGraph([], {
+            constructURL: function(ids) {
+                if (ids.length == 1) {
+                    return JSON_ROOT + "fileSummary?ID=" + encodeURIComponent(ids[0]);
+                } else {
+                    console.log("constructURL");
+                    console.log(ids);
+                    var rawids = _.reduce(ids, function(memo, id) {
+                        match = id.match(/http:\/\/qldarch.net\/omeka\/files\/show\/([0-9]*)/);
+                        if (match) {
+                            memo.idlist.push(match[1]);
+                        } else {
+                            memo.ids.push(id);
+                        }
+                        return memo;
+                    }, { ids: [], idlist: [] });
+
+                    return JSON_ROOT + "fileSummary" +
+                        "?PREFIX=" + encodeURIComponent("http://qldarch.net/omeka/files/show/") +
+                        "&IDLIST=" + _.map(rawids.idlist, encodeURIComponent).join(",") +
+                        "&ID=" + _.map(rawids.ids, encodeURIComponent).join("&ID=");
+                }
+            },
         });
 
         var artifacts = new SubCollection(displayedEntities, {
@@ -2154,6 +2218,7 @@ var frontend = (function() {
                 "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing": linedrawings,
             },
             entities: entities,
+            files: files,
         });
 
         var transcriptView = new TranscriptView({

@@ -155,39 +155,68 @@
 
     UnionCollection.extend = UnionCollection.extend;
 
-    var CachedRDFGraph = function(options) {
+    var CachedRDFGraph = function(initialModels, options) {
+        RDFGraph.apply(this, [initialModels, options]);
         if (options.constructURL) this.constructURL = options.constructURL;
     }
 
-    _.extend(CachedRDFGraph.prototype, RdfGraph.prototype, {
-        get: function(fileURI, callback, context) {
-            var model = RdfGraph.prototype.get.call(this, fileURI);
-            if (!_.isUndefined(model)) {
-                callback.call(context, model);
+    _.extend(CachedRDFGraph.prototype, RDFGraph.prototype, {
+        get: function(fileURIs, callback, context) {
+            console.log("CachedRDFGraph");
+            console.log(fileURIs);
+            console.log(callback);
+            console.log(context);
+            console.trace();
+            var uris = _.flatten(fileURIs);
+            var models = _.reduce(uris, function(memo, uri) {
+                var model = RDFGraph.prototype.get.call(this, uri);
+                if (!_.isUndefined(model)) {
+                    memo.cached.push(model);
+                } else {
+                    memo.uncached.push(uri);
+                }
+                return memo;
+            }, { cached: [], uncached: [] }, this);
+
+            if (models.uncached.length == 0) {
+                callback.call(context, uri);
             } else {
+                var url = this.constructURL(models.uncached);
+                console.log("Fetching: " + url);
                 var that = this;
-                $.get(constructURL(fileURI))
+                $.get(url)
                     .done(function filesCallbackSuccess(data) {
+                        console.log("Fetch success");
+                        console.log(data);
+                        console.log(models.cached);
                         _.each(_.values(data), function fileCallback(file) {
                             var rdf = new RDFDescription(file);
                             this.add(rdf);
-                            callback.call(context, rdf);
+                            models.cached.push(rdf);
                         }, that);
+                        console.log(models.cached);
+                        console.log("Calling callback");
+                        callback.call(context, models.cached);
                     })
                     .fail(function filesCallbackError(jqXHR) {
-                        console.log("ERROR fetching model: " + jqXHR.responseText);
-                        callback.call(context, undefined);
+                        console.log("ERROR fetching models: " + jqXHR.responseText);
+                        callback.call(context, models.cached);
                     });
             }
-        }
+        },
 
         constructURL: function(id) {
             console.log("ERROR: no constructURL(id) not defined");
             return id;
-        }
+        },
+
+        fetch: function() {
+            console.log("ERROR: fetch not supported on CachedRDFGraph");
+            return;
+        },
     });
 
-    CachedModels.extend = _.extend;
+    CachedRDFGraph.extend = _.extend;
 
 
     Backbone.RDFGraph = RDFGraph;
