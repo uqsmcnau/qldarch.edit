@@ -58,6 +58,7 @@ var frontend = (function() {
 
     var QA_INTERVIEW_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Interview";
     var QA_TRANSCRIPT_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Transcript";
+    var QA_ARTICLE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Article";
     var QA_PHOTOGRAPH_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Photograph";
     var QA_LINEDRAWING_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing";
     var QA_DIGITAL_THING = "http://qldarch.net/ns/rdf/2012-06/terms#DigitalThing";
@@ -1777,12 +1778,15 @@ var frontend = (function() {
 
         initialize: function(models, options) {
             _.bindAll(this);
-            this.solrURL = options.solrURL ? options.solrURL
-                : "http://localhost/solr/collection1/select",
-            this.debounce = options.debounce ? options.debounce
-                : 3000;
-            this.search = options.search;
+            _.checkarg(options).throwNoArg("options");
+            this.defaultField = _.checkarg(options.defaultField)
+                .throwNoArg("options.defaultField");
+            this.solrURL = _.checkarg(options.solrURL).throwNoArg("options.solrURL");
+            this.debounce = _.checkarg(options.debounce).withDefault(3000);
+            this.search = _.checkarg(options.search).throwNoArg("options.search");
+            this.maxresults = _.checkarg(options.maxresults).withDefault(100);
 
+            console.log("FT: " + this.defaultField);
             this.search.on("change", _.debounce(this._refresh, this.debounce));
             this.search.on("performsearch", _.debounce(this._refresh, this.debounce, true));
             this._refresh();
@@ -1797,36 +1801,41 @@ var frontend = (function() {
             var newURL = this.buildURL(searchstring);
             if (this.url !== newURL) {
                 this.url = newURL;
+                console.log("Querying: " + newURL);
                 this.fetch();
             }
         },
 
         buildURL: function(searchstring) {
-            var query = encodeURIComponent(searchstring.indexOf(":") < 0 ?
+            var query = encodeURIComponent(searchstring.indexOf(":") >= 0 ?
                 searchstring :
                 _(searchstring.split(/\s+/))
-                    .map(function(s) { return "transcript:" + s; })
+                    .map(function(s) { return this.defaultField + ":" + s; }, this)
                     .join(" "));
                 
             return this.solrURL +
                 "?q=" +
                 query +
-                "&wt=json&rows=100";
+                "&wt=json&rows=" + this.maxresults;
         },
     });
+
     FulltextSearchCollection.extend = Backbone.Collection.extend;
 
     var FulltextResultsView = ToplevelView.extend({
         template: "#contentTemplate",
 
         initialize: function(options) {
-            options || (options = {});
+            _.checkarg(options).throwNoArg("options");
             ToplevelView.prototype.initialize.call(this, options);
 
-            this.content = options.content;
-            this.selection = options.selection;
-            this.fulltext = options.fulltext;
-            this.interviews = options.interviews;
+            this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
+            this.fulltextInterviews =
+                _.checkarg(options.fulltextInterviews).throwNoArg("options.fulltextInterviews");
+            this.fulltextArticles =
+                _.checkarg(options.fulltextArticles).throwNoArg("options.fulltextArticles");
+            this.interviews = _.checkarg(options.interviews).throwNoArg("options.interviews");
+            this.articles = _.checkarg(options.articles).throwNoArg("options.articles");
 
             this.model.on("change:searchtypes", this._update);
 
@@ -1837,23 +1846,44 @@ var frontend = (function() {
             ToplevelView.prototype.render.call(this);
             this.$el.html(this.template());
 
-            if (_.isUndefined(this.fulltextView)) {
-                this.fulltextView = new FulltextTypeView({
+            if (_.isUndefined(this.interviewView)) {
+                this.interviewView = new FulltextTypeView({
                     router: this.router,
-                    model: this.fulltext,
+                    model: this.fulltextInterviews,
                     selection: this.selection,
-                    interviews: this.interviews,
+                    objects: this.interviews,
+                    title: "Transcripts",
+                    type: QA_INTERVIEW_TYPE, // FIXME: This should probably be TRANSCRIPT_TYPE
+                    idField: "interview",
+                    itemtype: QA_TRANSCRIPT_TYPE,
+                    itemField: "transcript",
+                });
+            }
+            if (_.isUndefined(this.articleView)) {
+                this.articleView = new FulltextTypeView({
+                    router: this.router,
+                    model: this.fulltextArticles,
+                    selection: this.selection,
+                    objects: this.articles,
+                    title: "Articles",
+                    type: QA_ARTICLE_TYPE, 
+                    idField: "id",
+                    itemtype: QA_ARTICLE_TYPE, // FIXME: This indicates something is wrong.
+                    itemField: "article",
                 });
             }
 
+
             this.$(".columntitle").text("Fulltext Search Results");
-            this.$('.contentdiv').append(this.fulltextView.render().el);
+            this.$('.contentdiv').append(this.interviewView.render().el);
+            this.$('.contentdiv').append(this.articleView.render().el);
 
             return this;
         },
 
         _update: function() {
-            if (this.fulltextView) this.fulltextView._update();
+            if (this.interviewView) this.interviewView._update();
+            if (this.articleView) this.articleView._update();
             if (_.contains(this.model.get('searchtypes'), 'fulltext') &&
                     this.model.get('searchstring')) {
                 this.$el.show();
@@ -1868,25 +1898,31 @@ var frontend = (function() {
         initialize: function(options) {
             _.bindAll(this);
 
-            options || (options = {});
-            if (options.initialize) { options.initialize.call(this); }
+            _.checkarg(options.initalize).withDefault(_.identity).call(this);
 
-            this.template = _.template($("#contenttypeTemplate").html());
-            this.router = options.router;
-            this.selection = options.selection;
-            this.interviews = options.interviews;
+            this.template = _.checkarg(_.template($("#contenttypeTemplate").html()))
+                .withValidator(_.isFunction).throwError("#contenttypeTemplate missing");
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
+            this.objects = _.checkarg(options.objects).throwNoArg("options.objects");
+            this.title = _.checkarg(options.title).throwNoArg("options.title");
+            this.type = _.checkarg(options.type).throwNoArg("options.type");
+            this.idField = _.checkarg(options.idField).throwNoArg("options.idField");
+            this.titleProp = _.checkarg(options.titleProp).withDefault(DCT_TITLE);
+            this.itemtype = _.checkarg(options.type).throwNoArg("options.itemtype");
+            this.itemField = _.checkarg(options.itemField).throwNoArg("options.itemField");
 
             this.model.on("reset", this.render);
 
-            this.$placeholder = $('<span display="none" data-uri="' + QA_INTERVIEW_TYPE + '"/>');
+            this.$placeholder = $('<span display="none" data-uri="' + this.type + '"/>');
             this.rendered = false;
             this.visible = false;
         },
         
         render: function() {
             this.$el.html(this.template({
-                uri: QA_INTERVIEW_TYPE, // FIXME: This should probably be TRANSCRIPT_TYPE
-                label: "Transcripts",
+                uri: this.type,
+                label: this.title,
             }));
 
             this.model.each(function(result) {
@@ -1894,8 +1930,11 @@ var frontend = (function() {
                     router: this.router,
                     model: result,
                     selection: this.selection,
-                    type: QA_TRANSCRIPT_TYPE,
-                    interviews: this.interviews,
+                    type: this.itemtype,
+                    objects: this.objects,
+                    idField: this.idField,
+                    titleProp: this.titleProp,
+                    itemField: this.itemField,
                 });
                 this.$('.contentlist').append(itemView.render().el);
             }, this);
@@ -1932,12 +1971,17 @@ var frontend = (function() {
             options || (options = {});
             _.bindAll(this);
 
-            if (options.initialize) { options.initialize.call(this); }
-            this.router = options.router;
-            this.selection = options.selection;
-            this.type = options.type;
-            this.interviews = options.interviews;
-            this.template = _.template($("#fulltextEntry").html());
+            _.checkarg(options.initalize).withDefault(_.identity).call(this);
+
+            this.template = _.checkarg(_.template($("#fulltextEntry").html()))
+                .withValidator(_.isFunction).throwError("#fulltextEntry missing");
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
+            this.type = _.checkarg(options.type).throwNoArg("options.type");
+            this.objects = _.checkarg(options.objects).throwNoArg("options.objects");
+            this.idField = _.checkarg(options.idField).throwNoArg("options.idField");
+            this.titleProp = _.checkarg(options.titleProp).throwNoArg("options.titleProp");
+            this.itemField = _.checkarg(options.itemField).throwNoArg("options.itemField");
 
             this.$placeholder = $('<span display="none" data-uri="' + this.model.id + '"/>');
             this.rendered = false;
@@ -1950,14 +1994,13 @@ var frontend = (function() {
         },
 
         render: function() {
-            console.log(this.model)
-            var interview = this.model.get("interview");
-            if (interview) {
-                var title = this.interviews.get(this.model.get("interview")).get1(DCT_TITLE);
+            var objectId = this.model.get(this.idField);
+            if (objectId) {
+                var title = this.objects.get(objectId).get1(this.titleProp);
                 title = title ? title : "Interview not found";
                 this.$el.html(this.template({
-                    interview: title,
-                    transcript: this._labeltext(this.model.get("transcript"), 110),
+                    title: title,
+                    exerpt: this._labeltext(this.model.get(this.itemField), 110),
                 }));
 
                 this.rendered = true;
@@ -2036,8 +2079,16 @@ var frontend = (function() {
 
         var entityRelatedContentModel = new ContentSearchModel();
 
-        var fulltextSearchModel = new FulltextSearchCollection({
+        var fulltextTranscriptModel = new FulltextSearchCollection({
             search: searchModel,
+            defaultField: "transcript",
+            solrURL: "/solr/collection1/select",
+        });
+
+        var fulltextArticleModel = new FulltextSearchCollection({
+            search: searchModel,
+            defaultField: "content",
+            solrURL: "/solr/collection1/select",
         });
 
         var properties = new RDFGraph([], {
@@ -2159,7 +2210,7 @@ var frontend = (function() {
             console.log(collection);
         });
 */
-        fulltextSearchModel.on("reset", function(collection) {
+        fulltextTranscriptModel.on("reset", function(collection) {
             console.log("\tRESET:FulltextSearchModel: " + collection.length);
             console.log(collection);
         });
@@ -2204,8 +2255,10 @@ var frontend = (function() {
             id: "fulltextpane",
             model: searchModel,
             selection: contentSearchModel,
-            fulltext: fulltextSearchModel,
+            fulltextInterviews: fulltextTranscriptModel,
+            fulltextArticles: fulltextArticleModel,
             interviews: interviews,
+            articles: articles,
         });
 
         var contentpaneView = new ContentPaneView({
@@ -2248,7 +2301,7 @@ var frontend = (function() {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Interview": interviews,
                 "http://qldarch.net/ns/rdf/2012-06/terms#Transcript": interviews,
             },
-            fulltext: fulltextSearchModel,
+            fulltext: fulltextTranscriptModel,
             transcripts: transcripts,
         });
 
