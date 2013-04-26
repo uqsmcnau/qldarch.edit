@@ -2087,7 +2087,7 @@ var frontend = (function() {
 
         var fulltextArticleModel = new FulltextSearchCollection({
             search: searchModel,
-            defaultField: "content",
+            defaultField: "article",
             solrURL: "/solr/collection1/select",
         });
 
@@ -2211,7 +2211,11 @@ var frontend = (function() {
         });
 */
         fulltextTranscriptModel.on("reset", function(collection) {
-            console.log("\tRESET:FulltextSearchModel: " + collection.length);
+            console.log("\tRESET:FulltextTranscriptModel: " + collection.length);
+            console.log(collection);
+        });
+        fulltextArticleModel.on("reset", function(collection) {
+            console.log("\tRESET:FulltextArticleModel: " + collection.length);
             console.log(collection);
         });
 
