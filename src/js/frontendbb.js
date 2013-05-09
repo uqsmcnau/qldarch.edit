@@ -282,6 +282,7 @@ var frontend = (function() {
 
         initialize: function(options) {
             options || (options = {});
+            console.log(options);
             ToplevelView.prototype.initialize.call(this, options);
 
             this.content = options.content;
@@ -2068,6 +2069,69 @@ var frontend = (function() {
         },
     });
 
+    var MapSearchView = ToplevelView.extend({
+        className: "mapsearch",
+        template: "#mapsearchTemplate",
+
+        initialize: function(options) {
+            options || (options = {});
+            ToplevelView.prototype.initialize.call(this, options);
+
+            this.router = options.router;
+            this.divid = _.uniqueId("mapsearch");
+        },
+
+        events: {
+            "click .returnbutton" : "toFrontpage"
+        },
+
+        initOM: function() {
+            window.map.init(this.divid);
+            /*
+            this.olmap = new OpenLayers.Map(this.divid);
+            var gmap = new OpenLayers.Layer.Google("Google Streets", {
+                    numZoomLevels: 20,
+                    sphericalMercator: true
+                });
+
+            var omap = new OpenLayers.Layer.OSM("Open Street Map", {
+                    numZoomLevels: 20,
+                    sphericalMercator: true
+                });
+            this.olmap.addLayers([gmap, omap]);
+            this.olmap.addControl(new OpenLayers.Control.LayerSwitcher());
+            this.olmap.zoomToMaxExtent();
+
+            this.olmap.setCenter(
+                new OpenLayers.LonLat(-71.147, 42.472).transform(
+                    new OpenLayers.Projection("EPSG:4326"),
+                    this.olmap.getProjectionObject()), 12);    
+            */
+        },
+
+        // Note: We need to integrate search.js.
+        // Replace the AJAX call with a backbone filter and map.
+        // ie. More monads.
+
+        render: function() {
+            ToplevelView.prototype.render.call(this);
+
+            this.$el.html(this.template({
+                id: this.divid,
+            }));
+
+            _.defer(this.initOM);
+
+            return this;
+        },
+
+        _update: function() {
+        },
+
+        toFrontpage: function() {
+            this.router.navigate("", { trigger: true, replace: false });
+        },
+    });
 
     function frontendOnReady() {
         var router = new QldarchRouter();
@@ -2320,6 +2384,10 @@ var frontend = (function() {
             files: files,
         });
 
+        var mapSearchView = new MapSearchView({
+            router: router,
+        });
+
         searchModel.on("change", function(searchModel) {
             this.navigate("search/" + searchModel.serialize(), { trigger: false, replace: true });
         }, router);
@@ -2339,6 +2407,7 @@ var frontend = (function() {
             imageContentView.detach();
             pdfContentView.detach();
             transcriptView.detach();
+            mapSearchView.detach();
             searchView.append("#column1");
             fulltextView.append("#column1");
             contentView.append("#column2");
@@ -2357,6 +2426,7 @@ var frontend = (function() {
             imageContentView.detach();
             pdfContentView.detach();
             transcriptView.detach();
+            mapSearchView.detach();
             contentpaneView.attach("#column12");
             contentView.append("#column3");
             $("#column12,#column3").show();
@@ -2371,6 +2441,7 @@ var frontend = (function() {
             entityView.detach();
             contentpaneView.detach();
             transcriptView.detach();
+            mapSearchView.detach();
             contentView.append("#column1");
             imageContentView.append("#column23");
             pdfContentView.detach();
@@ -2386,6 +2457,7 @@ var frontend = (function() {
             entityView.detach();
             contentpaneView.detach();
             transcriptView.detach();
+            mapSearchView.detach();
             imageContentView.detach();
             contentView.append("#column1");
             pdfContentView.append("#column23");
@@ -2403,8 +2475,23 @@ var frontend = (function() {
             contentView.detach();
             imageContentView.detach();
             pdfContentView.detach();
+            mapSearchView.detach();
             transcriptView.append("#column123");
             $("#column123").show();
+        }, contentSearchModel);
+
+        router.on('route:mapsearch', function(id) {
+            $("#column123,#column2,#column3").hide();
+            searchView.detach();
+            fulltextView.detach();
+            entityView.detach();
+            contentpaneView.detach();
+            transcriptView.detach();
+            imageContentView.detach();
+            pdfContentView.detach();
+            contentView.append("#column1");
+            mapSearchView.append("#column23");
+            $("#column1,#column23").show();
         }, contentSearchModel);
 
         Backbone.history.start();
@@ -2433,6 +2520,7 @@ var frontend = (function() {
             "viewimage(/*id)": "viewimage",
             "interview(/*id)": "interview",
             "viewpdf(/*id)": "viewpdf",
+            "mapsearch": "mapsearch",
         },
 
         contentViews: {

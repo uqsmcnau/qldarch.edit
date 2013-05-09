@@ -4,11 +4,6 @@
         <title>Digital Archive of Queensland Architecture</title>
         <link rel="stylesheet" href="css/blueprint/screen.css" type="text/css" media="screen, projection">
         <link rel="stylesheet" href="css/blueprint/print.css" type="text/css" media="print"> 
-        <!--[if lt IE 8]>
-            <link rel="stylesheet" href="css/blueprint/ie.css" type="text/css" media="screen, projection">
-        <![endif]-->
-        <style>
-        </style>
         <link rel="stylesheet" href="css/frontendbb.css" type="text/css"> 
 
         <script type="text/javascript" src="js/underscore.js"></script>
@@ -22,6 +17,11 @@
         <script type="text/javascript" src="js/checkarg.js"></script>
         <script type="text/javascript"
             src="https://raw.github.com/mozilla/pdf.js/gh-pages/build/pdf.js"></script>
+        <script src="http://maps.google.com/maps/api/js?v=3&sensor=false"></script>
+        <script type="text/javascript" src="js/Events.js"></script>
+        <script type="text/javascript" src="OpenLayers-2.12/OpenLayers.js"></script>
+        <script type="text/javascript" src="js/Cluster2.js"></script>
+        <script type="text/javascript" src="js/mapui.js"></script>
 
         <script type="text/javascript" src="js/networkgraph.js"></script>
 
@@ -70,6 +70,7 @@
                     <option value="all">Just Metadata</option>
                 </select>
                 <input class="span-8 last" type="text" value="" placeHolder="Search Content, People and Things"/>
+                <a href="#mapsearch"><div class="returnbutton span-6 last">Map Search...</div></a>
             </div>
         </script>
         <script type="text/template" id="searchtypeoptionTemplate">
@@ -175,6 +176,11 @@
                 <span class="transcriptlabel"><%= interview %></span>
                 <span class="transcriptlabel"><%= speaker %> @ <%= time %></span>
                 <span class="transcripttext"><%= transcript %></span>
+            </div>
+        </script>
+        <script type="text/template" id="mapsearchTemplate">
+            <div class="mapcontainer span-16 last">
+                <div class="map" id="<%= id %>"></div>
             </div>
         </script>
         <script type="text/template" id="relatedcontentTemplate">
