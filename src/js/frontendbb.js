@@ -287,6 +287,7 @@ var frontend = (function() {
     });
 
     var MapSearchButtonView = ToplevelView.extend({
+        className: "mapsearchbutton",
         template: "#mapsearchbuttonTemplate",
 
         initialize: function(options) {
@@ -461,6 +462,8 @@ var frontend = (function() {
         _cascadeUpdate: function() {
             var entity = this.entitySearch.get('entity');
             if (entity) {
+                console.log(entity);
+                console.log(this.entities.get(entity));
                 _.each(this.itemviews, function(itemview) {
                     itemview.setPredicate(itemview.relatedToPredicator(this.entities.get(entity)));
                 }, this);
@@ -620,6 +623,7 @@ var frontend = (function() {
                 if (_.any(this.model.geta(QA_RELATED_TO), function(related) {
                     return related === entity.id;
                 }, this)) {
+                    console.log(this.model);
                     return true;
                 } else {
                     return false;
@@ -2172,7 +2176,6 @@ var frontend = (function() {
             this.replaceMarkers(this.geoentities);
             this.bounded.setPredicate(this.isOnScreen);
             this.geoentities.on("reset", this.replaceMarkers, this);
-            console.log(map);
             this.map.getMap().events.register("moveend", this, this._onMove);
         },
 

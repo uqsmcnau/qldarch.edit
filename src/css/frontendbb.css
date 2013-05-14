@@ -45,6 +45,7 @@ body * {
 
 h2.columntitle {
     font-size: 20px;
+    clear: both;
 }
 
 h2.columntitle:not(:first-of-type) {
@@ -102,7 +103,7 @@ h2.columntitle:not(:first-of-type) {
     height:110px;
 }
 
-.contentlist :nth-of-type(2n-1) {
+.contentlist div:nth-of-type(2n-1) {
     background: #e5e5e5;
     color: #333333;
 }
@@ -128,14 +129,26 @@ h2.columntitle:not(:first-of-type) {
     color: #e5e5e5;
 }
 
-.entityentry:hover,
-.contententry:hover {
+div.entityentry:hover,
+div.contententry:hover {
     background: #333333;
     color: #e5e5e5;
     cursor: default;
 }
 
+.interviewtext {
+    color: #333333;
+    background: #e5e5e5;
+    cursor: default;
+}
+
 .interviewtext:hover {
+    background: #333333;
+    color: #e5e5e5;
+    cursor: default;
+}
+
+.interviewhdr {
     background: #333333;
     color: #e5e5e5;
     cursor: default;
@@ -165,21 +178,21 @@ audio {
 }
 
 .returnbutton {
-    background: #333333;
-    color: #e5e5e5;
+    background: #e5e5e5;
+    color: #333333;
     padding-left:20px;
-    padding-top:10px;
-    padding-bottom:10px;
-    border-radius: 10px;
+    padding-top:5px;
+    padding-bottom:5px;
+    border-radius: 5px;
     font-weight: 200;
-    font-size: 20px;
+    font-size: 18px;
     width: 210px;
     cursor: default;
 }
 
 .returnbutton:hover {
-    color: #333333;
-    background: #e5e5e5;
+    background: #333333;
+    color: #e5e5e5;
 }
 
 .img.span-16 {
@@ -468,7 +481,7 @@ div.mapcontainer {
   font-size: 18px;
   font-weight: bold;
   height: 22px;
-  line-height: 19px;
+  line-height: 23px;
   margin: 1px;
   padding: 0;
   text-align: center;
@@ -486,3 +499,18 @@ div.mapcontainer {
   
 }
 
+#searchdiv input {
+    margin-top: 5px;
+    margin-bottom: 20px;
+}
+
+.mainsearch {
+    position: relative;
+}
+
+.mapsearchbutton {
+    position: relative;
+    clear: both;
+    margin-bottom: 15px;
+    overflow: auto;
+}
