@@ -1,5 +1,5 @@
 // pattern taken from http://stackoverflow.com/questions/881515/javascript-namespace-declaration
-(function( map, $, events, undefined ) {
+(function( map, $, _, events, undefined ) {
 
     var olmap;
 
@@ -41,10 +41,10 @@
         }, {
             context: {
                 extGra: function(feature) {
-                    if(isDefined(feature.attributes.count)) {
-                        return '/images/marker-cluster.png';
+                    if(!_.isUndefined(feature.attributes.count)) {
+                        return 'img/marker-cluster.png';
                     } else {
-                        return '/openlayers/img/marker.png';
+                        return 'openlayers/img/marker.png';
                     }
                 }
             }
@@ -58,10 +58,10 @@
         }, {
             context: {
                 extGra: function(feature) {
-                    if(isDefined(feature.attributes.count)) {
-                        return '/images/marker-cluster.png';
+                    if(!_.isUndefined(feature.attributes.count)) {
+                        return 'img/marker-cluster.png';
                     } else {
-                        return '/openlayers/img/marker.png';
+                        return 'openlayers/img/marker.png';
                     }
                 }
             }
@@ -74,10 +74,10 @@
         }, {
             context: {
                 extGra: function(feature) {
-                    if(isDefined(feature.attributes.count)) {
-                        return '/images/marker-gold-cluster.png';
+                    if(!_.isUndefined(feature.attributes.count)) {
+                        return 'img/marker-gold-cluster.png';
                     } else {
-                        return '/openlayers/img/marker-gold.png';
+                        return 'openlayers/img/marker-gold.png';
                     }
                 }
             }
@@ -329,7 +329,7 @@
     map.centerMarker = function(id, zoom) {
         var feature = getFeature(id);
         if(feature!=null) {
-            if(isDefined(zoom)) {
+            if(!_.isUndefined(zoom)) {
                 olmap.zoomTo(zoom);
             }
             olmap.panTo(new OpenLayers.LonLat(feature.geometry.x, feature.geometry.y));
@@ -398,6 +398,12 @@
         return isInCluster(cluster,id);
     };
 
+    map.featuresOnScreen = function() {
+        return _.filter(vectors.features, function(feature) {
+            return feature.onScreen();
+        } );
+    };
+
     //Private Method
     function getFeature(id) {
         for(var i=0;i<vectors.features.length;i++) {
@@ -414,7 +420,7 @@
     };
 
     function isInCluster(feature, id) {
-        if(isDefined(feature.cluster)) {
+        if(!_.isUndefined(feature.cluster)) {
             for(var i=0;i<feature.cluster.length;i++) {
                 var clustered = feature.cluster[i];
                 if(clustered.attributes.id === id) {
@@ -437,4 +443,4 @@
         }
     };
 
-}( window.map = window.map || {}, jQuery, events ));
+}( window.map = window.map || {}, jQuery, _, events ));

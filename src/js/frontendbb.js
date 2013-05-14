@@ -27,6 +27,10 @@ var frontend = (function() {
         flatmap: function(l, f, t) {
             return _.chain(l).flatten().map(f, t).reject(_.isUndefined).value();
         },
+
+        yes: function(v) {
+            return true;
+        },
     });
 
     function selectFileByMimeType(files, mimetype) {
@@ -50,6 +54,7 @@ var frontend = (function() {
     var QA_HAS_FILE = "http://qldarch.net/ns/rdf/2012-06/terms#hasFile";
     var QA_BASIC_MIME_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#basicMimeType";
 
+
     var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
     var OWL_OBJECT_PROPERTY = "http://www.w3.org/2002/07/owl#ObjectProperty";
     var RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
@@ -65,6 +70,9 @@ var frontend = (function() {
 
     var DCT_TITLE = "http://purl.org/dc/terms/title";
     var DCT_FORMAT = "http://purl.org/dc/terms/format";
+
+    var GEO_LAT = "http://www.w3.org/2003/01/geo/wgs84_pos#lat";
+    var GEO_LONG = "http://www.w3.org/2003/01/geo/wgs84_pos#long";
 
     var MAX_PRECEDENCE = 1000000;
     var successDelay = 2000;
@@ -155,7 +163,7 @@ var frontend = (function() {
         initialize: function(options) {
             _.bindAll(this);
             this.template = _.template($(_.result(this, "template")).html());
-            this.router = options.router;
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
             this.rendered = false;
             this.attached = false;
         },
@@ -260,6 +268,7 @@ var frontend = (function() {
                     'searchtypes': [this.$("select").val()],
                 });
             }
+            this.router.navigate("search/" + this.model.serialize(), { trigger: false, replace: true });
         },
 
         _select: function(event) {
@@ -277,12 +286,37 @@ var frontend = (function() {
         },
     });
 
+    var MapSearchButtonView = ToplevelView.extend({
+        template: "#mapsearchbuttonTemplate",
+
+        initialize: function(options) {
+            ToplevelView.prototype.initialize.call(this, options);
+        },
+        
+        events: {
+            "click"   : "_click"
+        },
+        
+        render: function() {
+            ToplevelView.prototype.render.call(this);
+
+            this.$el.html(this.template());
+            
+            return this;
+        },
+
+        _update: function() { },
+        
+        _click: function _click() {
+            this.router.navigate("mapsearch", { trigger: true, replace: false });
+        },
+    });
+
     var DigitalContentView = ToplevelView.extend({
         template: "#contentTemplate",
 
         initialize: function(options) {
             options || (options = {});
-            console.log(options);
             ToplevelView.prototype.initialize.call(this, options);
 
             this.content = options.content;
@@ -353,6 +387,7 @@ var frontend = (function() {
 
             this.model.on("reset", this.render);
             this.search.on("change", this._update);
+            this.entitySearch.on("change", this._update);
 
             this.$placeholder = $('<span display="none" data-uri="' + this.type.id + '"/>');
             this.rendered = false;
@@ -360,10 +395,11 @@ var frontend = (function() {
             this.predicate = this._defaultPredicate;
             this.itemViews = [];
 
-            this.recordroute = true;
-            this.router.on('route:viewimage', function () { this.recordroute = false }, this);
-            this.router.on('route:viewentity', function () { this.recordroute = true }, this);
-            this.router.on('route:frontpage', function () { this.recordroute = true }, this);
+            this.forgetroute = true;
+            this.router.on('route:viewimage', function () { this.forgetroute = true }, this);
+            this.router.on('route:viewentity', function () { this.forgetroute = false }, this);
+            this.router.on('route:frontpage', function () { this.forgetroute = false }, this);
+            this.router.on('route:mapsearch', function () { this.forgetroute = false }, this);
         },
         
         render: function() {
@@ -547,7 +583,7 @@ var frontend = (function() {
 
                     this.router.navigate(this.router.contentViews[this.type.id] + "/" +
                             this.selection.serialize(),
-                            { trigger: true, replace: this.typeview.recordroute });
+                            { trigger: true, replace: this.typeview.forgetroute });
                 }
             } else {
                 this.router.navigate("", { trigger: true, replace: false });
@@ -1168,27 +1204,26 @@ var frontend = (function() {
         },
     });
 
-/*
-    var EntityDetailView = ToplevelView.extend({
-        template: "#entitydetailTemplate",
+    var EntityDetailView = Backbone.View.extend({
+        className: 'entitydetail',
 
         initialize: function(options) {
-            options || (options = {});
-            ToplevelView.prototype.initialize.call(this, options);
+            _.bindAll(this);
 
-            this.itemTemplate = _.template($("#entitydetailItemTemplate").html());
+            _.checkarg(options.initalize).withDefault(_.identity).call(this);
 
-            this.entities = options.entities;
-            this.properties = options.properties;
+            this.template = _.template($("#entitydetailTemplate").html());
+            this.detailItemTemplate = _.template($("#entitydetailItemTemplate").html());
+
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+
             this.entity = undefined;
-
-            if (options.initialize) { options.initialize.call(this); }
             this.model.on("change", this._updateEntity);
+            this._updateEntity();
         },
         
         render: function() {
-            ToplevelView.prototype.render.call(this);
-
             this.$el.html(this.template());
             
             this._update();
@@ -1198,26 +1233,53 @@ var frontend = (function() {
 
         _update: function() {
             if (this.entity) {
-                document.title = "QldArch: " + this.entity.get1(QA_LABEL, true);
-                this.$("h2").text("About " + this.entity.get1(QA_LABEL));
-                var $propertylist = this.$(".propertylist");
-                $propertylist.empty();
-                _.each(this.entity.predicates(), function(predicate) {
-                    var property = this.properties.get(predicate);
-                    if (property) {
-                        if (property.get1(QA_DISPLAY, true, true)) {
-                            $propertylist.append(this.itemTemplate({
-                                label: this.properties.get(predicate).get1(QA_LABEL, true),
-                                value: this.entity.get1(predicate, logmultiple),
-                            }));
+                console.log(this.entity);
+                this._updateListTitle(this.entity.get1(QA_LABEL));
+
+                /* FIXME: This block copied from the image metadata code. Refactor! */
+                this.$(".propertylist").empty();
+                var metadata = _(this.entity.predicates()).map(function(property) {
+                    var propMeta = this.properties.get(property);
+                    if (!propMeta) {
+                        console.log("Property not found in ontology: " + property);
+                    } else if (propMeta.get1(QA_DISPLAY, true, true)) {
+                        var value = this.entity.get1(property, logmultiple);
+                        var precedence = propMeta.get1(QA_DISPLAY_PRECEDENCE);
+                        precedence = precedence ? precedence : MAX_PRECEDENCE;
+
+                        if (propMeta.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
+                            if (this.entities.get(value) &&
+                                    this.entities.get(value).get1(QA_LABEL)) {
+                                return {
+                                    label: propMeta.get1(QA_LABEL, logmultiple),
+                                    value: this.entities.get(value).get1(QA_LABEL, logmultiple),
+                                    precedence: precedence,
+                                };
+                            } else {
+                                console.log("ObjectProperty(" + property + ") failed resolve");
+                                console.log(this.entities.get(value));
+                            }
+                        } else {
+                            return {
+                                label: propMeta.get1(QA_LABEL, logmultiple),
+                                value: value,
+                                precedence: precedence,
+                            };
                         }
-                    } else {
-                        console.log("Property (" + predicate + ") not found in ontology");
                     }
                 }, this);
+
+                _.chain(metadata).filter(_.identity).sortBy('precedence').each(function(entry) {
+                    this.$(".propertylist").append(this.detailItemTemplate(entry));
+                }, this);
+
             } else {
-                this.$("h2").text("Unknown");
+                this._updateListTitle("Location Properties...");
             }
+        },
+
+        _updateListTitle: function _updateListTitle(title) {
+            this.$(".contentlisttitle").text(title);
         },
 
         _updateEntity: function() {
@@ -1239,7 +1301,6 @@ var frontend = (function() {
             }
         },
     });
-*/
 
     var ImageContentView = ToplevelView.extend({
         className: "imagepane",
@@ -2074,11 +2135,31 @@ var frontend = (function() {
         template: "#mapsearchTemplate",
 
         initialize: function(options) {
-            options || (options = {});
             ToplevelView.prototype.initialize.call(this, options);
+            _.checkarg(options).throwNoArg("options");
 
-            this.router = options.router;
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.entitySearch = _.checkarg(options.entitySearch)
+                .throwNoArg("options.entitySearch");
+
             this.divid = _.uniqueId("mapsearch");
+
+            this.geoentities = new SubCollection(this.entities, {
+                    name: "geo-entities",
+                    tracksort: true,
+                    predicate: this.isGeoLocated,
+                });
+
+            this.bounded = new SubCollection(this.entities, {
+                    name: "geo-entities",
+                    tracksort: true,
+                    predicate: _.identity, // Will replace with a bounds test when map is init'd.
+                });
+
+            this.map = _.checkarg(window.map).throwNoArg("window.map");
+//            events.addListener("selected", this.selected);
         },
 
         events: {
@@ -2086,27 +2167,34 @@ var frontend = (function() {
         },
 
         initOM: function() {
-            window.map.init(this.divid);
-            /*
-            this.olmap = new OpenLayers.Map(this.divid);
-            var gmap = new OpenLayers.Layer.Google("Google Streets", {
-                    numZoomLevels: 20,
-                    sphericalMercator: true
-                });
+            this.map.init(this.divid);
 
-            var omap = new OpenLayers.Layer.OSM("Open Street Map", {
-                    numZoomLevels: 20,
-                    sphericalMercator: true
-                });
-            this.olmap.addLayers([gmap, omap]);
-            this.olmap.addControl(new OpenLayers.Control.LayerSwitcher());
-            this.olmap.zoomToMaxExtent();
+            this.replaceMarkers(this.geoentities);
+            this.bounded.setPredicate(this.isOnScreen);
+            this.geoentities.on("reset", this.replaceMarkers, this);
+            console.log(map);
+            this.map.getMap().events.register("moveend", this, this._onMove);
+        },
 
-            this.olmap.setCenter(
-                new OpenLayers.LonLat(-71.147, 42.472).transform(
-                    new OpenLayers.Projection("EPSG:4326"),
-                    this.olmap.getProjectionObject()), 12);    
-            */
+        _onMove: function _onMove() {
+            this.bounded.setPredicate(this.isOnScreen);
+        },
+
+        isOnScreen: function isOnScreen(entity) {
+            var features = this.map.featuresOnScreen();
+            var idlists = [];
+            _.each(features, function(feature) {
+                if (_.has(feature, "cluster")) {
+                    idlists.push(
+                        _.map(feature.cluster, function(feature) {
+                            return feature.attributes.id;
+                        }));
+                } else {
+                    idlists.push(feature.attributes.id);
+                }
+            });
+            var onscreenids = _.flatten(idlists);
+            return _(onscreenids).contains(entity.id);
         },
 
         // Note: We need to integrate search.js.
@@ -2120,16 +2208,245 @@ var frontend = (function() {
                 id: this.divid,
             }));
 
+            this.entityListView = new MapEntityListView({
+                router: this.router,
+                title: "Locations of Interest",
+                model: this.bounded,
+                entitySearch: this.entitySearch,
+            });
+            this.$(".mapentitylist").append(this.entityListView.render().el);
+
+            this.entityDetailView = new EntityDetailView({
+                router: this.router,
+                entities: this.entities,
+                properties: this.properties,
+                model: this.entitySearch,
+            });
+            this.$(".mapentitydesc").append(this.entityDetailView.render().el);
+
             _.defer(this.initOM);
 
             return this;
         },
 
         _update: function() {
+            if (this.entityListView) this.entityListView._update();
+            if (this.entityDetailView) this.entityDetailView._update();
         },
 
         toFrontpage: function() {
             this.router.navigate("", { trigger: true, replace: false });
+        },
+
+        replaceMarkers: function replaceMarkers(collection) {
+            var coordinates = this.geoentities.map(function calccoord(entity) {
+                return {
+                    lon: entity.get(GEO_LONG),
+                    lat: entity.get(GEO_LAT),
+                    id: entity.id,
+                };
+            });
+
+            window.map.replaceMarkers(coordinates);
+        },
+
+        isGeoLocated: function isGeoLocated(entity) {
+            return entity.has(GEO_LAT) && entity.has(GEO_LONG);
+        },
+
+        getSelectionPredicate: function getSelectionPredicate() {
+            return _.yes;
+        },
+
+        selected: function selected(e) {
+            var feature = e.feature;
+            var featureId;
+            if(isDefined(feature.cluster)) {
+                var sId = this.map.getSelectedId();
+                // if a cluster was clicked, select the first feature in the cluster
+                // but only if the currently selected element (if any) is not in
+                // this cluster
+                if(!(sId && map.idInCluster(feature, sId))) {
+                    featureId = feature.cluster[0].attributes.id;
+                } else {
+                    featureId = sId;
+                }   
+                selectPop(featureId, 'cluster');
+            } else {
+                featureId = feature.attributes.id;
+                var monument = this.geoentities.get(featureId);
+                if(monument.popup) {
+                    this.selectPop(featureId, 'item');
+                } else if(monument.url) {
+                    // record state change and select marker (no popup). this is
+                    // important because if the
+                    // user does a navigation back we wan't to select the last
+                    // clicked marker
+                    this.selectPop(featureId, '');
+                    // then follow link
+                    window.location.href = monument.url;
+                } else {
+                    // if there is no popup or url defined on an item (should not
+                    // happen really) then
+                    // just select the marker
+                    this.selectPop(featureId, '');
+                }   
+            }   
+        },  
+
+        // selected the marker and opens item or cluster popup
+        selectPop: function selectPop(featureId, popup) {
+            if(featureId) {
+             // we can not change into the current state again,
+             // just select the marker and open the popup if applicable
+                if(mapSelection == featureId) {
+                    this.selectMarker(featureId);
+                    if(popup == 'cluster') {
+                        searchui.popupCluster(featureId);
+                    } else if(popup == 'item') {
+                        searchui.popupItem(featureId);
+                    }
+                } else {
+                    changeState({
+                        center: '',
+                        ms: featureId,
+                        mclo: map.getCenterLon(),
+                        mcla:map.getCenterLat(),
+                        mz: map.getZoom(),
+                        pop: popup
+                    });
+                }
+            }
+        },
+
+        selectMarker: function selectMarker(id) {
+            this.map.unselectAll();
+            $(".sresult").removeClass("srsel");
+            $(".sresult").removeClass("srhigh");
+            this.map.selectMarker(id);
+            $("#"+id).addClass("srsel");
+        },
+        
+    });
+
+    var MapEntityListView = Backbone.View.extend({
+        className: 'maplistview',
+        initialize: function(options) {
+            _.bindAll(this);
+
+            _.checkarg(options.initalize).withDefault(_.identity).call(this);
+
+            this.template = _.checkarg(_.template($("#contenttypeTemplate").html()))
+                .withValidator(_.isFunction).throwError("#contenttypeTemplate missing");
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.title = _.checkarg(options.title).throwNoArg("options.title");
+            this.entitySearch = _.checkarg(options.entitySearch)
+                .throwNoArg("options.entitySearch");
+
+            this.model.on("reset", this.render);
+
+            this.$placeholder = $('<span display="none" data-uri="' + this.type + '"/>');
+            this.rendered = false;
+            this.visible = false;
+        },
+        
+        render: function() {
+            this.$el.html(this.template({
+                uri: "",
+                label: this.title,
+            }));
+
+            this.model.each(function(result) {
+                var itemView = new MapEntityListItemView({
+                    router: this.router,
+                    model: result,
+                    entitySearch: this.entitySearch,
+                });
+                this.$('.contentlist').append(itemView.render().el);
+            }, this);
+
+            this._update();
+
+            this.rendered = true;
+            this.visible = true;
+
+            return this;
+        },
+
+        _update: function() {
+            if (this.rendered) {
+                if (!this.visible) {
+                    this.$placeholder.after(this.$el).detach();
+                    this.visible = true;
+                }
+            }
+        },
+    });
+
+    var MapEntityListItemView = Backbone.View.extend({
+        className: "entityentry",
+        initialize: function(options) {
+            options || (options = {});
+
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.entitySearch = _.checkarg(options.entitySearch)
+                .throwNoArg("options.entitySearch");
+
+            _.bindAll(this);
+            if (options.initialize) { options.initialize.call(this); }
+
+            this.$placeholder = $('<span display="none" data-uri="' + this.model.id + '"/>');
+            this.rendered = false;
+            this.visible = false;
+            this.predicate = this._defaultPredicate;
+        },
+        
+        events: {
+            "click"   : "_select"
+        },
+
+        render: function() {
+            this.$el.text(this.model.get1(QA_LABEL, true));
+
+            this.rendered = true;
+            this.visible = true;
+
+            return this;
+        },
+
+        _update: function() {
+            if (this.rendered) {
+                if (this.predicate(this.model)) {
+                    if (!this.visible) {
+                        this.$placeholder.after(this.$el).detach();
+                        this.visible = true;
+                    }
+                    this._cascadeUpdate();
+                } else {
+                    if (this.visible) {
+                        this.$el.after(this.$placeholder).detach();
+                        this.visible = false;
+                    }
+                }
+            }
+        },
+
+        _cascadeUpdate: function() {},
+
+        setPredicate: function(predicate) {
+            this.predicate = predicate ? predicate : this._defaultPredicate;
+            this._update();
+        },
+
+        _defaultPredicate: function(model) {
+            return true;
+        },
+
+        _select: function() {
+            console.log("Selected: " + this.model.id);
+            this.entitySearch.set({
+                entity: this.model.id,
+            });
         },
     });
 
@@ -2274,6 +2591,7 @@ var frontend = (function() {
             console.log(collection);
         });
 */
+
         fulltextTranscriptModel.on("reset", function(collection) {
             console.log("\tRESET:FulltextTranscriptModel: " + collection.length);
             console.log(collection);
@@ -2288,6 +2606,10 @@ var frontend = (function() {
             model: searchModel,
             proper: proper,
             router: router
+        });
+
+        var mapButtonView = new MapSearchButtonView({
+            router: router,
         });
 
         var contentView = new DigitalContentView({
@@ -2341,15 +2663,6 @@ var frontend = (function() {
             files: files,
         });
 
-/*
-        var entityDetailView = new EntityDetailView({
-            router: router,
-            model: entitySearchModel,
-            entities: entities,
-            properties: properties,
-            related: entityRelatedContentModel,
-        });
-*/
         var imageContentView = new ImageContentView({
             router: router,
             model: contentSearchModel,
@@ -2386,11 +2699,11 @@ var frontend = (function() {
 
         var mapSearchView = new MapSearchView({
             router: router,
+            entities: entities,
+            properties: properties,
+            entitySearch: entitySearchModel,
         });
 
-        searchModel.on("change", function(searchModel) {
-            this.navigate("search/" + searchModel.serialize(), { trigger: false, replace: true });
-        }, router);
 
         router.on('route:frontpage', function(search) {
             if (search) {
@@ -2409,6 +2722,7 @@ var frontend = (function() {
             transcriptView.detach();
             mapSearchView.detach();
             searchView.append("#column1");
+            mapButtonView.append("#column1");
             fulltextView.append("#column1");
             contentView.append("#column2");
             entityView.append("#column3");
@@ -2421,6 +2735,7 @@ var frontend = (function() {
 
             $("#column123,#column1,#column2,#column23").hide();
             searchView.detach();
+            mapButtonView.detach();
             fulltextView.detach();
             entityView.detach();
             imageContentView.detach();
@@ -2437,6 +2752,7 @@ var frontend = (function() {
 
             $("#column123,#column2,#column3").hide();
             searchView.detach();
+            mapButtonView.detach();
             fulltextView.detach();
             entityView.detach();
             contentpaneView.detach();
@@ -2453,6 +2769,7 @@ var frontend = (function() {
 
             $("#column123,#column2,#column3").hide();
             searchView.detach();
+            mapButtonView.detach();
             fulltextView.detach();
             entityView.detach();
             contentpaneView.detach();
@@ -2469,6 +2786,7 @@ var frontend = (function() {
 
             $("#column12,#column1,#column2,#column3, #column23").hide();
             searchView.detach();
+            mapButtonView.detach();
             fulltextView.detach();
             entityView.detach();
             contentpaneView.detach();
@@ -2481,17 +2799,18 @@ var frontend = (function() {
         }, contentSearchModel);
 
         router.on('route:mapsearch', function(id) {
-            $("#column123,#column2,#column3").hide();
+            $("#column123,#column1,#column2,#column23").hide();
             searchView.detach();
+            mapButtonView.detach();
             fulltextView.detach();
             entityView.detach();
             contentpaneView.detach();
             transcriptView.detach();
             imageContentView.detach();
             pdfContentView.detach();
-            contentView.append("#column1");
-            mapSearchView.append("#column23");
-            $("#column1,#column23").show();
+            mapSearchView.append("#column12");
+            contentView.append("#column3");
+            $("#column12,#column3").show();
         }, contentSearchModel);
 
         Backbone.history.start();

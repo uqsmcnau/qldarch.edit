@@ -108,7 +108,7 @@
 
         setPredicate: function(predicate) {
             this.predicate = predicate;
-            _doReset(this.baseCollection, {});
+            this._doReset(this.baseCollection, {});
         }
     });
 
