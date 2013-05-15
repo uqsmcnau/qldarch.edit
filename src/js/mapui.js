@@ -21,6 +21,8 @@
 
     var selectedId;
 
+    map.events = events;
+
     //Public Method
     map.init = function(divid) {
         var options = { };
@@ -111,11 +113,12 @@
                 renderIntent: "temporary",
                 eventListeners: {
                     beforefeaturehighlighted: function(e) {
-                      if((highlighted!=null) && (highlighted.attributes.id!=e.feature.attributes.id)) {
-                          events.disable();
-                          hoverControl.unhighlight(highlighted);
-                          highlighted=null;
-                          events.enable();
+                        if ((highlighted != null) &&
+                                (highlighted.attributes.id != e.feature.attributes.id)) {
+                            events.disable();
+                            hoverControl.unhighlight(highlighted);
+                            highlighted=null;
+                            events.enable();
                       }
                     },
                     featurehighlighted: function(e) {
@@ -249,6 +252,9 @@
             }
         });
         vectors.addFeatures(tmp);
+        events.fire({
+            type: "vectorschanged",
+        })
     };
 
     map.removeMarkers = function() {
@@ -402,6 +408,13 @@
         return _.filter(vectors.features, function(feature) {
             return feature.onScreen();
         } );
+    };
+
+    map.selectMapFeature = function selectMapFeature(feature) {
+        selectControl.unselectAll();
+        if (!_.isUndefined(feature)) {
+            selectControl.select(feature);
+        }
     };
 
     //Private Method
