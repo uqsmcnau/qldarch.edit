@@ -116,7 +116,7 @@ var frontend = (function() {
 
     var EntitySearchModel = Backbone.Model.extend({
         defaults: {
-            'entity': "",
+            'entity': undefined,
         },
 
         initialize: function() { },
@@ -462,8 +462,6 @@ var frontend = (function() {
         _cascadeUpdate: function() {
             var entity = this.entitySearch.get('entity');
             if (entity) {
-                console.log(entity);
-                console.log(this.entities.get(entity));
                 _.each(this.itemviews, function(itemview) {
                     itemview.setPredicate(itemview.relatedToPredicator(this.entities.get(entity)));
                 }, this);
@@ -623,7 +621,6 @@ var frontend = (function() {
                 if (_.any(this.model.geta(QA_RELATED_TO), function(related) {
                     return related === entity.id;
                 }, this)) {
-                    console.log(this.model);
                     return true;
                 } else {
                     return false;
@@ -1237,7 +1234,6 @@ var frontend = (function() {
 
         _update: function() {
             if (this.entity) {
-                console.log(this.entity);
                 this._updateListTitle(this.entity.get1(QA_LABEL));
 
                 /* FIXME: This block copied from the image metadata code. Refactor! */
@@ -1852,7 +1848,6 @@ var frontend = (function() {
             this.search = _.checkarg(options.search).throwNoArg("options.search");
             this.maxresults = _.checkarg(options.maxresults).withDefault(100);
 
-            console.log("FT: " + this.defaultField);
             this.search.on("change", _.debounce(this._refresh, this.debounce));
             this.search.on("performsearch", _.debounce(this._refresh, this.debounce, true));
             this._refresh();
@@ -1867,7 +1862,6 @@ var frontend = (function() {
             var newURL = this.buildURL(searchstring);
             if (this.url !== newURL) {
                 this.url = newURL;
-                console.log("Querying: " + newURL);
                 this.fetch();
             }
         },
@@ -2156,14 +2150,7 @@ var frontend = (function() {
                     predicate: this.isGeoLocated,
                 });
 
-            this.bounded = new SubCollection(this.entities, {
-                    name: "geo-entities",
-                    tracksort: true,
-                    predicate: _.identity, // Will replace with a bounds test when map is init'd.
-                });
-
             this.map = _.checkarg(window.map).throwNoArg("window.map");
-//            events.addListener("selected", this.selected);
         },
 
         events: {
@@ -2174,13 +2161,36 @@ var frontend = (function() {
             this.map.init(this.divid);
 
             this.replaceMarkers(this.geoentities);
-            this.bounded.setPredicate(this.isOnScreen);
             this.geoentities.on("reset", this.replaceMarkers, this);
             this.map.getMap().events.register("moveend", this, this._onMove);
+            this.map.events.addListener("selected", this._featureSelected);
+            this.map.events.addListener("vectorschanged", this._restoreSelected);
         },
 
         _onMove: function _onMove() {
-            this.bounded.setPredicate(this.isOnScreen);
+            this.entityListView.filterLocationsOnMap();
+        },
+
+        _featureSelected: function _featureSelected(evt) {
+            this.selectedFeature =
+                (this.selectedFeature === evt.feature) ? undefined : evt.feature;
+            this._restoreSelected();
+        },
+
+        _restoreSelected: function _restoreSelected() {
+            this.map.selectMapFeature(this.selectedFeature);
+            if (_.isUndefined(this.selectedFeature)) {
+                this.entityListView.filterLocationsOnMap();
+            } else {
+                if (_.has(this.selectedFeature, "cluster")) {
+                    this.entityListView.filterLocations(
+                        _.map(this.selectedFeature.cluster, function(feature) {
+                            return feature.attributes.id;
+                        }));
+                } else {
+                    this.entityListView.filterLocations([this.selectedFeature.attributes.id]);
+                }
+            }
         },
 
         isOnScreen: function isOnScreen(entity) {
@@ -2214,8 +2224,9 @@ var frontend = (function() {
             this.entityListView = new MapEntityListView({
                 router: this.router,
                 title: "Locations of Interest",
-                model: this.bounded,
+                model: this.geoentities,
                 entitySearch: this.entitySearch,
+                isOnScreen: this.isOnScreen, // Note this is a curried method.
             });
             this.$(".mapentitylist").append(this.entityListView.render().el);
 
@@ -2261,75 +2272,6 @@ var frontend = (function() {
             return _.yes;
         },
 
-        selected: function selected(e) {
-            var feature = e.feature;
-            var featureId;
-            if(isDefined(feature.cluster)) {
-                var sId = this.map.getSelectedId();
-                // if a cluster was clicked, select the first feature in the cluster
-                // but only if the currently selected element (if any) is not in
-                // this cluster
-                if(!(sId && map.idInCluster(feature, sId))) {
-                    featureId = feature.cluster[0].attributes.id;
-                } else {
-                    featureId = sId;
-                }   
-                selectPop(featureId, 'cluster');
-            } else {
-                featureId = feature.attributes.id;
-                var monument = this.geoentities.get(featureId);
-                if(monument.popup) {
-                    this.selectPop(featureId, 'item');
-                } else if(monument.url) {
-                    // record state change and select marker (no popup). this is
-                    // important because if the
-                    // user does a navigation back we wan't to select the last
-                    // clicked marker
-                    this.selectPop(featureId, '');
-                    // then follow link
-                    window.location.href = monument.url;
-                } else {
-                    // if there is no popup or url defined on an item (should not
-                    // happen really) then
-                    // just select the marker
-                    this.selectPop(featureId, '');
-                }   
-            }   
-        },  
-
-        // selected the marker and opens item or cluster popup
-        selectPop: function selectPop(featureId, popup) {
-            if(featureId) {
-             // we can not change into the current state again,
-             // just select the marker and open the popup if applicable
-                if(mapSelection == featureId) {
-                    this.selectMarker(featureId);
-                    if(popup == 'cluster') {
-                        searchui.popupCluster(featureId);
-                    } else if(popup == 'item') {
-                        searchui.popupItem(featureId);
-                    }
-                } else {
-                    changeState({
-                        center: '',
-                        ms: featureId,
-                        mclo: map.getCenterLon(),
-                        mcla:map.getCenterLat(),
-                        mz: map.getZoom(),
-                        pop: popup
-                    });
-                }
-            }
-        },
-
-        selectMarker: function selectMarker(id) {
-            this.map.unselectAll();
-            $(".sresult").removeClass("srsel");
-            $(".sresult").removeClass("srhigh");
-            this.map.selectMarker(id);
-            $("#"+id).addClass("srsel");
-        },
-        
     });
 
     var MapEntityListView = Backbone.View.extend({
@@ -2345,8 +2287,15 @@ var frontend = (function() {
             this.title = _.checkarg(options.title).throwNoArg("options.title");
             this.entitySearch = _.checkarg(options.entitySearch)
                 .throwNoArg("options.entitySearch");
+            this.isOnScreen = _.checkarg(options.isOnScreen).throwNoArg("options.isOnScreen");
 
-            this.model.on("reset", this.render);
+            this.filtered = new SubCollection(this.model, {
+                    name: "filtered-entities",
+                    tracksort: true,
+                    predicate: _.identity, // Will replace with a bounds test as required.
+                });
+
+            this.filtered.on("reset", this.render);
 
             this.$placeholder = $('<span display="none" data-uri="' + this.type + '"/>');
             this.rendered = false;
@@ -2359,7 +2308,7 @@ var frontend = (function() {
                 label: this.title,
             }));
 
-            this.model.each(function(result) {
+            this.filtered.each(function(result) {
                 var itemView = new MapEntityListItemView({
                     router: this.router,
                     model: result,
@@ -2383,6 +2332,16 @@ var frontend = (function() {
                     this.visible = true;
                 }
             }
+        },
+
+        filterLocationsOnMap: function filterLocationsOnMap() {
+            this.filtered.setPredicate(this.isOnScreen);
+        },
+
+        filterLocations: function filterLocations(locs) {
+            this.filtered.setPredicate(function(loc) {
+                return _.contains(locs, loc.id);
+            });
         },
     });
 
@@ -2446,7 +2405,6 @@ var frontend = (function() {
         },
 
         _select: function() {
-            console.log("Selected: " + this.model.id);
             this.entitySearch.set({
                 entity: this.model.id,
             });
