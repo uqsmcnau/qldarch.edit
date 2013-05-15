@@ -123,8 +123,8 @@ h2.columntitle:not(:first-of-type) {
     margin-right: 10px;
 }
 
-.entityentry.selected,
-.contententry.selected {
+div.entityentry.selected,
+div.contententry.selected {
     background: #555555;
     color: #e5e5e5;
 }

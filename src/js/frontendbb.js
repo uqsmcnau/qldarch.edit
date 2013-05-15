@@ -116,18 +116,19 @@ var frontend = (function() {
 
     var EntitySearchModel = Backbone.Model.extend({
         defaults: {
-            'entity': undefined,
+            'entityids': [],
         },
 
         initialize: function() { },
 
         serialize: function() {
-            return encodeURIComponent(this.get('entity'))
+            return _.map(this.get('entityids'), encodeURIComponent).join(",");
         },
 
         deserialize: function(string) {
+            var encodedids = string.split(",");
             return {
-                'entity': decodeURIComponent(string),
+                'entityids': _.map(encodedids, decodeURIComponent),
             };
         },
     });
@@ -460,10 +461,10 @@ var frontend = (function() {
         },
 
         _cascadeUpdate: function() {
-            var entity = this.entitySearch.get('entity');
-            if (entity) {
+            var entityids = this.entitySearch.get('entityids');
+            if (entityids && entityids.length > 0) {
                 _.each(this.itemviews, function(itemview) {
-                    itemview.setPredicate(itemview.relatedToPredicator(this.entities.get(entity)));
+                    itemview.setPredicate(itemview.relatedToOneOfPredicator(entityids));
                 }, this);
             } else {
                 var searchtypes = this.search.get('searchtypes');
@@ -616,10 +617,10 @@ var frontend = (function() {
             }, this);
         },
 
-        relatedToPredicator: function(entity) {
+        relatedToOneOfPredicator: function(entityids) {
             return function() {
                 if (_.any(this.model.geta(QA_RELATED_TO), function(related) {
-                    return related === entity.id;
+                    return _.contains(entityids, related);
                 }, this)) {
                     return true;
                 } else {
@@ -931,11 +932,11 @@ var frontend = (function() {
         },
         // FIXME: This is slightly ridiculous. I should introduce the ViewModel concept of
         // derivied for views and then this can be a direct model application.
-        _updateContentDescription: function(model) {
+        _updateContentDescription: function() {
             this.contentDescription = undefined;
-            var entityId = this.model.get('entity');
-            if (entityId) {
-                this.entity = this.entities.get(entityId);
+            var entityids = this.model.get('entityids');
+            if (entityids && entityids.length == 1) {
+                this.entity = this.entities.get(entityids[0]);
                 if (this.entity) {
                     var preferredImageURI = this.entity.get1(QA_PREFERRED_IMAGE);
                     if (preferredImageURI) {
@@ -1192,9 +1193,9 @@ var frontend = (function() {
         // derivied for views and then this can be a direct model application.
         _updateContentDescription: function() {
             this.contentDescription = undefined;
-            var entityId = this.model.get('entity');
-            if (entityId) {
-                this.entity = this.entities.get(entityId);
+            var entityids = this.model.get('entityids');
+            if (entityids && entityids.length == 1) {
+                this.entity = this.entities.get(entityids[0]);
                 if (this.entity) {
                     var preferredImageURI = this.entity.get1(QA_PREFERRED_IMAGE);
                     if (preferredImageURI) {
@@ -1275,6 +1276,7 @@ var frontend = (function() {
 
             } else {
                 this._updateListTitle("Location Properties...");
+                this.$(".propertylist").empty();
             }
         },
 
@@ -1283,9 +1285,9 @@ var frontend = (function() {
         },
 
         _updateEntity: function() {
-            var entityId = this.model.get('entity');
-            if (entityId) {
-                var newEntity = this.entities.get(entityId);
+            var entityids = this.model.get('entityids');
+            if (entityids && entityids.length == 1) {
+                var newEntity = this.entities.get(entityids[0]);
                 if (newEntity) {
                     if (newEntity !== this.entity) {
                         this.entity = newEntity;
@@ -2181,14 +2183,24 @@ var frontend = (function() {
             this.map.selectMapFeature(this.selectedFeature);
             if (_.isUndefined(this.selectedFeature)) {
                 this.entityListView.filterLocationsOnMap();
+                this.entitySearch.set({
+                    entityids: [],
+                });
             } else {
                 if (_.has(this.selectedFeature, "cluster")) {
-                    this.entityListView.filterLocations(
-                        _.map(this.selectedFeature.cluster, function(feature) {
-                            return feature.attributes.id;
-                        }));
+                    var locationids = _.map(this.selectedFeature.cluster, function(feature) {
+                        return feature.attributes.id;
+                    });
+                    this.entitySearch.set({
+                        entityids: locationids,
+                    });
+                    this.entityListView.filterLocations(locationids);
                 } else {
-                    this.entityListView.filterLocations([this.selectedFeature.attributes.id]);
+                    var locationid = this.selectedFeature.attributes.id;
+                    this.entitySearch.set({
+                        entityids: [locationid],
+                    });
+                    this.entityListView.filterLocations([locationid]);
                 }
             }
         },
@@ -2348,18 +2360,20 @@ var frontend = (function() {
     var MapEntityListItemView = Backbone.View.extend({
         className: "entityentry",
         initialize: function(options) {
-            options || (options = {});
+            _.bindAll(this);
+
+            _.checkarg(options.initalize).withDefault(_.identity).call(this);
 
             this.router = _.checkarg(options.router).throwNoArg("options.router");
             this.entitySearch = _.checkarg(options.entitySearch)
                 .throwNoArg("options.entitySearch");
 
-            _.bindAll(this);
-            if (options.initialize) { options.initialize.call(this); }
+            this.entitySearch.on("change", this._updateSelected);
 
             this.$placeholder = $('<span display="none" data-uri="' + this.model.id + '"/>');
             this.rendered = false;
             this.visible = false;
+            this.selected = false;
             this.predicate = this._defaultPredicate;
         },
         
@@ -2395,6 +2409,17 @@ var frontend = (function() {
 
         _cascadeUpdate: function() {},
 
+        _updateSelected: function _updateSelected() {
+            var entityids = this.entitySearch.get('entityids');
+            if (entityids && _.contains(entityids, this.model.id)) {
+                this.selected = true;
+                this.$el.addClass("selected");
+            } else {
+                this.selected = false;
+                this.$el.removeClass("selected");
+            }
+        },
+
         setPredicate: function(predicate) {
             this.predicate = predicate ? predicate : this._defaultPredicate;
             this._update();
@@ -2405,9 +2430,16 @@ var frontend = (function() {
         },
 
         _select: function() {
-            this.entitySearch.set({
-                entity: this.model.id,
-            });
+            var oldids = (this.entitySearch.get('entities') || []);
+            if (this.selected) {
+                this.entitySearch.set({
+                    entityids: _.without(oldids, this.model.id),
+                });
+            } else {
+                this.entitySearch.set({
+                    entityids: _.union(oldids, [this.model.id]),
+                });
+            }
         },
     });
 
