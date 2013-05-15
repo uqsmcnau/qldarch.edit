@@ -70,11 +70,11 @@
     }
 
     _.extend(SubCollection.prototype, Collection.prototype, {
-        _doReset : function(collection, options) {
+        _doReset : function _doReset(collection, options) {
             this.reset(collection.filter(this.predicate), options);
         },
 
-        _doAdd : function(model, collection, options) {
+        _doAdd : function _doAdd(model, collection, options) {
             // TODO: Handle the 'at' option, this will counting the number of models in
             //  the base collection that don't match the predicate that are also to the
             //  left of 'at', and adjusting the 'at' option passed thru to compensate.
@@ -84,29 +84,29 @@
             }
         },
 
-        _doRemove : function(model, collection, options) {
+        _doRemove : function _doRemove(model, collection, options) {
             if (this.predicate(model)) {
                 this.remove(model, _.omit(options, 'index'));
             }
         },
 
-        _doSort : function(collection, options) {
+        _doSort : function _doSort(collection, options) {
             if (_.result(this.tracksort)) {
                 this.comparator = this.baseCollection.comparator;
                 this.sort(options);
             }
         },
 
-        bindToBaseCollection : function() {
+        bindToBaseCollection : function bindToBaseCollection() {
             this.baseCollection.on("add", this._doAdd, this);
             this.baseCollection.on("remove", this._doRemove, this);
             this.baseCollection.on("reset", this._doReset, this);
             this.baseCollection.on("sort", this._doSort, this);
         },
 
-        predicate: function() { return true; },
+        predicate: function () { return true; },
 
-        setPredicate: function(predicate) {
+        setPredicate: function setPredicate(predicate) {
             this.predicate = predicate;
             this._doReset(this.baseCollection, {});
         }
