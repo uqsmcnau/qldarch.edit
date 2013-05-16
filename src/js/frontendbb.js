@@ -159,6 +159,14 @@ var frontend = (function() {
         },
     });
 
+    var DisplayedImageModel = Backbone.Model.extend({
+        defaults: {
+            'image': undefined,
+        },
+    });
+
+    var PredicatedImages = Backbone.Collection.extend({});
+
     var ToplevelView = Backbone.View.extend({
         template: "",
         initialize: function(options) {
@@ -318,18 +326,24 @@ var frontend = (function() {
         template: "#contentTemplate",
 
         initialize: function(options) {
-            options || (options = {});
+            options = _.checkarg(options).withDefault({})
+
             ToplevelView.prototype.initialize.call(this, options);
 
-            this.content = options.content;
-            this.search = options.search;
-            this.selection = options.selection;
+            this.content = _.checkarg(options.content).throwNoArg("options.content");
+            this.search = _.checkarg(options.search).throwNoArg("options.search");
+            this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
             this.contentViews = [];
-            this.entitySearch = options.entitySearch;
-            this.entities = options.entities;
+            this.entitySearch = _.checkarg(options.entitySearch)
+                .throwNoArg("options.entitySearch");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.predicatedImages = _.checkarg(options.predicatedImages)
+                .throwNoArg("options.predicatedImages");
+
+            _.checkarg(options.initalize).withDefault(_.identity).call(this);
+
             this.model.on("reset", this.render, this);
 
-            if (options.initialize) { options.initialize.call(this); }
         },
 
         render: function() {
@@ -347,6 +361,7 @@ var frontend = (function() {
                         selection: this.selection,
                         entitySearch: this.entitySearch,
                         entities: this.entities,
+                        predicatedImages: this.predicatedImages,
                     });
                 }
             }, this);
@@ -373,18 +388,21 @@ var frontend = (function() {
     var ContentTypeView = Backbone.View.extend({
         className: 'typeview',
         initialize: function(options) {
-            options || (options = {});
-            this.template = _.template($("#contenttypeTemplate").html());
-            this.router = options.router;
-
             _.bindAll(this);
-            if (options.initialize) { options.initialize.call(this); }
 
-            this.type = options.type;
-            this.search = options.search;
-            this.selection = options.selection;
-            this.entitySearch = options.entitySearch;
-            this.entities = options.entities;
+            options = _.checkarg(options).withDefault({})
+            this.template = _.template($("#contenttypeTemplate").html());
+
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.type = _.checkarg(options.type).throwNoArg("options.type");
+            this.search = _.checkarg(options.search).throwNoArg("options.search");
+            this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
+            this.entitySearch = _.checkarg(options.entitySearch)
+                .throwNoArg("options.entitySearch");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.predicatedImages = _.checkarg(options.predicatedImages)
+                .throwNoArg("options.predicatedImages");
+
             this.itemviews = {};
 
             this.model.on("reset", this.render);
@@ -402,6 +420,8 @@ var frontend = (function() {
             this.router.on('route:viewentity', function () { this.forgetroute = false }, this);
             this.router.on('route:frontpage', function () { this.forgetroute = false }, this);
             this.router.on('route:mapsearch', function () { this.forgetroute = false }, this);
+
+            _.checkarg(options.initalize).withDefault(_.identity).call(this);
         },
         
         render: function() {
@@ -419,6 +439,7 @@ var frontend = (function() {
                         model: contentItem,
                         selection: this.selection,
                         type: this.type,
+                        predicatedImages: this.predicatedImages,
                     });
                     this.itemviews[contentItem.id] = itemView;
                     this.$('.contentlist').append(itemView.render().el);
@@ -455,6 +476,7 @@ var frontend = (function() {
                     if (this.visible) {
                         this.$el.after(this.$placeholder).detach();
                         this.visible = false;
+                        this.predicatedImages.without(this.model.models);
                     }
                 }
             }
@@ -484,7 +506,7 @@ var frontend = (function() {
             var searchtypes = this.search.get('searchtypes');
             return _.contains(searchtypes, 'all') ||
                 _.contains(searchtypes, 'fulltext') ||
-                _.contains(searchtypes, this.options.type.id);
+                _.contains(searchtypes, this.type.id);
         },
 
         _setinput: function() {
@@ -496,14 +518,16 @@ var frontend = (function() {
     var ContentItemView = Backbone.View.extend({
         className: "contententry",
         initialize: function(options) {
-            options || (options = {});
-            this.router = options.router;
-            this.selection = options.selection;
-            this.type = options.type;
-            this.typeview = options.typeview;
-
             _.bindAll(this);
-            if (options.initialize) { options.initialize.call(this); }
+
+            options = _.checkarg(options).withDefault({})
+
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
+            this.type = _.checkarg(options.type).throwNoArg("options.type");
+            this.typeview = _.checkarg(options.typeview).throwNoArg("options.typeview");
+            this.predicatedImages = _.checkarg(options.predicatedImages)
+                .throwNoArg("options.predicatedImages");
 
             this.$placeholder = $('<span display="none" data-uri="' + this.model.id + '"/>');
             this.rendered = false;
@@ -511,6 +535,8 @@ var frontend = (function() {
             this.predicate = this._defaultPredicate;
             this.selection.on("change", this._update);
             this.offset = 0;
+
+            _.checkarg(options.initalize).withDefault(_.identity).call(this);
         },
         
         events: {
@@ -533,12 +559,14 @@ var frontend = (function() {
                         this.$placeholder.after(this.$el).detach();
                         this.visible = true;
                     }
+                    this.predicatedImages.add(this.model);
                     this._cascadeUpdate();
                 } else {
                     if (this.visible) {
                         this.$el.after(this.$placeholder).detach();
                         this.visible = false;
                     }
+                    this.predicatedImages.remove(this.model);
                 }
             }
             if (this.selection.get("selection") === this.model.id) {
@@ -2453,6 +2481,8 @@ var frontend = (function() {
 
         var entityRelatedContentModel = new ContentSearchModel();
 
+        var predicatedImages = new PredicatedImages();
+
         var fulltextTranscriptModel = new FulltextSearchCollection({
             search: searchModel,
             defaultField: "transcript",
@@ -2594,6 +2624,14 @@ var frontend = (function() {
             console.log(collection);
         });
 
+        predicatedImages.on("add", function(model) {
+            console.log("\t ADD:PredicatedImages: " + model.id);
+        });
+
+        predicatedImages.on("remove", function(model) {
+            console.log("\t REMOVE:PredicatedImages: " + model.id);
+        });
+
         var searchView = new GeneralSearchView({
             id: "mainsearch",
             model: searchModel,
@@ -2619,6 +2657,7 @@ var frontend = (function() {
             selection: contentSearchModel,
             entitySearch: entitySearchModel,
             entities: entities,
+            predicatedImages: predicatedImages,
         });
 
         var entityView = new EntityContentView({
