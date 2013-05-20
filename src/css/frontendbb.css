@@ -129,6 +129,12 @@ div.contententry.selected {
     color: #e5e5e5;
 }
 
+div.entityentry.displayed,
+div.contententry.displayed {
+    background: #555555;
+    color: #e5e5e5;
+}
+
 div.entityentry:hover,
 div.contententry:hover {
     background: #333333;
@@ -309,6 +315,9 @@ div.contentpanetabs {
     padding-left: 10px;
 }
 
+.relatedcontent {
+    position: relative;
+}
 .imagedisplay {
     position: relative;
 }

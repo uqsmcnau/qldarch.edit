@@ -159,9 +159,36 @@ var frontend = (function() {
         },
     });
 
-    var DisplayedImageModel = Backbone.Model.extend({
-        defaults: {
-            'image': undefined,
+    var DisplayedImages = Backbone.Collection.extend({
+        initialize: function initialize(options) {
+            _.bindAll(this);
+        },
+
+        displayed: function displayed(imageid) {
+            var image = this.get(imageid);
+            if (image) {
+                var count = image.get("count");
+                image.set("count", count + 1);
+            } else {
+                this.add(new Backbone.Model({
+                    id: imageid,
+                    count: 1,
+                }));
+            }
+        },
+
+        undisplayed: function undisplayed(imageid) {
+            var image = this.get(imageid);
+            if (image) {
+                var count = image.get("count");
+                if (count === 1) {
+                    this.remove(image);
+                } else {
+                    image.set("count", count - 1);
+                }
+            } else {
+                console.log("Undisplayed image that wasn't registered as displayed");
+            }
         },
     });
 
@@ -339,6 +366,8 @@ var frontend = (function() {
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.predicatedImages = _.checkarg(options.predicatedImages)
                 .throwNoArg("options.predicatedImages");
+            this.displayedImages = _.checkarg(options.displayedImages)
+                .throwNoArg("options.displayedImages");
 
             _.checkarg(options.initalize).withDefault(_.identity).call(this);
 
@@ -362,6 +391,7 @@ var frontend = (function() {
                         entitySearch: this.entitySearch,
                         entities: this.entities,
                         predicatedImages: this.predicatedImages,
+                        displayedImages: this.displayedImages,
                     });
                 }
             }, this);
@@ -402,6 +432,8 @@ var frontend = (function() {
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.predicatedImages = _.checkarg(options.predicatedImages)
                 .throwNoArg("options.predicatedImages");
+            this.displayedImages = _.checkarg(options.displayedImages)
+                .throwNoArg("options.displayedImages");
 
             this.itemviews = {};
 
@@ -440,6 +472,7 @@ var frontend = (function() {
                         selection: this.selection,
                         type: this.type,
                         predicatedImages: this.predicatedImages,
+                        displayedImages: this.displayedImages,
                     });
                     this.itemviews[contentItem.id] = itemView;
                     this.$('.contentlist').append(itemView.render().el);
@@ -528,6 +561,8 @@ var frontend = (function() {
             this.typeview = _.checkarg(options.typeview).throwNoArg("options.typeview");
             this.predicatedImages = _.checkarg(options.predicatedImages)
                 .throwNoArg("options.predicatedImages");
+            this.displayedImages = _.checkarg(options.displayedImages)
+                .throwNoArg("options.displayedImages");
 
             this.$placeholder = $('<span display="none" data-uri="' + this.model.id + '"/>');
             this.rendered = false;
@@ -535,6 +570,10 @@ var frontend = (function() {
             this.predicate = this._defaultPredicate;
             this.selection.on("change", this._update);
             this.offset = 0;
+
+            this.displayedImages.on("add", this._addImage);
+            this.displayedImages.on("remove", this._removeImage);
+            this.displayedImages.on("reset", this._resetImage);
 
             _.checkarg(options.initalize).withDefault(_.identity).call(this);
         },
@@ -655,6 +694,30 @@ var frontend = (function() {
                     return false;
                 }
             };
+        },
+
+        _addImage: function _addImage(image) {
+            if (image.id === this.model.id) {
+                this.$el.addClass("displayed");
+                if (!this.selection.get("selection")) {
+                    this.$el.parents(".contentlist").scrollTop(this.offset);
+                }
+            }
+        },
+
+        _removeImage: function _removeImage(image) {
+            if (image.id === this.model.id) {
+                this.$el.removeClass("displayed");
+                if (!this.selection.get("selection")) {
+                    this.$el.parents(".contentlist").scrollTop(this.offset);
+                }
+            }
+        },
+
+        _resetImage: function _resetImage(collection) {
+            if (collection.contains(this.model)) {
+                this._addImage(this.model);
+            }
         },
     });
 
@@ -984,14 +1047,19 @@ var frontend = (function() {
         className: "relatedcontent",
 
         initialize: function(options) {
-            options || (options = {});
-
             _.bindAll(this);
+
+            options = _.checkarg(options).withDefault({})
+
             this.frameTemplate = _.template($("#relatedcontentTemplate").html());
 
-            this.images = options.images;
-            this.type = options.type;
-            this.files = options.files;
+            this.images = _.checkarg(options.images).throwNoArg("options.images");
+            console.log(options);
+            this.type = _.checkarg(options.type).withDefault({ id: "none" });
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
+            this.number = _.checkarg(options.number).throwNoArg("options.number");
+            this.displayedImages = _.checkarg(options.displayedImages)
+                .throwNoArg("options.displayedImages");
             this.images.on("reset", this._update, this);
             this.imageViews = [];
         },
@@ -1009,18 +1077,19 @@ var frontend = (function() {
             }));
 
 
-            var that = this;
-            this.$(".relatedimage").each(function(index, imagediv) {
+            for (var i = 0; i < this.number; i++) {
                 var imageView = new RotatingImageView({
-                    files: that.files,
-                    type: that.type,
-                    images: that.images,
-                    initialIndex: index,
-                    initialDelay: (2000 * index),
+                    files: this.files,
+                    type: this.type,
+                    images: this.images,
+                    initialIndex: i,
+                    totalViewers: this.number,
+                    initialDelay: (2000 * i),
+                    displayedImages: this.displayedImages,
                 });
-                that.imageViews.push(imageView);
-                $(this).html(imageView.render().el);
-            });
+                this.imageViews.push(imageView);
+                $(".contentbox").prepend(imageView.render().el);
+            }
         },
 
         _beforeDetach: function() {
@@ -1034,17 +1103,26 @@ var frontend = (function() {
         className: "rotatingImage",
 
         initialize: function(options) {
-            options || (options = {});
-
             _.bindAll(this);
+
+            options = _.checkarg(options).withDefault({})
+
+            this.template = _.template($("#rotatingimageTemplate").html());
             this.imageTemplate = _.template($("#imageTemplate").html());
 
-            this.images = options.images;
-            this.index = options.initialIndex;
-            this.initialIndex = options.initialIndex;
-            this.initialDelay = options.initialDelay;
-            this.type = options.type;
-            this.files = options.files;
+            this.images = _.checkarg(options.images).throwNoArg("options.images");
+            this.index = _.checkarg(options.initialIndex).throwNoArg("options.initialIndex");
+            this.initialIndex = _.checkarg(options.initialIndex)
+                .throwNoArg("options.initialIndex");
+            this.totalViewers = _.checkarg(options.totalViewers)
+                .throwNoArg("options.totalViewers");
+            this.initialDelay = _.checkarg(options.initialDelay)
+                .throwNoArg("options.initialDelay");
+            this.type = _.checkarg(options.type).throwNoArg("options.type");
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
+            this.displayedImages = _.checkarg(options.displayedImages)
+                .throwNoArg("options.displayedImages");
+
             this.active = false;
         },
 
@@ -1067,6 +1145,7 @@ var frontend = (function() {
             if (this.active) {
                 var that = this;
                 this.$("img").fadeOut("slow", function() {
+                    that.displayedImages.undisplayed($(this).data("uri"));
                     $(this).remove();
                     if (that.active) {
                         that._fadeInImage(0);
@@ -1104,6 +1183,7 @@ var frontend = (function() {
                                         this.initialIndex + " " + this.type.id);
                                 }
                             }, this);
+                    this.displayedImages.displayed(image.id);
                 } else {
                     console.log("No image found in collection: " + this.index);
                     console.log(this.images);
@@ -1123,16 +1203,21 @@ var frontend = (function() {
         template: "#contentpaneTemplate",
 
         initialize: function(options) {
-            options || (options = {});
+            options = _.checkarg(options).withDefault({})
+
             ToplevelView.prototype.initialize.call(this, options);
 
             this.infoTemplate = _.template($("#infopanelTemplate").html());
 
-            this.entities = options.entities;
-            this.photographs = options.photographs;
-            this.linedrawings = options.linedrawings;
-            this.artifacts = options.artifacts;
-            this.files = options.files;
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.photographs = _.checkarg(options.photographs).throwNoArg("options.photographs");
+            this.linedrawings = _.checkarg(options.linedrawings)
+                .throwNoArg("options.linedrawings");
+            this.artifacts = _.checkarg(options.artifacts)
+                .throwNoArg("options.artifacts");
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
+            this.displayedImages = _.checkarg(options.displayedImages)
+                .throwNoArg("options.displayedImages");
 
             this.state = undefined;
             this.entity = undefined;
@@ -1174,10 +1259,12 @@ var frontend = (function() {
         _update: function() {
             if (this.state === "Content") {
                 var that = this;
+                console.log(this.artifacts);
                 this.relatedPhotographView = new RelatedImagesView({
                     images: new SubCollection(this.photographs, {
                         name: "related_photographs",
                         tracksort: true,
+                        type: QA_PHOTOGRAPH_TYPE,
                         predicate: function(model) {
                                 return that.entity &&
                                     _(that.entity.geta(QA_RELATED_TO)).contains(model.id);
@@ -1185,11 +1272,14 @@ var frontend = (function() {
                         }),
                     type: this.artifacts.get(QA_PHOTOGRAPH_TYPE),
                     files: this.files,
+                    number: 3,
+                    displayedImages: this.displayedImages,
                 });
                 this.relatedLineDrawingView = new RelatedImagesView({
                     images: new SubCollection(this.linedrawings, {
                         name: "related_linedrawings",
                         tracksort: true,
+                        type: QA_LINEDRAWING_TYPE,
                         predicate: function(model) {
                                 return that.entity &&
                                     _(that.entity.geta(QA_RELATED_TO)).contains(model.id);
@@ -1197,6 +1287,8 @@ var frontend = (function() {
                         }),
                     type: this.artifacts.get(QA_LINEDRAWING_TYPE),
                     files: this.files,
+                    number: 3,
+                    displayedImages: this.displayedImages,
                 });
                 this.$(".content").empty();
                 this.$(".content").append(this.relatedPhotographView.render().$el);
@@ -2483,6 +2575,8 @@ var frontend = (function() {
 
         var predicatedImages = new PredicatedImages();
 
+        var displayedImages = new DisplayedImages();
+
         var fulltextTranscriptModel = new FulltextSearchCollection({
             search: searchModel,
             defaultField: "transcript",
@@ -2624,6 +2718,7 @@ var frontend = (function() {
             console.log(collection);
         });
 
+        /*
         predicatedImages.on("add", function(model) {
             console.log("\t ADD:PredicatedImages: " + model.id);
         });
@@ -2631,7 +2726,7 @@ var frontend = (function() {
         predicatedImages.on("remove", function(model) {
             console.log("\t REMOVE:PredicatedImages: " + model.id);
         });
-
+*/
         var searchView = new GeneralSearchView({
             id: "mainsearch",
             model: searchModel,
@@ -2658,6 +2753,7 @@ var frontend = (function() {
             entitySearch: entitySearchModel,
             entities: entities,
             predicatedImages: predicatedImages,
+            displayedImages: displayedImages,
         });
 
         var entityView = new EntityContentView({
@@ -2693,6 +2789,7 @@ var frontend = (function() {
             linedrawings: linedrawings,
             artifacts: artifacts,
             files: files,
+            displayedImages: displayedImages,
         });
 
         var imageContentView = new ImageContentView({
