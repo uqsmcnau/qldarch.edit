@@ -165,6 +165,7 @@ var frontend = (function() {
         },
 
         displayed: function displayed(imageid) {
+            console.log("displayed: " + imageid);
             var image = this.get(imageid);
             if (image) {
                 var count = image.get("count");
@@ -178,6 +179,7 @@ var frontend = (function() {
         },
 
         undisplayed: function undisplayed(imageid) {
+            console.log("undisplayed: " + imageid);
             var image = this.get(imageid);
             if (image) {
                 var count = image.get("count");
@@ -1192,7 +1194,11 @@ var frontend = (function() {
         },
 
         _beforeDetach: function() {
+            var that = this;
             this.active = false;
+            $("img").each(function () {
+                that.displayedImages.undisplayed($(this).data("uri"));
+            });
             this.undelegateEvents();
             this.remove();
         },
@@ -1232,6 +1238,7 @@ var frontend = (function() {
         },
 
         render: function() {
+            console.log("ContentPaneView::render");
             ToplevelView.prototype.render.call(this);
 
             this.$el.html(this.template());
@@ -2260,9 +2267,12 @@ var frontend = (function() {
 
             this.router = _.checkarg(options.router).throwNoArg("options.router");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.entitySearch = _.checkarg(options.entitySearch)
                 .throwNoArg("options.entitySearch");
+            this.predicatedImages = _.checkarg(options.predicatedImages)
+                .throwNoArg("options.predicatedImages");
 
             this.divid = _.uniqueId("mapsearch");
 
@@ -2273,6 +2283,48 @@ var frontend = (function() {
                 });
 
             this.map = _.checkarg(window.map).throwNoArg("window.map");
+
+            this.imageSelection = new ImageSelection({});
+            this.imageSelection.on("change", function() {
+                console.log("imageSelection changed");
+                console.log(this.imageSelection.get("image"));
+                console.log(this.imageSelection.get("index"));
+            }, this);
+
+            this._imageSelectionLoop(3000);
+        },
+
+        _imageSelectionLoop: function _imageSelectionLoop(delay) {
+            console.log("_imageSelectionLoop called");
+            var entityids = this.entitySearch.get("entityids");
+            if (entityids &&
+               (entityids.length == 1) &&
+               (this.predicatedImages.length > 0) &&
+               (this.$el.filter(":visible").length > 0)) {
+                    console.log("Need to set imageSelection, predicatedImages:");
+                    console.log(this.predicatedImages);
+                    var index = this.imageSelection.get("index");
+                    console.log("indexing " + index + " against " + this.predicatedImages.length);
+                    if (index < 0 || index >= this.predicatedImages.length) {
+                        this.imageSelection.set({
+                            image: this.predicatedImages.at(0),
+                            index: 0,
+                        });
+                    } else {
+                        this.imageSelection.set({
+                            image: this.predicatedImages.at(index + 1),
+                            index: index + 1,
+                        });
+                    }
+            } else {
+                if (this.imageSelection.get("image")) {
+                    this.imageSelection.set({
+                        image: undefined,
+                        index: -1,
+                    });
+                }
+            }
+            _.delay(this._imageSelectionLoop, delay, delay);
         },
 
         events: {
@@ -2369,6 +2421,19 @@ var frontend = (function() {
                 model: this.entitySearch,
             });
             this.$(".mapentitydesc").append(this.entityDetailView.render().el);
+
+            this.displayedImage = new Backbone.Model();
+            this.displayedImage.on("change", function() {
+                console.log("displayed image");
+                console.log(this.displayedImage);
+            }, this);
+
+            this.imagePreviewView = new NotifyingImageView({
+                files: this.files,
+                imageSelection: this.imageSelection,
+                displayedImage: this.displayedImage,
+            });
+            this.$(".multiimagepreview").append(this.imagePreviewView.render().el);
 
             _.defer(this.initOM);
 
@@ -2560,6 +2625,111 @@ var frontend = (function() {
                     entityids: _.union(oldids, [this.model.id]),
                 });
             }
+        },
+    });
+
+    var ImageSelection = Backbone.Model.extend({
+        defaults: {
+            'image': undefined,
+            'index': -1,
+        }
+    });
+
+    var NotifyingImageView = Backbone.View.extend({
+        className: "notifyingImage",
+
+        initialize: function(options) {
+            _.bindAll(this);
+
+            options = _.checkarg(options).withDefault({})
+
+            this.imageTemplate = _.template($("#imageTemplate").html());
+
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
+            this.imageSelection = _.checkarg(options.imageSelection)
+                .throwNoArg("options.imageSelection");
+            this.displayedImage = _.checkarg(options.displayedImage)
+                .throwNoArg("options.displayedImage");
+
+            this.displayingImage = undefined;
+        },
+
+        render: function() {
+            this.listenTo(this.imageSelection, "change", this._update);
+            _.defer(this._update);
+
+            return this;
+        },
+
+        _update: function() {
+            console.log("_update called on NotifyingImageView");
+            if (this.$el.filter(":visible").length > 0) {
+                var image = this.imageSelection.get("image");
+                console.log("image");
+                console.log(image);
+                var displayed = this.displayedImage.get("image");
+                console.log("displayed");
+                console.log(displayed);
+                console.log("displayingImage");
+                console.log(this.displayingImage);
+
+                if (this.displayingImage === image) {
+                    console.log("Already displaying image");
+                    return;
+                }
+                if (this.displayingImage !== displayed) {
+                    console.log("Not ready for new-image event, discarding");
+                    return;
+                }
+
+                // Note which image we are currently in the process of displaying.
+                this.displayingImage = image;
+
+                this._fadeInImageSelection();
+            } else {
+                console.log("NotifyingImageView was invisible");
+            }
+        },
+
+        _fadeInImageSelection: function _fadeInImageSelection() {
+            if (_.isUndefined(this.displayingImage)) {
+                this.$("img:visible").fadeOut("slow", function() {
+                    $(this).remove();
+                });
+                this.displayedImage.set(undefined);
+            } else {
+                this.files.get(this.displayingImage.geta(QA_HAS_FILE),
+                        _.partial(this._displayJpegFile, this.displayingImage), this);
+            }
+        },
+
+        _displayJpegFile: function _displayJpegFile(image, files) {
+            var file = selectFileByMimeType(files, "image/jpeg");
+            if (file) {
+                this.$el.append(this.imageTemplate({
+                    uri: image.id,
+                    systemlocation: file.get1(QA_SYSTEM_LOCATION, true, true),
+                    label: image.get1(DCT_TITLE),
+                }));
+
+                var hidden = this.$("img:hidden");
+                var visible = this.$("img:visible");
+
+                hidden.fadeIn("slow");
+                visible.fadeOut("slow");
+
+                this.displayedImage.set("image", image);
+            } else {
+                console.log("No image/jpeg found for " + image.id);
+            }
+        },
+
+        _beforeDetach: function() {
+            console.log("NotifyingImageView::_beforeDetach called");
+            this.displayingImage = undefined;
+            this.displayedImage.set("image", undefined);
+            this.undelegateEvents();
+            this.remove();
         },
     });
 
@@ -2831,6 +3001,8 @@ var frontend = (function() {
             entities: entities,
             properties: properties,
             entitySearch: entitySearchModel,
+            predicatedImages: predicatedImages,
+            files: files,
         });
 
 
