@@ -700,7 +700,10 @@ var frontend = (function() {
             if (image.id === this.model.id) {
                 this.$el.addClass("displayed");
                 if (!this.selection.get("selection")) {
-                    this.$el.parents(".contentlist").scrollTop(this.offset);
+                    var container = this.$el.parents(".contentlist");
+                    if (!isScrolledIntoView(container, this.$el)) {
+                        container.scrollTo(this.$el);
+                    }
                 }
             }
         },
@@ -708,9 +711,6 @@ var frontend = (function() {
         _removeImage: function _removeImage(image) {
             if (image.id === this.model.id) {
                 this.$el.removeClass("displayed");
-                if (!this.selection.get("selection")) {
-                    this.$el.parents(".contentlist").scrollTop(this.offset);
-                }
             }
         },
 
@@ -720,6 +720,18 @@ var frontend = (function() {
             }
         },
     });
+
+    var isScrolledIntoView = function isScrolledIntoView(container, target) {
+        var ctop = $(container).offset().top;
+        var cbot = ctop + $(container).height();
+
+        var etop = $(target).offset().top;
+        var ebot = etop + $(target).height();
+
+        var isInView = ((ebot <= cbot) && (etop >= ctop));
+
+        return isInView;
+    };
 
     var EntityContentView = ToplevelView.extend({
         template: "#contentTemplate",
