@@ -10,7 +10,8 @@ basePath = 'src/';
 files = [
   QUNIT,
   QUNIT_ADAPTER,
-  'js/*.js'
+  'js/*.js',
+  '../test/js/*.js,
 ];
 
 
