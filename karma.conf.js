@@ -3,15 +3,20 @@
 
 
 // base path, that will be used to resolve files and exclude
-basePath = 'src/';
+basePath = '';
 
 
 // list of files / patterns to load in the browser
 files = [
   QUNIT,
   QUNIT_ADAPTER,
-  'js/*.js',
-  '../test/js/*.js,
+//  'js/jquery-1.9.0.js',
+//  'js/underscore.js',
+//  'js/checkarg.js',
+//  'js/backbone.js',
+//  'js/rdfbone.js',
+  'test/js/*.js',
+  { pattern: 'karma.conf.js', watched: true, included: false, served: false },
 ];
 
 
@@ -40,7 +45,7 @@ colors = true;
 
 // level of logging
 // possible values: LOG_DISABLE || LOG_ERROR || LOG_WARN || LOG_INFO || LOG_DEBUG
-logLevel = LOG_INFO;
+logLevel = LOG_DEBUG;
 
 
 // enable / disable watching file and executing tests whenever any file changes
