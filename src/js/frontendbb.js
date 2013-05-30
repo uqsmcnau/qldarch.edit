@@ -2554,52 +2554,26 @@ var frontend = (function() {
         },
     });
 
-    var MapEntityListItemView = Backbone.View.extend({
+    var MapEntityListItemView = Backbone.Marionette.ItemView.extend({
         className: "entityentry",
+        template: "#mapentitylistitemviewTemplate",
+        serializeData: function() {
+            return {
+                label: this.model.get1(QA_LABEL, true),
+            };
+        },
+
         initialize: function(options) {
             _.bindAll(this);
 
-            _.checkarg(options.initalize).withDefault(_.identity).call(this);
-
             this.entitySearch = _.checkarg(options.entitySearch)
                 .throwNoArg("options.entitySearch");
-
-            this.entitySearch.on("change", this._updateSelected);
-
-            this.$placeholder = $('<span display="none" data-uri="' + this.model.id + '"/>');
-            this.rendered = false;
-            this.visible = false;
-            this.selected = false;
+            this.listenTo(this.entitySearch, "change", this._updateSelected);
             this.predicate = this._defaultPredicate;
         },
         
         events: {
             "click"   : "_select"
-        },
-
-        render: function() {
-            this.$el.text(this.model.get1(QA_LABEL, true));
-
-            this.rendered = true;
-            this.visible = true;
-
-            return this;
-        },
-
-        _update: function() {
-            if (this.rendered) {
-                if (this.predicate(this.model)) {
-                    if (!this.visible) {
-                        this.$placeholder.after(this.$el).detach();
-                        this.visible = true;
-                    }
-                } else {
-                    if (this.visible) {
-                        this.$el.after(this.$placeholder).detach();
-                        this.visible = false;
-                    }
-                }
-            }
         },
 
         _updateSelected: function _updateSelected() {
