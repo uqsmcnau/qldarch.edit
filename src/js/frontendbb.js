@@ -995,7 +995,7 @@ var frontend = (function() {
         _update: function() {
             this._updateContentDescription();
             if (this.entity && this.contentDescription) {
-                this.files.get(this.contentDescription.geta(QA_HAS_FILE),
+                this.files.getp(this.contentDescription.geta(QA_HAS_FILE),
                         function(files) {
                             var file = selectFileByMimeType(files, "image/jpeg");
                             if (file) {
@@ -1173,7 +1173,7 @@ var frontend = (function() {
 
                 var image = this.images.at(this.index);
                 if (image) {
-                    this.files.get(image.geta(QA_HAS_FILE),
+                    this.files.getp(image.geta(QA_HAS_FILE),
                             function(files) {
                                 var file = selectFileByMimeType(files, "image/jpeg");
                                 if (file) {
@@ -1476,7 +1476,7 @@ var frontend = (function() {
         _update: function() {
             if (this.attached) {
                 if (this.contentDescription && this.contentDescription.geta(QA_HAS_FILE)) {
-                    this.files.get(this.contentDescription.geta(QA_HAS_FILE),
+                    this.files.getp(this.contentDescription.geta(QA_HAS_FILE),
                         this._displayImages, this);
                 } else {
                     this.$(".columntitle").text("Unknown Image");
@@ -1835,7 +1835,7 @@ var frontend = (function() {
         _update: function() {
             if (this.attached) {
                 if (this.contentDescription && this.contentDescription.get1(QA_HAS_FILE)) {
-                    this.files.get(this.contentDescription.geta(QA_HAS_FILE),
+                    this.files.getp(this.contentDescription.geta(QA_HAS_FILE),
                             this._displayAnArticle, this);
                 } else {
                     this.$(".columntitle").text("Pdf not found");
@@ -2391,7 +2391,8 @@ var frontend = (function() {
                 }
             });
             var onscreenids = _.flatten(idlists);
-            return _(onscreenids).contains(entity.id);
+            var result = _(onscreenids).contains(entity.id);
+            return result;
         },
 
         // Note: We need to integrate search.js.
@@ -2408,7 +2409,7 @@ var frontend = (function() {
             this.entityListView = new MapEntityListView({
                 router: this.router,
                 title: "Locations of Interest",
-                model: this.geoentities,
+                geoentities: this.geoentities,
                 entitySearch: this.entitySearch,
                 isOnScreen: this.isOnScreen, // Note this is a curried method.
             });
@@ -2476,6 +2477,7 @@ var frontend = (function() {
 
     });
 
+    // Split into composite + collection view?
     var MapEntityListView = Backbone.View.extend({
         className: 'maplistview',
         initialize: function(options) {
@@ -2485,19 +2487,24 @@ var frontend = (function() {
 
             this.template = _.checkarg(_.template($("#contenttypeTemplate").html()))
                 .withValidator(_.isFunction).throwError("#contenttypeTemplate missing");
-            this.router = _.checkarg(options.router).throwNoArg("options.router");
             this.title = _.checkarg(options.title).throwNoArg("options.title");
             this.entitySearch = _.checkarg(options.entitySearch)
                 .throwNoArg("options.entitySearch");
             this.isOnScreen = _.checkarg(options.isOnScreen).throwNoArg("options.isOnScreen");
+            this.geoentities = _.checkarg(options.geoentities).throwNoArg("options.geoentities");
 
-            this.filtered = new SubCollection(this.model, {
+            this.model = new Backbone.Model({
+                uri: "",
+                title: this.title,
+            });
+
+            this.collection = new SubCollection(this.geoentities, {
                     name: "filtered-entities",
                     tracksort: true,
                     predicate: _.identity, // Will replace with a bounds test as required.
                 });
 
-            this.filtered.on("reset", this.render);
+            this.collection.on("reset", this.render);
 
             this.$placeholder = $('<span display="none" data-uri="' + this.type + '"/>');
             this.rendered = false;
@@ -2510,7 +2517,7 @@ var frontend = (function() {
                 label: this.title,
             }));
 
-            this.filtered.each(function(result) {
+            this.collection.each(function(result) {
                 var itemView = new MapEntityListItemView({
                     router: this.router,
                     model: result,
@@ -2537,11 +2544,11 @@ var frontend = (function() {
         },
 
         filterLocationsOnMap: function filterLocationsOnMap() {
-            this.filtered.setPredicate(this.isOnScreen);
+            this.collection.setPredicate(this.isOnScreen);
         },
 
         filterLocations: function filterLocations(locs) {
-            this.filtered.setPredicate(function(loc) {
+            this.collection.setPredicate(function(loc) {
                 return _.contains(locs, loc.id);
             });
         },
@@ -2554,7 +2561,6 @@ var frontend = (function() {
 
             _.checkarg(options.initalize).withDefault(_.identity).call(this);
 
-            this.router = _.checkarg(options.router).throwNoArg("options.router");
             this.entitySearch = _.checkarg(options.entitySearch)
                 .throwNoArg("options.entitySearch");
 
@@ -2587,7 +2593,6 @@ var frontend = (function() {
                         this.$placeholder.after(this.$el).detach();
                         this.visible = true;
                     }
-                    this._cascadeUpdate();
                 } else {
                     if (this.visible) {
                         this.$el.after(this.$placeholder).detach();
@@ -2596,8 +2601,6 @@ var frontend = (function() {
                 }
             }
         },
-
-        _cascadeUpdate: function() {},
 
         _updateSelected: function _updateSelected() {
             var entityids = this.entitySearch.get('entityids');
@@ -2697,7 +2700,7 @@ var frontend = (function() {
                 });
                 this.displayedImage.set("image", undefined);
             } else {
-                this.files.get(this.displayingImage.geta(QA_HAS_FILE),
+                this.files.getp(this.displayingImage.geta(QA_HAS_FILE),
                         _.partial(this._displayJpegFile, this.displayingImage), this);
             }
         },
@@ -2803,6 +2806,7 @@ var frontend = (function() {
                     return JSON_ROOT + "fileSummary?ID=" + encodeURIComponent(ids[0]);
                 } else {
                     var rawids = _.reduce(ids, function(memo, id) {
+                        console.log(id);
                         match = id.match(/http:\/\/qldarch.net\/omeka\/files\/show\/([0-9]*)/);
                         if (match) {
                             memo.idlist.push(match[1]);
@@ -2877,7 +2881,6 @@ var frontend = (function() {
             console.log("\tRESET:DISPLAYED_ENTITIES: " + collection.length);
             console.log(collection);
         });
-*/
 
         fulltextTranscriptModel.on("reset", function(collection) {
             console.log("\tRESET:FulltextTranscriptModel: " + collection.length);
@@ -2887,7 +2890,7 @@ var frontend = (function() {
             console.log("\tRESET:FulltextArticleModel: " + collection.length);
             console.log(collection);
         });
-
+*/
         /*
         predicatedImages.on("add", function(model) {
             console.log("\t ADD:PredicatedImages: " + model.id);
@@ -3118,14 +3121,14 @@ var frontend = (function() {
         Backbone.history.start();
 
         _.defer(function() {
-            properties.fetch();
-            displayedEntities.fetch();
-            entities.fetch();
-            photographs.fetch();
-            interviews.fetch();
-            transcripts.fetch();
-            linedrawings.fetch();
-            articles.fetch();
+            properties.fetch({ reset: true });
+            displayedEntities.fetch({ reset: true });
+            entities.fetch({ reset: true });
+            photographs.fetch({ reset: true });
+            interviews.fetch({ reset: true });
+            transcripts.fetch({ reset: true });
+            linedrawings.fetch({ reset: true });
+            articles.fetch({ reset: true });
         });
     }
 

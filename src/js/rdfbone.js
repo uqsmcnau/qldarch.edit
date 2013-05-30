@@ -56,6 +56,7 @@
     var Collection = Backbone.Collection;
     var SubCollection = function(baseCollection, options) {
         options || (options = {})
+        this.name = options.name;
         if (options.predicate) this.predicate = options.predicate;
         this.baseCollection = baseCollection ? baseCollection : new Collection([], options);
 
@@ -161,10 +162,10 @@
     }
 
     _.extend(CachedRDFGraph.prototype, RDFGraph.prototype, {
-        get: function(fileURIs, callback, context) {
+        getp: function(fileURIs, callback, context) {
             var uris = _.flatten(fileURIs);
             var models = _.reduce(uris, function(memo, uri) {
-                var model = RDFGraph.prototype.get.call(this, uri);
+                var model = this.get(uri);
                 if (!_.isUndefined(model)) {
                     memo.cached.push(model);
                 } else {
@@ -206,7 +207,6 @@
     });
 
     CachedRDFGraph.extend = _.extend;
-
 
     Backbone.RDFGraph = RDFGraph;
     Backbone.RDFDescription = RDFDescription;
