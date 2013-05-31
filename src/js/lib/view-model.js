@@ -42,3 +42,42 @@ Backbone.ViewModel = (function(Backbone, _, undefined){
 
   return ViewModel;
 })(Backbone, _);
+
+Backbone.ViewCollection = (function(Backbone, _, undefined) {
+    'use strict';
+
+    var Model = Backbone.Model;
+    var Collection = Backbone.Collection;
+
+    var ViewCollection = function(options) {
+        Collection.apply(this, [[], options]);
+        this.sources = options.sources;
+        this.initializeViewCollection();
+    };
+
+    _.extend(ViewCollection.prototype, Collection.prototype, {
+        initializeViewCollection: function() {
+            this.setComputedAttributes();
+            this.bindToChangesInSources();
+        },
+
+        setComputedAttributes: function() {
+            this.set(this.computeModelArray());
+        },
+
+        bindToChangesInSources: function(){
+            _.each(this.sources, function(collection) {
+                this.listenTo(collection, "add", this.setComputedAttributes, this);
+                this.listenTo(collection, "remove", this.setComputedAttributes, this);
+                this.listenTo(collection, "reset", this.setComputedAttributes, this);
+                this.listenTo(collection, "change", this.setComputedAttributes, this);
+                this.listenTo(collection, "sort", this.setComputedAttributes, this);
+                this.listenTo(collection, "destroy", this.setComputedAttributes, this);
+            }, this);
+        }
+    });
+
+    ViewCollection.extend = Collection.extend;
+
+    return ViewCollection;
+})(Backbone, _);

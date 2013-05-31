@@ -1340,101 +1340,118 @@ var frontend = (function() {
         },
     });
 
-    var EntityDetailView = Backbone.View.extend({
-        className: 'entitydetail',
+    var EntityPropertyViewCollection = Backbone.ViewCollection.extend({
+        computeModelArray: function() {
+            var selectedEntity = this.sources['selectedEntity'];
+            var properties = this.sources['properties'];
+            var entities = this.sources['entities'];
 
-        initialize: function(options) {
-            _.bindAll(this);
+            if (!selectedEntity || !properties || !entities) {
+                return [];
+            }
+            var selected = selectedEntity.get('entity');
+            if (!selected) {
+                return [];
+            }
 
-            _.checkarg(options.initalize).withDefault(_.identity).call(this);
+            var metadata = _.map(selected.predicates(), function(predicate) {
+                var predDefn = this.properties.get(predicate);
+                if (!predDefn) {
+                    console.log("Property not found in ontology: " + predicate);
+                    return undefined;
+                } else if (predDefn.get1(QA_DISPLAY, true, true)) {
+                    var value = selected.get1(predicate, logmultiple);
+                    var precedence = predDefn.get1(QA_DISPLAY_PRECEDENCE);
+                    precedence = precedence ? precedence : MAX_PRECEDENCE;
 
-            this.template = _.template($("#entitydetailTemplate").html());
-            this.detailItemTemplate = _.template($("#entitydetailItemTemplate").html());
-
-            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
-            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
-
-            this.entity = undefined;
-            this.model.on("change", this._updateEntity);
-            this._updateEntity();
-        },
-        
-        render: function() {
-            this.$el.html(this.template());
-            
-            this._update();
-
-            return this;
-        },
-
-        _update: function() {
-            if (this.entity) {
-                this._updateListTitle(this.entity.get1(QA_LABEL));
-
-                /* FIXME: This block copied from the image metadata code. Refactor! */
-                this.$(".propertylist").empty();
-                var metadata = _(this.entity.predicates()).map(function(property) {
-                    var propMeta = this.properties.get(property);
-                    if (!propMeta) {
-                        console.log("Property not found in ontology: " + property);
-                    } else if (propMeta.get1(QA_DISPLAY, true, true)) {
-                        var value = this.entity.get1(property, logmultiple);
-                        var precedence = propMeta.get1(QA_DISPLAY_PRECEDENCE);
-                        precedence = precedence ? precedence : MAX_PRECEDENCE;
-
-                        if (propMeta.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
-                            if (this.entities.get(value) &&
-                                    this.entities.get(value).get1(QA_LABEL)) {
-                                return {
-                                    label: propMeta.get1(QA_LABEL, logmultiple),
-                                    value: this.entities.get(value).get1(QA_LABEL, logmultiple),
-                                    precedence: precedence,
-                                };
-                            } else {
-                                console.log("ObjectProperty(" + property + ") failed resolve");
-                                console.log(this.entities.get(value));
-                            }
-                        } else {
+                    if (predDefn.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
+                        if (entities.get(value) && entities.get(value).get1(QA_LABEL)) {
                             return {
                                 label: propMeta.get1(QA_LABEL, logmultiple),
-                                value: value,
+                                value: entities.get(value).get1(QA_LABEL, logmultiple),
                                 precedence: precedence,
                             };
+                        } else {
+                            console.log("ObjectProperty(" + property + ") failed resolve");
+                            console.log(entities.get(value));
+                            return undefined;
                         }
-                    }
-                }, this);
-
-                _.chain(metadata).filter(_.identity).sortBy('precedence').each(function(entry) {
-                    this.$(".propertylist").append(this.detailItemTemplate(entry));
-                }, this);
-
-            } else {
-                this._updateListTitle("Location Properties...");
-                this.$(".propertylist").empty();
-            }
-        },
-
-        _updateListTitle: function _updateListTitle(title) {
-            this.$(".contentlisttitle").text(title);
-        },
-
-        _updateEntity: function() {
-            var entityids = this.model.get('entityids');
-            if (entityids && entityids.length == 1) {
-                var newEntity = this.entities.get(entityids[0]);
-                if (newEntity) {
-                    if (newEntity !== this.entity) {
-                        this.entity = newEntity;
-                        this._update();
+                    } else {
+                        return {
+                            label: propMeta.get1(QA_LABEL, logmultiple),
+                            value: value,
+                            precedence: precedence,
+                        };
                     }
                 } else {
-                    this.entity = undefined;
-                    this._update();
+                    return undefined;
                 }
-            } else {
-                this.entity = undefined;
-                this._update();
-            }
+            }, this);
+
+
+            var models = _.chain(metadata).compact().sortBy('precidence').map(function(entry) {
+                return new Backbone.Model(entry);
+            }, this).value();
+
+            console.log(models);
+
+            return models;
+        },
+    });
+
+    var EntityDetailItemView = Backbone.Marionette.ItemView.extend({
+        template: "#entitydetailItemTemplate",
+        render: function() {
+            console.log(this.model);
+            Backbone.Marionette.ItemView.prototype.render.call(this);
+        },
+    });
+        
+    var EntityDetailView = Backbone.Marionette.CompositeView.extend({
+        className: 'entitydetail',
+        template: "#entitydetailTemplate",
+        itemViewContainer: ".propertylist",
+
+        itemView: EntityDetailItemView,
+
+        initialize: function(options) {
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.entitySearch = _.checkarg(options.entitySearch)
+                .throwNoArg("options.entitySearch");
+
+            this.selectedEntity = new Backbone.ViewModel({
+                source_models: {
+                    entities: this.entities,
+                    selectedEntities: this.entitySearch,
+                },
+                computed_attributes: {
+                    entity: function() {
+                        var entityids = this.get('selectedentities').get('entityids');
+                        return (entityids && entityids.length == 1)
+                            ? this.get('entities').get(entityids[0])
+                            : undefined;
+                    }
+                },
+            });
+
+            this.model = new Backbone.ViewModel({
+                source_model: this.selectedEntity,
+                computed_attributes: {
+                    title: function() {
+                        var entity = this.get('source_model').get('entity');
+                        return entity ? entity.get1(QA_LABEL) : "No Known Title";
+                    }
+                },
+            });
+
+            this.collection = new EntityPropertyViewCollection({
+                sources: {
+                    selectedEntity: this.selectedEntity,
+                    properties: this.properties,
+                    entities: this.entities,
+                },
+            });
         },
     });
 
@@ -2416,10 +2433,9 @@ var frontend = (function() {
             this.$(".mapentitylist").append(this.entityListView.render().el);
 
             this.entityDetailView = new EntityDetailView({
-                router: this.router,
                 entities: this.entities,
                 properties: this.properties,
-                model: this.entitySearch,
+                entitySearch: this.entitySearch,
             });
             this.$(".mapentitydesc").append(this.entityDetailView.render().el);
 
@@ -2446,8 +2462,6 @@ var frontend = (function() {
         },
 
         _update: function() {
-            if (this.entityListView) this.entityListView._update();
-            if (this.entityDetailView) this.entityDetailView._update();
             if (this.imagePreviewView) _.defer(this.imagePreviewView._update);
         },
 
@@ -2475,83 +2489,6 @@ var frontend = (function() {
             return _.yes;
         },
 
-    });
-
-    // Split into composite + collection view?
-    var MapEntityListView = Backbone.View.extend({
-        className: 'maplistview',
-        initialize: function(options) {
-            _.bindAll(this);
-
-            _.checkarg(options.initalize).withDefault(_.identity).call(this);
-
-            this.template = _.checkarg(_.template($("#contenttypeTemplate").html()))
-                .withValidator(_.isFunction).throwError("#contenttypeTemplate missing");
-            this.title = _.checkarg(options.title).throwNoArg("options.title");
-            this.entitySearch = _.checkarg(options.entitySearch)
-                .throwNoArg("options.entitySearch");
-            this.isOnScreen = _.checkarg(options.isOnScreen).throwNoArg("options.isOnScreen");
-            this.geoentities = _.checkarg(options.geoentities).throwNoArg("options.geoentities");
-
-            this.model = new Backbone.Model({
-                uri: "",
-                title: this.title,
-            });
-
-            this.collection = new SubCollection(this.geoentities, {
-                    name: "filtered-entities",
-                    tracksort: true,
-                    predicate: _.identity, // Will replace with a bounds test as required.
-                });
-
-            this.collection.on("reset", this.render);
-
-            this.$placeholder = $('<span display="none" data-uri="' + this.type + '"/>');
-            this.rendered = false;
-            this.visible = false;
-        },
-        
-        render: function() {
-            this.$el.html(this.template({
-                uri: "",
-                label: this.title,
-            }));
-
-            this.collection.each(function(result) {
-                var itemView = new MapEntityListItemView({
-                    router: this.router,
-                    model: result,
-                    entitySearch: this.entitySearch,
-                });
-                this.$('.contentlist').append(itemView.render().el);
-            }, this);
-
-            this._update();
-
-            this.rendered = true;
-            this.visible = true;
-
-            return this;
-        },
-
-        _update: function() {
-            if (this.rendered) {
-                if (!this.visible) {
-                    this.$placeholder.after(this.$el).detach();
-                    this.visible = true;
-                }
-            }
-        },
-
-        filterLocationsOnMap: function filterLocationsOnMap() {
-            this.collection.setPredicate(this.isOnScreen);
-        },
-
-        filterLocations: function filterLocations(locs) {
-            this.collection.setPredicate(function(loc) {
-                return _.contains(locs, loc.id);
-            });
-        },
     });
 
     var MapEntityListItemView = Backbone.Marionette.ItemView.extend({
@@ -2607,6 +2544,52 @@ var frontend = (function() {
                     entityids: _.union(oldids, [this.model.id]),
                 });
             }
+        },
+    });
+
+    var MapEntityListView = Backbone.Marionette.CompositeView.extend({
+        className: 'maplistview',
+        template: "#contenttypeTemplate",
+        itemViewContainer: ".contentlist",
+
+        itemView: MapEntityListItemView,
+        itemViewOptions: function(options) {
+            return {
+                entitySearch: this.entitySearch
+            };
+        },
+
+
+        initialize: function(options) {
+            _.bindAll(this);
+
+            Backbone.Marionette.CompositeView.prototype.initialize.call(this, options);
+            this.title = _.checkarg(options.title).throwNoArg("options.title");
+            this.entitySearch = _.checkarg(options.entitySearch).throwNoArg("options.entitySearch");
+            this.isOnScreen = _.checkarg(options.isOnScreen).throwNoArg("options.isOnScreen");
+            this.geoentities = _.checkarg(options.geoentities).throwNoArg("options.geoentities");
+
+            this.model = new Backbone.Model({
+                uri: "",
+                label: this.title,
+            });
+
+            this.collection = new SubCollection(this.geoentities, {
+                    name: "filtered-entities",
+                    tracksort: true,
+                    predicate: _.identity, // Will replace with a bounds test as required.
+                });
+        },
+        
+
+        filterLocationsOnMap: function filterLocationsOnMap() {
+            this.collection.setPredicate(this.isOnScreen);
+        },
+
+        filterLocations: function filterLocations(locs) {
+            this.collection.setPredicate(function(loc) {
+                return _.contains(locs, loc.id);
+            });
         },
     });
 
