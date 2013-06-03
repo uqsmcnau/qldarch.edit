@@ -1355,7 +1355,7 @@ var frontend = (function() {
             }
 
             var metadata = _.map(selected.predicates(), function(predicate) {
-                var predDefn = this.properties.get(predicate);
+                var predDefn = properties.get(predicate);
                 if (!predDefn) {
                     console.log("Property not found in ontology: " + predicate);
                     return undefined;
@@ -1367,7 +1367,7 @@ var frontend = (function() {
                     if (predDefn.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
                         if (entities.get(value) && entities.get(value).get1(QA_LABEL)) {
                             return {
-                                label: propMeta.get1(QA_LABEL, logmultiple),
+                                label: predDefn.get1(QA_LABEL, logmultiple),
                                 value: entities.get(value).get1(QA_LABEL, logmultiple),
                                 precedence: precedence,
                             };
@@ -1378,7 +1378,7 @@ var frontend = (function() {
                         }
                     } else {
                         return {
-                            label: propMeta.get1(QA_LABEL, logmultiple),
+                            label: predDefn.get1(QA_LABEL, logmultiple),
                             value: value,
                             precedence: precedence,
                         };
@@ -1388,8 +1388,9 @@ var frontend = (function() {
                 }
             }, this);
 
+            console.log(metadata);
 
-            var models = _.chain(metadata).compact().sortBy('precidence').map(function(entry) {
+            var models = _.chain(metadata).compact().sortBy('precedence').map(function(entry) {
                 return new Backbone.Model(entry);
             }, this).value();
 
@@ -1415,34 +1416,40 @@ var frontend = (function() {
         itemView: EntityDetailItemView,
 
         initialize: function(options) {
+            console.log("foo");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.entitySearch = _.checkarg(options.entitySearch)
                 .throwNoArg("options.entitySearch");
 
-            this.selectedEntity = new Backbone.ViewModel({
-                source_models: {
-                    entities: this.entities,
-                    selectedEntities: this.entitySearch,
-                },
+            this.selectedEntity = new (Backbone.ViewModel.extend({
                 computed_attributes: {
                     entity: function() {
-                        var entityids = this.get('selectedentities').get('entityids');
+                        var entityids = this.get('selectedEntities').get('entityids');
                         return (entityids && entityids.length == 1)
                             ? this.get('entities').get(entityids[0])
                             : undefined;
                     }
                 },
+            }))({
+                source_models: {
+                    entities: this.entities,
+                    selectedEntities: this.entitySearch,
+                },
             });
 
-            this.model = new Backbone.ViewModel({
-                source_model: this.selectedEntity,
+            this.model = new (Backbone.ViewModel.extend({
                 computed_attributes: {
                     title: function() {
+                        console.log("computing title");
                         var entity = this.get('source_model').get('entity');
-                        return entity ? entity.get1(QA_LABEL) : "No Known Title";
+                        var title = entity ? entity.get1(QA_LABEL) : "No Known Title";
+                        console.log(title);
+                        return title;
                     }
                 },
+            }))({
+                source_model: this.selectedEntity,
             });
 
             this.collection = new EntityPropertyViewCollection({
@@ -1452,6 +1459,13 @@ var frontend = (function() {
                     entities: this.entities,
                 },
             });
+            console.log("bar");
+        },
+
+        onRender: function() {
+            console.log("rendered");
+            console.log(this.model);
+            console.log(this.collection);
         },
     });
 
