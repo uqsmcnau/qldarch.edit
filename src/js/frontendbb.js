@@ -1184,7 +1184,7 @@ var frontend = (function() {
                                     }));
 
                                     var that = this;
-                                    _.delay(function() {
+                                    _.delay(function fadeInImage() {
                                         that.$("img").fadeIn("slow", function() {
                                             _.delay(that._fadeOutImage, 6000);
                                         });
@@ -1370,6 +1370,7 @@ var frontend = (function() {
                                 label: predDefn.get1(QA_LABEL, logmultiple),
                                 value: entities.get(value).get1(QA_LABEL, logmultiple),
                                 precedence: precedence,
+                                uri: predicate,
                             };
                         } else {
                             console.log("ObjectProperty(" + property + ") failed resolve");
@@ -1381,6 +1382,7 @@ var frontend = (function() {
                             label: predDefn.get1(QA_LABEL, logmultiple),
                             value: value,
                             precedence: precedence,
+                            uri: predicate,
                         };
                     }
                 } else {
@@ -1388,13 +1390,9 @@ var frontend = (function() {
                 }
             }, this);
 
-            console.log(metadata);
-
             var models = _.chain(metadata).compact().sortBy('precedence').map(function(entry) {
-                return new Backbone.Model(entry);
+                return new Backbone.Model(entry, { idAttribute: "uri" });
             }, this).value();
-
-            console.log(models);
 
             return models;
         },
@@ -1402,10 +1400,6 @@ var frontend = (function() {
 
     var EntityDetailItemView = Backbone.Marionette.ItemView.extend({
         template: "#entitydetailItemTemplate",
-        render: function() {
-            console.log(this.model);
-            Backbone.Marionette.ItemView.prototype.render.call(this);
-        },
     });
         
     var EntityDetailView = Backbone.Marionette.CompositeView.extend({
@@ -1416,12 +1410,14 @@ var frontend = (function() {
         itemView: EntityDetailItemView,
 
         initialize: function(options) {
-            console.log("foo");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.entitySearch = _.checkarg(options.entitySearch)
                 .throwNoArg("options.entitySearch");
 
+            // Both the title and the list are dependent on the currently selected entity.
+            // To avoid duplication this selection logic is computed in an intermediary
+            // ViewModel.
             this.selectedEntity = new (Backbone.ViewModel.extend({
                 computed_attributes: {
                     entity: function() {
@@ -1438,20 +1434,26 @@ var frontend = (function() {
                 },
             });
 
+            // At some point I will need to generalise the concept of a derived model that
+            // consists of plucking a set of rdf predicates from an rdf description.
+            // For now do it explicitly.
+            // Note: We need 1) the rdf description; 2) the predicate 3) the default value
+            // in the case the rdf description doesn't exist; 4) the default value should
+            // the predicate not be contained in the description.
             this.model = new (Backbone.ViewModel.extend({
                 computed_attributes: {
                     title: function() {
-                        console.log("computing title");
                         var entity = this.get('source_model').get('entity');
-                        var title = entity ? entity.get1(QA_LABEL) : "No Known Title";
-                        console.log(title);
-                        return title;
+                        var title = entity ? entity.get1(QA_LABEL) : "No selected location";
+                        return title ? title : "No known title";
                     }
                 },
             }))({
                 source_model: this.selectedEntity,
             });
 
+            // This collection contains a prededence ordered list of models containing
+            // label->value pairs.
             this.collection = new EntityPropertyViewCollection({
                 sources: {
                     selectedEntity: this.selectedEntity,
@@ -1459,13 +1461,6 @@ var frontend = (function() {
                     entities: this.entities,
                 },
             });
-            console.log("bar");
-        },
-
-        onRender: function() {
-            console.log("rendered");
-            console.log(this.model);
-            console.log(this.collection);
         },
     });
 
@@ -2295,6 +2290,14 @@ var frontend = (function() {
         },
     });
 
+    var MapUIView = Backbone.Marionette.ItemView.extend({
+        classname: "mapui",
+        template: "#mapuiTemplate",
+
+        initialize: function(options) {
+        },
+    });
+
     var MapSearchView = ToplevelView.extend({
         className: "mapsearch",
         template: "#mapsearchTemplate",
@@ -2303,7 +2306,6 @@ var frontend = (function() {
             ToplevelView.prototype.initialize.call(this, options);
             _.checkarg(options).throwNoArg("options");
 
-            this.router = _.checkarg(options.router).throwNoArg("options.router");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.files = _.checkarg(options.files).throwNoArg("options.files");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
@@ -2358,15 +2360,13 @@ var frontend = (function() {
             _.delay(this._imageSelectionLoop, delay, delay);
         },
 
-        events: {
-            "click .returnbutton" : "toFrontpage"
-        },
-
         initOM: function() {
             this.map.init(this.divid);
 
             this.replaceMarkers(this.geoentities);
             this.geoentities.on("reset", this.replaceMarkers, this);
+            this.geoentities.on("add", this.replaceMarkers, this);
+            this.geoentities.on("remove", this.replaceMarkers, this);
             this.map.getMap().events.register("moveend", this, this._onMove);
             this.map.events.addListener("selected", this._featureSelected);
             this.map.events.addListener("vectorschanged", this._restoreSelected);
@@ -2438,7 +2438,6 @@ var frontend = (function() {
             }));
 
             this.entityListView = new MapEntityListView({
-                router: this.router,
                 title: "Locations of Interest",
                 geoentities: this.geoentities,
                 entitySearch: this.entitySearch,
@@ -2476,11 +2475,6 @@ var frontend = (function() {
         },
 
         _update: function() {
-            if (this.imagePreviewView) _.defer(this.imagePreviewView._update);
-        },
-
-        toFrontpage: function() {
-            this.router.navigate("", { trigger: true, replace: false });
         },
 
         replaceMarkers: function replaceMarkers(collection) {
@@ -2614,10 +2608,11 @@ var frontend = (function() {
         }
     });
 
-    var NotifyingImageView = Backbone.View.extend({
+    var NotifyingImageView = Backbone.Marionette.ItemView.extend({
         className: "notifyingImage",
+        template: "#spinnerTemplate",
 
-        initialize: function(options) {
+        initialize: function initialize(options) {
             _.bindAll(this);
 
             options = _.checkarg(options).withDefault({})
@@ -2631,16 +2626,10 @@ var frontend = (function() {
                 .throwNoArg("options.displayedImage");
 
             this.displayingImage = undefined;
+            this.listenTo(this.imageSelection, "change", this.onDomRefresh);
         },
 
-        render: function() {
-            this.listenTo(this.imageSelection, "change", this._update);
-            _.defer(this._update);
-
-            return this;
-        },
-
-        _update: function() {
+        onDomRefresh: function onDomRefresh() {
             if (this.$el.filter(":visible").length > 0) {
                 var image = this.imageSelection.get("image");
                 var displayed = this.displayedImage.get("image");
@@ -2697,13 +2686,6 @@ var frontend = (function() {
             } else {
                 console.log("No image/jpeg found for " + image.id);
             }
-        },
-
-        _beforeDetach: function() {
-            this.displayingImage = undefined;
-            this.displayedImage.set("image", undefined);
-            this.undelegateEvents();
-            this.remove();
         },
     });
 
@@ -2777,7 +2759,6 @@ var frontend = (function() {
                     return JSON_ROOT + "fileSummary?ID=" + encodeURIComponent(ids[0]);
                 } else {
                     var rawids = _.reduce(ids, function(memo, id) {
-                        console.log(id);
                         match = id.match(/http:\/\/qldarch.net\/omeka\/files\/show\/([0-9]*)/);
                         if (match) {
                             memo.idlist.push(match[1]);

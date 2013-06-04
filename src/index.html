@@ -93,7 +93,7 @@
         </script>
         <script type="text/template" id="entitydetailTemplate">
             <div class="entitydescription">
-                <div class="contentlisttitle">About <%= title %><div>
+                <div class="contentlisttitle">About: <%= title %><div>
                 <div class="propertylist"></div>
             </div>
         </script>
@@ -163,7 +163,7 @@
             </div>
         </script>
         <script type="text/template" id="spinnerTemplate">
-            <img src="img/spinner.gif" title="Spinner GIF" style="margin-left:100px;margin-top:50px;margin-bottom:50px"/>
+            <img class="spinner" src="img/spinner.gif" title="Spinner GIF" />
         </script>
         <script type="text/template" id="transcriptresultTemplate">
             <div class="transcriptref">
@@ -177,6 +177,9 @@
                 <span class="transcriptlabel"><%= speaker %> @ <%= time %></span>
                 <span class="transcripttext"><%= transcript %></span>
             </div>
+        </script>
+        <script type="text/template" id="mapuiTemplate">
+            <div class="map" id="<%= id %>"></div>
         </script>
         <script type="text/template" id="mapsearchTemplate">
             <h2 class="columntitle">Places of Interest</h2>
