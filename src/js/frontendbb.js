@@ -2324,6 +2324,7 @@ var frontend = (function() {
             this.map.getMap().events.register("moveend", this, this._onMove);
             this.map.events.addListener("selected", this._featureSelected);
             this.map.events.addListener("vectorschanged", this._restoreSelected);
+            this.map.getMap().events.register("moveend", this, this._restoreSelected);
         },
 
         _onMove: function _onMove() {
@@ -2337,8 +2338,8 @@ var frontend = (function() {
         },
 
         _restoreSelected: function _restoreSelected() {
-            this.map.selectMapFeature(this.selectedFeature);
             if (_.isUndefined(this.selectedFeature)) {
+                this.map.selectMapFeature(undefined);
                 this.entitiesOnMap.setPredicate(this.isOnScreenPredicator());
                 this.entitySearch.set({
                     entityids: [],
@@ -2351,8 +2352,11 @@ var frontend = (function() {
                     this.entitySearch.set({
                         entityids: locationids,
                     });
-                    this.entitiesOnMap.setPredicate(this.locationListPredicator(locationids));
+                    map.zoomToCluster(this.selectedFeature);
+                    this.selectedFeature = undefined;
+//                    this.entitiesOnMap.setPredicate(this.locationListPredicator(locationids));
                 } else {
+                    this.map.selectMapFeature(this.selectedFeature);
                     var locationid = this.selectedFeature.attributes.id;
                     this.entitySearch.set({
                         entityids: [locationid],
@@ -2420,8 +2424,6 @@ var frontend = (function() {
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.entitySearch = _.checkarg(options.entitySearch)
                 .throwNoArg("options.entitySearch");
-            console.log("MSV::initialize");
-            console.log(this.entitySearch);
             this.predicatedImages = _.checkarg(options.predicatedImages)
                 .throwNoArg("options.predicatedImages");
             this.displayedImages = _.checkarg(options.displayedImages)
@@ -2490,8 +2492,6 @@ var frontend = (function() {
         },
 
         _imageSelectionLoop: function _imageSelectionLoop(delay) {
-            console.log("MSV::_imageSelectionLoop");
-            console.log(this.entitySearch);
             var entityids = this.entitySearch.get("entityids");
             if (entityids &&
                (entityids.length == 1) &&

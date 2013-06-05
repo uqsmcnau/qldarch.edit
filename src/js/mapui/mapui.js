@@ -273,7 +273,18 @@
     };
 
     map.zoomToMarkers = function() {
-        var features = vectors.features;
+        map.zoomToFeatures(vectors.features);
+    };
+
+    map.zoomToCluster = function(cluster) {
+        if (!_.has(cluster, "cluster")) {
+            map.zoomToMarkers();
+        } else {
+            map.zoomToFeatures(cluster.cluster);
+        }
+    };
+
+    map.zoomToFeatures = function(features) {
         if(features.length == 0) {
             map.centerAustralia();
         } else if(features.length == 1) {
@@ -281,7 +292,7 @@
             olmap.setCenter(lonlat, 16, false, false);
         } else {
             var bounds = new OpenLayers.Bounds();
-            $.each(vectors.features, function(index, feature) {
+            $.each(features, function(index, feature) {
                 bounds.extend(feature.geometry.getBounds());
             });
             olmap.zoomToExtent(bounds);
@@ -412,7 +423,7 @@
 
     map.selectMapFeature = function selectMapFeature(feature) {
         selectControl.unselectAll();
-        if (!_.isUndefined(feature)) {
+        if (!_.isUndefined(feature) && _.contains(map.featuresOnScreen(), feature)) {
             selectControl.select(feature);
         }
     };
