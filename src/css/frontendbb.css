@@ -461,6 +461,10 @@ div.mapcontainer {
     height: 400px;
 }
 
+div.mapcontainer>div {
+    height: 100%;
+}
+
 .map {
     position: relative;
     margin: 0;
@@ -537,22 +541,12 @@ div.mapcontainer {
 
 .notifyingImage img {
     position: absolute;
-    top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
 }
 
 .transcript .spinner {
     margin-left: 100px;
     margin-top: 50px;
     margin-bottom: 50px;
-}
-
-.notifyingImage img.spinner {
-    margin-left: 100px;
-    margin-top: 50px;
-    margin-bottom: 50px;
-    width: 110px;
-    height: 110px;
 }

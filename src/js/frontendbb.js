@@ -1,4 +1,6 @@
 var frontend = (function() {
+    'use strict';
+
     // Alias the Rdfbone extensions to Backbone
     var RDFGraph = Backbone.RDFGraph;
     var CachedRDFGraph = Backbone.CachedRDFGraph;
@@ -385,7 +387,6 @@ var frontend = (function() {
                         router: this.router,
                         model: this._subViewModel(artifactType),
                         type: artifactType,
-                        router: this.router,
                         search: this.search,
                         selection: this.selection,
                         entitySearch: this.entitySearch,
@@ -2295,15 +2296,123 @@ var frontend = (function() {
         template: "#mapuiTemplate",
 
         initialize: function(options) {
+            _.bindAll(this);
+            this.map = _.checkarg(window.map).throwNoArg("window.map");
+
+            this.geoentities = _.checkarg(options.geoentities)
+                .throwNoArg("options.geoentities");
+            this.entitiesOnMap = _.checkarg(options.entitiesOnMap)
+                .throwNoArg("options.entitiesOnMap");
+            this.entitySearch = _.checkarg(options.entitySearch)
+                .throwNoArg("options.entitySearch");
+
+            this.model = new Backbone.Model({
+                id: _.uniqueId("mapsearch"),
+            });
+
+        },
+        
+        // Note: Currently using a patched marionette.
+        // If this stops working wrap the contents in a _.defer.
+        onDomRefresh: function() {
+            this.map.init(this.model.get('id'));
+
+            this.replaceMarkers(this.geoentities);
+            this.geoentities.on("reset", this.replaceMarkers, this);
+            this.geoentities.on("add", this.replaceMarkers, this);
+            this.geoentities.on("remove", this.replaceMarkers, this);
+            this.map.getMap().events.register("moveend", this, this._onMove);
+            this.map.events.addListener("selected", this._featureSelected);
+            this.map.events.addListener("vectorschanged", this._restoreSelected);
+        },
+
+        _onMove: function _onMove() {
+            this.entitiesOnMap.setPredicate(this.isOnScreenPredicator());
+        },
+
+        _featureSelected: function _featureSelected(evt) {
+            this.selectedFeature =
+                (this.selectedFeature === evt.feature) ? undefined : evt.feature;
+            this._restoreSelected();
+        },
+
+        _restoreSelected: function _restoreSelected() {
+            this.map.selectMapFeature(this.selectedFeature);
+            if (_.isUndefined(this.selectedFeature)) {
+                this.entitiesOnMap.setPredicate(this.isOnScreenPredicator());
+                this.entitySearch.set({
+                    entityids: [],
+                });
+            } else {
+                if (_.has(this.selectedFeature, "cluster")) {
+                    var locationids = _.map(this.selectedFeature.cluster, function(feature) {
+                        return feature.attributes.id;
+                    });
+                    this.entitySearch.set({
+                        entityids: locationids,
+                    });
+                    this.entitiesOnMap.setPredicate(this.locationListPredicator(locationids));
+                } else {
+                    var locationid = this.selectedFeature.attributes.id;
+                    this.entitySearch.set({
+                        entityids: [locationid],
+                    });
+                    this.entitiesOnMap.setPredicate(this.locationListPredicator([locationid]));
+                }
+            }
+        },
+
+        locationListPredicator: function filterLocations(locs) {
+            return function(loc) {
+                return _.contains(locs, loc.id);
+            };
+        },
+
+        isOnScreenPredicator: function isOnScreenPredicator() {
+            var features = this.map.featuresOnScreen();
+            var idlists = [];
+            _.each(features, function(feature) {
+                if (_.has(feature, "cluster")) {
+                    idlists.push(
+                        _.map(feature.cluster, function(feature) {
+                            return feature.attributes.id;
+                        }));
+                } else {
+                    idlists.push(feature.attributes.id);
+                }
+            });
+            var onscreenids = _.flatten(idlists);
+
+            return this.locationListPredicator(onscreenids);
+        },
+
+        replaceMarkers: function replaceMarkers(collection) {
+            var coordinates = this.geoentities.map(function calccoord(entity) {
+                return {
+                    lon: entity.get(GEO_LONG),
+                    lat: entity.get(GEO_LAT),
+                    id: entity.id,
+                };
+            });
+
+            window.map.replaceMarkers(coordinates);
         },
     });
 
-    var MapSearchView = ToplevelView.extend({
+    var MapSearchView = Backbone.Marionette.Layout.extend({
         className: "mapsearch",
         template: "#mapsearchTemplate",
 
+        regions: {
+            map: ".mapcontainer",
+            entitylist: ".mapentitylist",
+            entitydesc: ".mapentitydesc",
+            imgpreview: ".multiimagepreview",
+        },
+
         initialize: function(options) {
-            ToplevelView.prototype.initialize.call(this, options);
+            _.bindAll(this, "_imageSelectionLoop");
+
             _.checkarg(options).throwNoArg("options");
 
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
@@ -2311,12 +2420,12 @@ var frontend = (function() {
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.entitySearch = _.checkarg(options.entitySearch)
                 .throwNoArg("options.entitySearch");
+            console.log("MSV::initialize");
+            console.log(this.entitySearch);
             this.predicatedImages = _.checkarg(options.predicatedImages)
                 .throwNoArg("options.predicatedImages");
             this.displayedImages = _.checkarg(options.displayedImages)
                 .throwNoArg("options.displayedImages");
-
-            this.divid = _.uniqueId("mapsearch");
 
             this.geoentities = new SubCollection(this.entities, {
                     name: "geo-entities",
@@ -2324,14 +2433,65 @@ var frontend = (function() {
                     predicate: this.isGeoLocated,
                 });
 
-            this.map = _.checkarg(window.map).throwNoArg("window.map");
+            this.entitiesOnMap = new SubCollection(this.geoentities, {
+                    name: "filtered-entities",
+                    tracksort: true,
+                    predicate: function() { return false; }, // Will be updated by mapui.
+                });
+
+            this.displayedImage = new Backbone.Model({
+                image: undefined,
+            });
+
+            this.listenTo(this.displayedImage, "change", function(model) {
+                var oldImage = model.previous("image");
+                var newImage = model.get("image");
+                if (oldImage) this.displayedImages.undisplayed(oldImage.id);
+                if (newImage) this.displayedImages.displayed(newImage.id);
+            });
 
             this.imageSelection = new ImageSelection({});
 
             this._imageSelectionLoop(3000);
         },
 
+        onRender: function onRender() {
+            console.log("Map::onRender");
+            this.map.show(new MapUIView({
+                geoentities: this.geoentities,
+                entitiesOnMap: this.entitiesOnMap,
+                entitySearch: this.entitySearch,
+            }));
+
+            this.entitylist.show(new MapEntityListView({
+                model: new Backbone.Model({
+                    uri: "",
+                    label: "Locations of Interest",
+                }),
+                collection: this.entitiesOnMap,
+                entitySearch: this.entitySearch,
+            }))
+
+            this.entitydesc.show(new EntityDetailView({
+                entities: this.entities,
+                properties: this.properties,
+                entitySearch: this.entitySearch,
+            }));
+
+            this.imgpreview.show(new NotifyingImageView({
+                files: this.files,
+                imageSelection: this.imageSelection,
+                displayedImage: this.displayedImage,
+            }));
+        },
+
+        isGeoLocated: function isGeoLocated(entity) {
+            return entity.has(GEO_LAT) && entity.has(GEO_LONG);
+        },
+
         _imageSelectionLoop: function _imageSelectionLoop(delay) {
+            console.log("MSV::_imageSelectionLoop");
+            console.log(this.entitySearch);
             var entityids = this.entitySearch.get("entityids");
             if (entityids &&
                (entityids.length == 1) &&
@@ -2357,146 +2517,9 @@ var frontend = (function() {
                     });
                 }
             }
+
             _.delay(this._imageSelectionLoop, delay, delay);
         },
-
-        initOM: function() {
-            this.map.init(this.divid);
-
-            this.replaceMarkers(this.geoentities);
-            this.geoentities.on("reset", this.replaceMarkers, this);
-            this.geoentities.on("add", this.replaceMarkers, this);
-            this.geoentities.on("remove", this.replaceMarkers, this);
-            this.map.getMap().events.register("moveend", this, this._onMove);
-            this.map.events.addListener("selected", this._featureSelected);
-            this.map.events.addListener("vectorschanged", this._restoreSelected);
-        },
-
-        _onMove: function _onMove() {
-            this.entityListView.filterLocationsOnMap();
-        },
-
-        _featureSelected: function _featureSelected(evt) {
-            this.selectedFeature =
-                (this.selectedFeature === evt.feature) ? undefined : evt.feature;
-            this._restoreSelected();
-        },
-
-        _restoreSelected: function _restoreSelected() {
-            this.map.selectMapFeature(this.selectedFeature);
-            if (_.isUndefined(this.selectedFeature)) {
-                this.entityListView.filterLocationsOnMap();
-                this.entitySearch.set({
-                    entityids: [],
-                });
-            } else {
-                if (_.has(this.selectedFeature, "cluster")) {
-                    var locationids = _.map(this.selectedFeature.cluster, function(feature) {
-                        return feature.attributes.id;
-                    });
-                    this.entitySearch.set({
-                        entityids: locationids,
-                    });
-                    this.entityListView.filterLocations(locationids);
-                } else {
-                    var locationid = this.selectedFeature.attributes.id;
-                    this.entitySearch.set({
-                        entityids: [locationid],
-                    });
-                    this.entityListView.filterLocations([locationid]);
-                }
-            }
-        },
-
-        isOnScreen: function isOnScreen(entity) {
-            var features = this.map.featuresOnScreen();
-            var idlists = [];
-            _.each(features, function(feature) {
-                if (_.has(feature, "cluster")) {
-                    idlists.push(
-                        _.map(feature.cluster, function(feature) {
-                            return feature.attributes.id;
-                        }));
-                } else {
-                    idlists.push(feature.attributes.id);
-                }
-            });
-            var onscreenids = _.flatten(idlists);
-            var result = _(onscreenids).contains(entity.id);
-            return result;
-        },
-
-        // Note: We need to integrate search.js.
-        // Replace the AJAX call with a backbone filter and map.
-        // ie. More monads.
-
-        render: function() {
-            ToplevelView.prototype.render.call(this);
-
-            this.$el.html(this.template({
-                id: this.divid,
-            }));
-
-            this.entityListView = new MapEntityListView({
-                title: "Locations of Interest",
-                geoentities: this.geoentities,
-                entitySearch: this.entitySearch,
-                isOnScreen: this.isOnScreen, // Note this is a curried method.
-            });
-            this.$(".mapentitylist").append(this.entityListView.render().el);
-
-            this.entityDetailView = new EntityDetailView({
-                entities: this.entities,
-                properties: this.properties,
-                entitySearch: this.entitySearch,
-            });
-            this.$(".mapentitydesc").append(this.entityDetailView.render().el);
-
-            this.displayedImage = new Backbone.Model({
-                image: undefined,
-            });
-            this.displayedImage.on("change", function(model) {
-                var oldImage = model.previous("image");
-                var newImage = model.get("image");
-                if (oldImage) this.displayedImages.undisplayed(oldImage.id);
-                if (newImage) this.displayedImages.displayed(newImage.id);
-            }, this);
-
-            this.imagePreviewView = new NotifyingImageView({
-                files: this.files,
-                imageSelection: this.imageSelection,
-                displayedImage: this.displayedImage,
-            });
-            this.$(".multiimagepreview").append(this.imagePreviewView.render().el);
-
-            _.defer(this.initOM);
-
-            return this;
-        },
-
-        _update: function() {
-        },
-
-        replaceMarkers: function replaceMarkers(collection) {
-            var coordinates = this.geoentities.map(function calccoord(entity) {
-                return {
-                    lon: entity.get(GEO_LONG),
-                    lat: entity.get(GEO_LAT),
-                    id: entity.id,
-                };
-            });
-
-            window.map.replaceMarkers(coordinates);
-        },
-
-        isGeoLocated: function isGeoLocated(entity) {
-            return entity.has(GEO_LAT) && entity.has(GEO_LONG);
-        },
-
-        getSelectionPredicate: function getSelectionPredicate() {
-            return _.yes;
-        },
-
     });
 
     var MapEntityListItemView = Backbone.Marionette.ItemView.extend({
@@ -2509,12 +2532,9 @@ var frontend = (function() {
         },
 
         initialize: function(options) {
-            _.bindAll(this);
-
             this.entitySearch = _.checkarg(options.entitySearch)
                 .throwNoArg("options.entitySearch");
             this.listenTo(this.entitySearch, "change", this._updateSelected);
-            this.predicate = this._defaultPredicate;
         },
         
         events: {
@@ -2530,15 +2550,6 @@ var frontend = (function() {
                 this.selected = false;
                 this.$el.removeClass("selected");
             }
-        },
-
-        setPredicate: function(predicate) {
-            this.predicate = predicate ? predicate : this._defaultPredicate;
-            this._update();
-        },
-
-        _defaultPredicate: function(model) {
-            return true;
         },
 
         _select: function() {
@@ -2561,43 +2572,10 @@ var frontend = (function() {
         itemViewContainer: ".contentlist",
 
         itemView: MapEntityListItemView,
-        itemViewOptions: function(options) {
+        itemViewOptions: function() {
             return {
-                entitySearch: this.entitySearch
+                entitySearch: this.options.entitySearch,
             };
-        },
-
-
-        initialize: function(options) {
-            _.bindAll(this);
-
-            Backbone.Marionette.CompositeView.prototype.initialize.call(this, options);
-            this.title = _.checkarg(options.title).throwNoArg("options.title");
-            this.entitySearch = _.checkarg(options.entitySearch).throwNoArg("options.entitySearch");
-            this.isOnScreen = _.checkarg(options.isOnScreen).throwNoArg("options.isOnScreen");
-            this.geoentities = _.checkarg(options.geoentities).throwNoArg("options.geoentities");
-
-            this.model = new Backbone.Model({
-                uri: "",
-                label: this.title,
-            });
-
-            this.collection = new SubCollection(this.geoentities, {
-                    name: "filtered-entities",
-                    tracksort: true,
-                    predicate: _.identity, // Will replace with a bounds test as required.
-                });
-        },
-        
-
-        filterLocationsOnMap: function filterLocationsOnMap() {
-            this.collection.setPredicate(this.isOnScreen);
-        },
-
-        filterLocations: function filterLocations(locs) {
-            this.collection.setPredicate(function(loc) {
-                return _.contains(locs, loc.id);
-            });
         },
     });
 
@@ -2610,7 +2588,7 @@ var frontend = (function() {
 
     var NotifyingImageView = Backbone.Marionette.ItemView.extend({
         className: "notifyingImage",
-        template: "#spinnerTemplate",
+        template: "#notifyingimageTemplate",
 
         initialize: function initialize(options) {
             _.bindAll(this);
@@ -2952,7 +2930,6 @@ var frontend = (function() {
         });
 
         var mapSearchView = new MapSearchView({
-            router: router,
             entities: entities,
             properties: properties,
             entitySearch: entitySearchModel,
@@ -2960,7 +2937,6 @@ var frontend = (function() {
             files: files,
             displayedImages: displayedImages,
         });
-
 
         router.on('route:frontpage', function(search) {
             if (search) {
@@ -2977,7 +2953,7 @@ var frontend = (function() {
             imageContentView.detach();
             pdfContentView.detach();
             transcriptView.detach();
-            mapSearchView.detach();
+            mapSearchView.close();
             searchView.append("#column1");
             mapButtonView.append("#column1");
             fulltextView.append("#column1");
@@ -2998,7 +2974,7 @@ var frontend = (function() {
             imageContentView.detach();
             pdfContentView.detach();
             transcriptView.detach();
-            mapSearchView.detach();
+            mapSearchView.close();
             contentpaneView.attach("#column12");
             contentView.append("#column3");
             $("#column12,#column3").show();
@@ -3014,7 +2990,7 @@ var frontend = (function() {
             entityView.detach();
             contentpaneView.detach();
             transcriptView.detach();
-            mapSearchView.detach();
+            mapSearchView.close();
             contentView.append("#column1");
             imageContentView.append("#column23");
             pdfContentView.detach();
@@ -3031,7 +3007,7 @@ var frontend = (function() {
             entityView.detach();
             contentpaneView.detach();
             transcriptView.detach();
-            mapSearchView.detach();
+            mapSearchView.close();
             imageContentView.detach();
             contentView.append("#column1");
             pdfContentView.append("#column23");
@@ -3050,7 +3026,7 @@ var frontend = (function() {
             contentView.detach();
             imageContentView.detach();
             pdfContentView.detach();
-            mapSearchView.detach();
+            mapSearchView.close();
             transcriptView.append("#column123");
             $("#column123").show();
         }, contentSearchModel);
@@ -3065,7 +3041,7 @@ var frontend = (function() {
             transcriptView.detach();
             imageContentView.detach();
             pdfContentView.detach();
-            mapSearchView.append("#column12");
+            $("#column12").empty().append(mapSearchView.render().$el);
             contentView.append("#column3");
             $("#column12,#column3").show();
         }, contentSearchModel);

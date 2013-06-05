@@ -594,7 +594,9 @@ Marionette.MonitorDOMRefresh = (function(){
   function triggerDOMRefresh(view){
     if (view._isShown && view._isRendered){
       if (_.isFunction(view.triggerMethod)){
-        view.triggerMethod("dom:refresh");
+        _.defer(function() {
+            view.triggerMethod("dom:refresh");
+        });
       }
     }
   }
