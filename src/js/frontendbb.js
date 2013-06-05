@@ -2310,6 +2310,9 @@ var frontend = (function() {
                 id: _.uniqueId("mapsearch"),
             });
 
+            // FIXME: We need to know if this is being triggered by us, or by someone else.
+            // If us, we can ignore it; if by someone else, we need to change the selection.
+            this.listenTo(this.entitySearch, "change", this._restoreSelected);
         },
         
         // Note: Currently using a patched marionette.
@@ -2338,6 +2341,8 @@ var frontend = (function() {
         },
 
         _restoreSelected: function _restoreSelected() {
+            console.log("mapUI::_restoreSelected");
+            console.log(this.selectedFeature);
             if (_.isUndefined(this.selectedFeature)) {
                 this.map.selectMapFeature(undefined);
                 this.entitiesOnMap.setPredicate(this.isOnScreenPredicator());
@@ -2541,6 +2546,10 @@ var frontend = (function() {
             "click"   : "_select"
         },
 
+        onRender: function() {
+            this._updateSelected();
+        },
+
         _updateSelected: function _updateSelected() {
             var entityids = this.entitySearch.get('entityids');
             if (entityids && _.contains(entityids, this.model.id)) {
@@ -2553,15 +2562,27 @@ var frontend = (function() {
         },
 
         _select: function() {
+            console.log("MELIV::_select");
+            console.log(this.selected);
             var oldids = (this.entitySearch.get('entities') || []);
             if (this.selected) {
+                console.log("without");
+                console.log(this.entitySearch.toJSON());
+                console.log(_.without(oldids, this.model.id));
                 this.entitySearch.set({
                     entityids: _.without(oldids, this.model.id),
                 });
+                console.log("post-without");
+                console.log(this.entitySearch.toJSON());
             } else {
+                console.log("union");
+                console.log(this.entitySearch);
+                console.log(_.union(oldids, [this.model.id]));
                 this.entitySearch.set({
                     entityids: _.union(oldids, [this.model.id]),
                 });
+                console.log("post-union");
+                console.log(this.entitySearch);
             }
         },
     });
@@ -2780,9 +2801,12 @@ var frontend = (function() {
         allcontent.on("reset", function(collection) {
             console.log("\tRESET:ALLCONTENT: " + collection.length);
         });
+        */
         entitySearchModel.on("change", function(model) {
             console.log("\tCHANGE:ENTITYSEARCHMODEL: " + JSON.stringify(model.toJSON()));
+            console.trace();
         });
+        /*
         searchModel.on("change", function(model) {
             console.log("\tCHANGE:SEARCHMODEL: " + JSON.stringify(model.toJSON()));
         });
