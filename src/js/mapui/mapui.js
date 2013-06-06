@@ -344,7 +344,7 @@
 
     
     map.centerMarker = function(id, zoom) {
-        var feature = getFeature(id);
+        var feature = map.getFeature(id);
         if(feature!=null) {
             if(!_.isUndefined(zoom)) {
                 olmap.zoomTo(zoom);
@@ -386,18 +386,18 @@
     };
 
     map.getMarker = function(featureId) {
-        return getFeature(featureId);
+        return map.getFeature(featureId);
     };
 
     map.highlight = function(id) {
-        var feature = getFeature(id);
+        var feature = map.getFeature(id);
         if(feature) {
             feature.layer.drawFeature(feature, 'temporary');
         }
     };
 
     map.unhighlight = function(id) {
-        var feature = getFeature(id);
+        var feature = map.getFeature(id);
         if(feature) {
             if($.inArray(feature, feature.layer.selectedFeatures) == -1) {
                 feature.layer.drawFeature(feature, 'default');
@@ -421,15 +421,14 @@
         } );
     };
 
-    map.selectMapFeature = function selectMapFeature(feature) {
+    map.selectMapFeature = function(feature) {
         selectControl.unselectAll();
         if (!_.isUndefined(feature) && _.contains(map.featuresOnScreen(), feature)) {
             selectControl.select(feature);
         }
     };
 
-    //Private Method
-    function getFeature(id) {
+    map.getFeature = function(id) {
         for(var i=0;i<vectors.features.length;i++) {
             var feature = vectors.features[i];
             if(feature.attributes.id==id) {
@@ -443,6 +442,7 @@
         return null;
     };
 
+    //Private Method
     function isInCluster(feature, id) {
         if(!_.isUndefined(feature.cluster)) {
             for(var i=0;i<feature.cluster.length;i++) {
@@ -457,7 +457,7 @@
 
     function selectFeature(id) {
         var feature;
-        feature = getFeature(id);
+        feature = map.getFeature(id);
         selectedId = id;
         if(feature!=null) {
             events.disable();

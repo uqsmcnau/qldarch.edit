@@ -2312,7 +2312,7 @@ var frontend = (function() {
 
             // FIXME: We need to know if this is being triggered by us, or by someone else.
             // If us, we can ignore it; if by someone else, we need to change the selection.
-            this.listenTo(this.entitySearch, "change", this._restoreSelected);
+            this.listenTo(this.entitySearch, "change", this._reconcileSelected);
         },
         
         // Note: Currently using a patched marionette.
@@ -2340,9 +2340,22 @@ var frontend = (function() {
             this._restoreSelected();
         },
 
+        _reconcileSelected: function _reconcileSelected() {
+            var entityids = this.entitySearch.get("entityids");
+            var feature = (_.isUndefined(entityids) || entityids.length == 0) ?
+                undefined :
+                this.map.getFeature(entityids[0]);
+
+            if (this.selectedFeature !== feature) {
+                this.selectedFeature = feature;
+                this._restoreSelected();
+            }
+        },
+
         _restoreSelected: function _restoreSelected() {
             console.log("mapUI::_restoreSelected");
             console.log(this.selectedFeature);
+            console.trace();
             if (_.isUndefined(this.selectedFeature)) {
                 this.map.selectMapFeature(undefined);
                 this.entitiesOnMap.setPredicate(this.isOnScreenPredicator());
@@ -2804,7 +2817,6 @@ var frontend = (function() {
         */
         entitySearchModel.on("change", function(model) {
             console.log("\tCHANGE:ENTITYSEARCHMODEL: " + JSON.stringify(model.toJSON()));
-            console.trace();
         });
         /*
         searchModel.on("change", function(model) {
