@@ -93,7 +93,7 @@
         }});
         clusterStrategy.events.on({"aftercluster": function() {
             if(selectedId) {
-                selectFeature(selectedId);
+                map.selectFeature(selectedId);
             }
         }});
         vectors = new OpenLayers.Layer.Vector("Vector Layer", {
@@ -248,7 +248,8 @@
             if(value.lon != "" && value.lat!="") {
                 var point = new OpenLayers.Geometry.Point(value.lon, value.lat);
                 point.transform(new OpenLayers.Projection("EPSG:4326"), olmap.getProjectionObject());
-                tmp.push(new OpenLayers.Feature.Vector(point, {id: value.id}));
+                var feature = new OpenLayers.Feature.Vector(point, {id: value.id, label: value.label});
+                tmp.push(feature);
             }
         });
         vectors.addFeatures(tmp);
@@ -344,18 +345,18 @@
 
     
     map.centerMarker = function(id, zoom) {
-        var feature = map.getFeature(id);
+        var feature = map.getFeatureOrCluster(id);
         if(feature!=null) {
             if(!_.isUndefined(zoom)) {
                 olmap.zoomTo(zoom);
             }
             olmap.panTo(new OpenLayers.LonLat(feature.geometry.x, feature.geometry.y));
-            selectFeature(id);
+            map.selectFeature(id);
         }
     };
 
     map.selectMarker = function(id) {
-        selectFeature(id);
+        map.selectFeature(id);
     };
 
     map.popup = function(content, width) {
@@ -386,18 +387,18 @@
     };
 
     map.getMarker = function(featureId) {
-        return map.getFeature(featureId);
+        return map.getFeatureOrCluster(featureId);
     };
 
     map.highlight = function(id) {
-        var feature = map.getFeature(id);
+        var feature = map.getFeatureOrCluster(id);
         if(feature) {
             feature.layer.drawFeature(feature, 'temporary');
         }
     };
 
     map.unhighlight = function(id) {
-        var feature = map.getFeature(id);
+        var feature = map.getFeatureOrCluster(id);
         if(feature) {
             if($.inArray(feature, feature.layer.selectedFeatures) == -1) {
                 feature.layer.drawFeature(feature, 'default');
@@ -428,7 +429,7 @@
         }
     };
 
-    map.getFeature = function(id) {
+    map.getFeatureOrCluster = function(id) {
         for(var i=0;i<vectors.features.length;i++) {
             var feature = vectors.features[i];
             if(feature.attributes.id==id) {
@@ -442,22 +443,26 @@
         return null;
     };
 
-    //Private Method
-    function isInCluster(feature, id) {
-        if(!_.isUndefined(feature.cluster)) {
-            for(var i=0;i<feature.cluster.length;i++) {
-                var clustered = feature.cluster[i];
+    map.getFeatureFromCluster = function(cluster, id) {
+        if(!_.isUndefined(cluster.cluster)) {
+            for(var i=0;i<cluster.cluster.length;i++) {
+                var clustered = cluster.cluster[i];
                 if(clustered.attributes.id === id) {
-                    return true;
+                    return clustered;
                 }
             }
         }
-        return false;
+        return undefined;
     };
 
-    function selectFeature(id) {
+    //Private Method
+    function isInCluster(feature, id) {
+        return !_.isUndefined(map.getFeatureFromCluster(feature, id));
+    };
+
+    map.selectFeature = function(id) {
         var feature;
-        feature = map.getFeature(id);
+        feature = map.getFeatureOrCluster(id);
         selectedId = id;
         if(feature!=null) {
             events.disable();
