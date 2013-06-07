@@ -1908,7 +1908,8 @@ Marionette.Layout = Marionette.ItemView.extend({
       // if this is the first render, don't do anything to
       // reset the regions
       this._firstRender = false;
-    } else if (this.isClosed){
+    }
+    if (this.isClosed){
       // a previously closed layout means we need to 
       // completely re-initialize the regions
       this._initializeRegions();
