@@ -1,5 +1,7 @@
 // pattern taken from http://stackoverflow.com/questions/881515/javascript-namespace-declaration
 (function( map, $, _, events, undefined ) {
+    var QA_DEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#definiteMapIcon";
+    var QA_INDEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#indefiniteMapIcon";
 
     var olmap;
 
@@ -23,8 +25,13 @@
 
     map.events = events;
 
+    map.icons = {
+        hash: {}
+    };
+
     //Public Method
-    map.init = function(divid) {
+    map.init = function(divid, icons) {
+        map.icons = icons;
         var options = { };
         olmap = new OpenLayers.Map(divid, options);
         var gmap = new OpenLayers.Layer.Google(
@@ -43,7 +50,7 @@
         }, {
             context: {
                 extGra: function(feature) {
-                    if(!_.isUndefined(feature.attributes.count)) {
+                    if(!_.isUndefined(feature.cluster)) {
                         return 'img/marker-cluster.png';
                     } else {
                         return 'openlayers/img/marker.png';
@@ -60,9 +67,13 @@
         }, {
             context: {
                 extGra: function(feature) {
-                    if(!_.isUndefined(feature.attributes.count)) {
+                    console.log("tmp");
+                    console.log(feature);
+                    if(!_.isUndefined(feature.cluster)) {
                         return 'img/marker-cluster.png';
                     } else {
+                        console.log("icon");
+                        console.log(map.icons.hash[feature.attributes.type][QA_INDEFINITE_MAP_ICON]);
                         return 'openlayers/img/marker.png';
                     }
                 }
@@ -76,9 +87,13 @@
         }, {
             context: {
                 extGra: function(feature) {
-                    if(!_.isUndefined(feature.attributes.count)) {
+                    console.log("select");
+                    console.log(feature);
+                    if(!_.isUndefined(feature.cluster)) {
                         return 'img/marker-gold-cluster.png';
                     } else {
+                        console.log("icon");
+                        console.log(map.icons.hash[feature.attributes.type][QA_DEFINITE_MAP_ICON]);
                         return 'openlayers/img/marker-gold.png';
                     }
                 }
@@ -248,7 +263,9 @@
             if(value.lon != "" && value.lat!="") {
                 var point = new OpenLayers.Geometry.Point(value.lon, value.lat);
                 point.transform(new OpenLayers.Projection("EPSG:4326"), olmap.getProjectionObject());
-                var feature = new OpenLayers.Feature.Vector(point, {id: value.id, label: value.label});
+                console.log("CREATING FEATURE");
+                console.log(value);
+                var feature = new OpenLayers.Feature.Vector(point, {id: value.id, label: value.label, type: value.type});
                 tmp.push(feature);
             }
         });

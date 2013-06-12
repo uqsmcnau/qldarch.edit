@@ -59,6 +59,8 @@ var frontend = (function() {
     var QA_RELATED_TO = "http://qldarch.net/ns/rdf/2012-06/terms#relatedTo";
     var QA_HAS_FILE = "http://qldarch.net/ns/rdf/2012-06/terms#hasFile";
     var QA_BASIC_MIME_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#basicMimeType";
+    var QA_DEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#definiteMapIcon";
+    var QA_INDEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#indefiniteMapIcon";
 
 
     var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
@@ -73,6 +75,9 @@ var frontend = (function() {
     var QA_PHOTOGRAPH_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Photograph";
     var QA_LINEDRAWING_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing";
     var QA_DIGITAL_THING = "http://qldarch.net/ns/rdf/2012-06/terms#DigitalThing";
+
+    var QA_BUILDING_TYPOLOGY = "http://qldarch.net/ns/rdf/2012-06/terms#BuildingTypology";
+    var QA_BUILDING_TYPOLOGY_P = "http://qldarch.net/ns/rdf/2012-06/terms#buildingTypology";
 
     var DCT_TITLE = "http://purl.org/dc/terms/title";
     var DCT_FORMAT = "http://purl.org/dc/terms/format";
@@ -2309,18 +2314,24 @@ var frontend = (function() {
                 .throwNoArg("options.entitiesOnMap");
             this.entitySearch = _.checkarg(options.entitySearch)
                 .throwNoArg("options.entitySearch");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
 
             this.model = new Backbone.Model({
                 id: _.uniqueId("mapsearch"),
             });
 
+            this.icons = {
+                hash: {},
+            };
+
             this.listenTo(this.entitySearch, "change", this._updateSelected);
+            this.listenTo(this.entities, "all", this._updateIcons);
         },
         
         // Note: Currently using a patched marionette.
         // If this stops working wrap the contents in a _.defer.
         onDomRefresh: function() {
-            this.map.init(this.model.get('id'));
+            this.map.init(this.model.get('id'), this.icons);
 
             this.replaceMarkers(this.geoentities);
             this.geoentities.on("reset", this.replaceMarkers, this);
@@ -2410,15 +2421,36 @@ var frontend = (function() {
         replaceMarkers: function replaceMarkers(collection) {
             var coordinates = this.geoentities.map(function calccoord(entity) {
                 var label = entity.get1(QA_LABEL, false);
+                console.log("PREPARING MARKERS");
+                console.log(entity);
+                var type = entity.get1(QA_BUILDING_TYPOLOGY_P, true);
                 return {
                     lon: entity.get(GEO_LONG),
                     lat: entity.get(GEO_LAT),
                     id: entity.id,
                     label: label,
+                    type: type,
                 };
             });
 
             window.map.replaceMarkers(coordinates);
+        },
+
+        _updateIcons: function() {
+            this.icons.hash = this.entities.reduce(function(memo, entity) {
+                if (_(entity.geta(RDF_TYPE)).contains(QA_BUILDING_TYPOLOGY)) {
+                    console.log("Setting entityid on memo: " + entity.id);
+                    console.log(entity);
+                    console.log(memo);
+                    var entry = {};
+                    entry[QA_DEFINITE_MAP_ICON] = entity.get1(QA_DEFINITE_MAP_ICON);
+                    entry[QA_INDEFINITE_MAP_ICON] = entity.get1(QA_INDEFINITE_MAP_ICON);
+                    memo[entity.id] = entry;
+                }
+                return memo;
+            }, {}, this);
+            console.log("Icons list updated to");
+            console.log(this.icons.hash);
         },
     });
 
@@ -2511,6 +2543,7 @@ var frontend = (function() {
                 geoentities: this.geoentities,
                 entitiesOnMap: this.entitiesOnMap,
                 entitySearch: this.entitySearch,
+                entities: this.entities,
             }));
 
             this.entitylist.show(new MapEntityListView({
