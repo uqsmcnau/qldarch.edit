@@ -170,6 +170,40 @@ var frontend = (function() {
         },
     });
 
+    var MapSearchModel = Backbone.Model.extend({
+        defaults: {
+            'lat': "",
+            'long': "",
+            'zoom': "",
+            'selection': "",
+        },
+
+        initialize: function(options) { },
+
+        serialize: function() {
+            return encodeURIComponent(encodeURIComponent(this.get('lat')) 
+                + "/" + encodeURIComponent(this.get('long'))
+                + "/" + encodeURIComponent(this.get('zoom'))
+                + "/" + encodeURIComponent(this.get('selection')));
+        },
+
+        deserialize: function(string) {
+            string = string || "";
+            var components = string.split("/");
+            if (components.length != 4) {
+                return this.defaults;
+            } else {
+                var r = {
+                    'lat': decodeURIComponent(components[0]),
+                    'long': decodeURIComponent(components[1]),
+                    'zoom': decodeURIComponent(components[2]),
+                    'selection': decodeURIComponent(components[3]),
+                };
+                return r;
+            }
+        },
+    });
+
     var DisplayedImages = Backbone.Collection.extend({
         initialize: function initialize(options) {
             _.bindAll(this);
@@ -2308,6 +2342,7 @@ var frontend = (function() {
             _.bindAll(this);
             this.map = _.checkarg(window.map).throwNoArg("window.map");
 
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
             this.geoentities = _.checkarg(options.geoentities)
                 .throwNoArg("options.geoentities");
             this.entitiesOnMap = _.checkarg(options.entitiesOnMap)
@@ -2316,20 +2351,28 @@ var frontend = (function() {
                 .throwNoArg("options.entitySearch");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
 
-            this.model = new Backbone.Model({
-                id: _.uniqueId("mapsearch"),
-            });
+            this.divid = _.uniqueId("mapsearch");
 
-            this._setupIconDefaults();
+            this.icons = {
+                hash: {},
+            };
+            this.iconDefaults = this._setupIconDefaults();
+            this._setupIcons();
 
             this.listenTo(this.entitySearch, "change", this._updateSelected);
             this.listenTo(this.entities, "all", this._updateIcons);
         },
         
+        serializeData: function() {
+            return {
+                id: this.divid,
+            }
+        },
+
         // Note: Currently using a patched marionette.
         // If this stops working wrap the contents in a _.defer.
         onDomRefresh: function() {
-            this.map.init(this.model.get('id'), this.icons);
+            this.map.init(this.divid, this.icons);
 
             this.replaceMarkers(this.geoentities);
             this.geoentities.on("reset", this.replaceMarkers, this);
@@ -2341,6 +2384,24 @@ var frontend = (function() {
 
             this.entitiesOnMap.setPredicate(this.isOnScreenPredicator());
             this.selectedFeatureId = undefined;
+
+            this.reorientMap();
+        },
+
+        reorientMap: function() {
+            var lat = this.model.get('lat');
+            var long = this.model.get('long');
+            var zoom = this.model.get('zoom');
+            var selection = this.model.get('selection');
+
+            if (lat && long && zoom) {
+                this.map.setCenter(long, lat, zoom);
+            }
+            if (selection) {
+                // Note: This doesn't decluster, to achieve this we need to replace entitySearch
+                // with mapSearchModel.
+                this.entitySearch.set({ entityids: [selection] });
+            }
         },
 
         onClose: function() {
@@ -2369,25 +2430,47 @@ var frontend = (function() {
             }
         },
 
-        _updateSelected: function _updateSelected() {
+        _updateSelected: function _updateSelected(model, options) {
             var entityids = this.entitySearch.get("entityids");
+            var selection;
+
             var markers = _.chain(entityids).map(function(id) {
                 return this.map.getFeatureOrCluster(id);
             }, this).uniq().value();
-
+            
             if (entityids.length == 0) {
                 this.map.selectMapFeature(undefined);
+                selection = "";
             } else if (entityids.length == 1) {
-                if (_.has(markers[0], "cluster")) {
+                if (!markers[0]) {
+                    // This can occur when the page renders before data has loaded, in this case
+                    // we abort this update and reprocess it when the data arrives. The callbacks
+                    // for this are already registered as we update on changes to it anyway.
+                    return; 
+                }
+                if (options && options.decluster && _.isBoolean(options.decluster) &&
+                        _.has(markers[0], "cluster")) {
                     this.map.zoomToCluster(markers[0]);
                     this.map.centerMarker(entityids[0]);
                 }
                 this.map.selectFeature(entityids[0]);
+                selection = entityids[0];
             } else {
                 this.map.zoomToFeatures(markers);
                 this.map.selectMapFeature(undefined);
+                selection = "";
             }
             this._refreshEntitiesOnMap();
+            this.model.set({
+                lat: this.map.getCenterLat(),
+                long: this.map.getCenterLon(),
+                zoom: this.map.getZoom(),
+                selection: selection,
+            });
+            // FIXME: This is a clear sign I shouldn't be using entitySearch in the mapSearch.
+            //   It now has its own model, so it should be using that instead.
+            this.entitySearch.set({ entityids: selection ? [ selection ] : [] });
+            this.router.navigate("mapsearch/" + this.model.serialize(), { trigger: false, replace: true });
         },
 
         isOnScreenPredicator: function isOnScreenPredicator() {
@@ -2432,7 +2515,7 @@ var frontend = (function() {
             window.map.replaceMarkers(coordinates);
         },
 
-        _updateIcons: function() {
+        _setupIcons: function() {
             this.icons.hash = this.entities.reduce(function(memo, entity) {
                 if (_(entity.geta(RDF_TYPE)).contains(QA_BUILDING_TYPOLOGY)) {
                     var entry = {};
@@ -2443,29 +2526,28 @@ var frontend = (function() {
                 return memo;
             }, {}, this);
 
-            _.extend(this.icons.hash, this.icons.defaults);
+            _.extend(this.icons.hash, this.iconDefaults);
+        },
 
+        _updateIcons: function() {
+            this._setupIcons();
             this.replaceMarkers();
         },
 
         _setupIconDefaults: function() {
-            this.icons = {
-                hash: {},
-                defaults: {},
-            };
-
-            this.icons.defaults[this.map.CLUSTER] = {};
-            this.icons.defaults[this.map.CLUSTER][QA_DEFINITE_MAP_ICON] =
+            var defaults = {};
+            defaults[this.map.CLUSTER] = {};
+            defaults[this.map.CLUSTER][QA_DEFINITE_MAP_ICON] =
                 'img/mapicons/blank_white_19x27.png';
-            this.icons.defaults[this.map.CLUSTER][QA_INDEFINITE_MAP_ICON] =
+            defaults[this.map.CLUSTER][QA_INDEFINITE_MAP_ICON] =
                 'img/mapicons/blank_black_19x27.png';
-            this.icons.defaults[this.map.DEFAULT] = {};
-            this.icons.defaults[this.map.DEFAULT][QA_DEFINITE_MAP_ICON] =
+            defaults[this.map.DEFAULT] = {};
+            defaults[this.map.DEFAULT][QA_DEFINITE_MAP_ICON] =
                 'img/mapicons/blank_white_19x27.png';
-            this.icons.defaults[this.map.DEFAULT][QA_INDEFINITE_MAP_ICON] =
+            defaults[this.map.DEFAULT][QA_INDEFINITE_MAP_ICON] =
                 'img/mapicons/blank_black_19x27.png';
 
-            _.extend(this.icons.hash, this.icons.defaults);
+            return defaults;
         },
     });
 
@@ -2485,6 +2567,7 @@ var frontend = (function() {
 
             _.checkarg(options).throwNoArg("options");
 
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.files = _.checkarg(options.files).throwNoArg("options.files");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
@@ -2555,10 +2638,12 @@ var frontend = (function() {
 
         onRender: function onRender() {
             this.map.show(new MapUIView({
+                router: this.router,
                 geoentities: this.geoentities,
                 entitiesOnMap: this.entitiesOnMap,
                 entitySearch: this.entitySearch,
                 entities: this.entities,
+                model: this.model,
             }));
 
             this.entitylist.show(new MapEntityListView({
@@ -2661,6 +2746,8 @@ var frontend = (function() {
             } else {
                 this.entitySearch.set({
                     entityids: _.union(oldids, [this.model.id]),
+                }, {
+                    decluster: true,
                 });
             }
         },
@@ -2776,6 +2863,8 @@ var frontend = (function() {
         var contentSearchModel = new ContentSearchModel();
 
         var entityRelatedContentModel = new ContentSearchModel();
+
+        var mapSearchModel = new MapSearchModel();
 
         var predicatedImages = new PredicatedImages();
 
@@ -3030,12 +3119,14 @@ var frontend = (function() {
         });
 
         var mapSearchView = new MapSearchView({
+            router: router,
             entities: entities,
             properties: properties,
             entitySearch: entitySearchModel,
             predicatedImages: predicatedImages,
             files: files,
             displayedImages: displayedImages,
+            model: mapSearchModel,
         });
 
         router.on('route:frontpage', function(search) {
@@ -3131,7 +3222,9 @@ var frontend = (function() {
             $("#column123").show();
         }, contentSearchModel);
 
-        router.on('route:mapsearch', function(id) {
+        router.on('route:mapsearch', function(state) {
+            mapSearchModel.set(mapSearchModel.deserialize(state));
+
             $("#column123,#column1,#column2,#column23").hide();
             searchView.detach();
             mapButtonView.detach();
@@ -3172,7 +3265,7 @@ var frontend = (function() {
             "viewimage(/*id)": "viewimage",
             "interview(/*id)": "interview",
             "viewpdf(/*id)": "viewpdf",
-            "mapsearch": "mapsearch",
+            "mapsearch(/*state)": "mapsearch",
         },
 
         contentViews: {
