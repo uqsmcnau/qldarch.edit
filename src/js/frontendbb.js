@@ -1453,6 +1453,10 @@ var frontend = (function() {
 
         itemView: EntityDetailItemView,
 
+        modelEvents: {
+            "change": "render",
+        },
+
         initialize: function(options) {
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
@@ -1505,6 +1509,7 @@ var frontend = (function() {
                     entities: this.entities,
                 },
             });
+
         },
     });
 

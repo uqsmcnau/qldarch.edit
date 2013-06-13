@@ -26,13 +26,17 @@ Backbone.ViewModel = (function(Backbone, _, undefined){
 
     setComputedAttributes: function(){
       _.each(this.computed_attributes, function(value, key){
-        this.set(key, value.call(this));
+        var val = value.call(this);
+        this.set(key, val);
       }, this);
     },
 
     bindToChangesInSourceModel: function(){
       _.each(this.source_models, function(model) {
           model.on("change", this.setComputedAttributes, this);
+          model.on("add", this.setComputedAttributes, this);
+          model.on("remove", this.setComputedAttributes, this);
+          model.on("reset", this.setComputedAttributes, this);
       }, this);
     }
 
