@@ -2,6 +2,8 @@
 (function( map, $, _, events, undefined ) {
     var QA_DEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#definiteMapIcon";
     var QA_INDEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#indefiniteMapIcon";
+    map.CLUSTER = "{{cluster}}";
+    map.DEFAULT = "{{default}}";
 
     var olmap;
 
@@ -44,16 +46,16 @@
         olmap.addLayers([gmap]);
         var defaultStyle = new OpenLayers.Style({
             pointRadius: 10,
-            fillOpacity: 0.7,
+            fillOpacity: 0.8,
             strokeColor: "black",
             externalGraphic: "${extGra}"
         }, {
             context: {
                 extGra: function(feature) {
                     if(!_.isUndefined(feature.cluster)) {
-                        return 'img/marker-cluster.png';
+                        return map.getMapIcon(map.CLUSTER, QA_INDEFINITE_MAP_ICON);
                     } else {
-                        return 'openlayers/img/marker.png';
+                        return map.getMapIcon(feature.attributes.type, QA_INDEFINITE_MAP_ICON);
                     }
                 }
             }
@@ -67,14 +69,10 @@
         }, {
             context: {
                 extGra: function(feature) {
-                    console.log("tmp");
-                    console.log(feature);
                     if(!_.isUndefined(feature.cluster)) {
-                        return 'img/marker-cluster.png';
+                        return map.getMapIcon(map.CLUSTER, QA_INDEFINITE_MAP_ICON);
                     } else {
-                        console.log("icon");
-                        console.log(map.icons.hash[feature.attributes.type][QA_INDEFINITE_MAP_ICON]);
-                        return 'openlayers/img/marker.png';
+                        return map.getMapIcon(feature.attributes.type, QA_INDEFINITE_MAP_ICON);
                     }
                 }
             }
@@ -83,18 +81,14 @@
             pointRadius: 10,
             externalGraphic: "${extGra}",
             fillOpacity: 1.0,
-            strokeColor: "black"
+            strokeColor: "black",
         }, {
             context: {
                 extGra: function(feature) {
-                    console.log("select");
-                    console.log(feature);
                     if(!_.isUndefined(feature.cluster)) {
-                        return 'img/marker-gold-cluster.png';
+                        return map.getMapIcon(map.CLUSTER, QA_DEFINITE_MAP_ICON);
                     } else {
-                        console.log("icon");
-                        console.log(map.icons.hash[feature.attributes.type][QA_DEFINITE_MAP_ICON]);
-                        return 'openlayers/img/marker-gold.png';
+                        return map.getMapIcon(feature.attributes.type, QA_DEFINITE_MAP_ICON);
                     }
                 }
             }
@@ -253,6 +247,16 @@
         return olmap;
     };
 
+    map.getMapIcon = function(featureType, iconType) {
+        if (map.icons.hash && featureType &&
+            map.icons.hash[featureType] &&
+            map.icons.hash[featureType][iconType]) {
+            return map.icons.hash[featureType][iconType];
+        } else {
+            return map.icons.hash[map.DEFAULT][iconType];
+        }
+    };
+
     map.replaceMarkers = function(markers) {
         selectedId = null;
         map.removeMarkers();
@@ -263,8 +267,6 @@
             if(value.lon != "" && value.lat!="") {
                 var point = new OpenLayers.Geometry.Point(value.lon, value.lat);
                 point.transform(new OpenLayers.Projection("EPSG:4326"), olmap.getProjectionObject());
-                console.log("CREATING FEATURE");
-                console.log(value);
                 var feature = new OpenLayers.Feature.Vector(point, {id: value.id, label: value.label, type: value.type});
                 tmp.push(feature);
             }

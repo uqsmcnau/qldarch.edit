@@ -2320,9 +2320,7 @@ var frontend = (function() {
                 id: _.uniqueId("mapsearch"),
             });
 
-            this.icons = {
-                hash: {},
-            };
+            this._setupIconDefaults();
 
             this.listenTo(this.entitySearch, "change", this._updateSelected);
             this.listenTo(this.entities, "all", this._updateIcons);
@@ -2418,11 +2416,9 @@ var frontend = (function() {
             this.entitiesOnMap.setPredicate(this.entitiesOnMap.predicate);
         },
 
-        replaceMarkers: function replaceMarkers(collection) {
+        replaceMarkers: function replaceMarkers() {
             var coordinates = this.geoentities.map(function calccoord(entity) {
                 var label = entity.get1(QA_LABEL, false);
-                console.log("PREPARING MARKERS");
-                console.log(entity);
                 var type = entity.get1(QA_BUILDING_TYPOLOGY_P, true);
                 return {
                     lon: entity.get(GEO_LONG),
@@ -2439,9 +2435,6 @@ var frontend = (function() {
         _updateIcons: function() {
             this.icons.hash = this.entities.reduce(function(memo, entity) {
                 if (_(entity.geta(RDF_TYPE)).contains(QA_BUILDING_TYPOLOGY)) {
-                    console.log("Setting entityid on memo: " + entity.id);
-                    console.log(entity);
-                    console.log(memo);
                     var entry = {};
                     entry[QA_DEFINITE_MAP_ICON] = entity.get1(QA_DEFINITE_MAP_ICON);
                     entry[QA_INDEFINITE_MAP_ICON] = entity.get1(QA_INDEFINITE_MAP_ICON);
@@ -2449,8 +2442,30 @@ var frontend = (function() {
                 }
                 return memo;
             }, {}, this);
-            console.log("Icons list updated to");
-            console.log(this.icons.hash);
+
+            _.extend(this.icons.hash, this.icons.defaults);
+
+            this.replaceMarkers();
+        },
+
+        _setupIconDefaults: function() {
+            this.icons = {
+                hash: {},
+                defaults: {},
+            };
+
+            this.icons.defaults[this.map.CLUSTER] = {};
+            this.icons.defaults[this.map.CLUSTER][QA_DEFINITE_MAP_ICON] =
+                'img/mapicons/blank_white_19x27.png';
+            this.icons.defaults[this.map.CLUSTER][QA_INDEFINITE_MAP_ICON] =
+                'img/mapicons/blank_black_19x27.png';
+            this.icons.defaults[this.map.DEFAULT] = {};
+            this.icons.defaults[this.map.DEFAULT][QA_DEFINITE_MAP_ICON] =
+                'img/mapicons/blank_white_19x27.png';
+            this.icons.defaults[this.map.DEFAULT][QA_INDEFINITE_MAP_ICON] =
+                'img/mapicons/blank_black_19x27.png';
+
+            _.extend(this.icons.hash, this.icons.defaults);
         },
     });
 
