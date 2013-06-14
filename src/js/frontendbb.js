@@ -2475,7 +2475,7 @@ var frontend = (function() {
             // FIXME: This is a clear sign I shouldn't be using entitySearch in the mapSearch.
             //   It now has its own model, so it should be using that instead.
             this.entitySearch.set({ entityids: selection ? [ selection ] : [] });
-            this.router.navigate("mapsearch/" + this.model.serialize(), { trigger: false, replace: true });
+            this.router.navigate("mapsearch/" + this.model.serialize(), { trigger: false, replace: false });
         },
 
         isOnScreenPredicator: function isOnScreenPredicator() {
@@ -2641,6 +2641,10 @@ var frontend = (function() {
             this._imageSelectionLoop(3000);
         },
 
+        onClose: function() {
+            this.displayedImage.set('image', undefined);
+        },
+
         onRender: function onRender() {
             this.map.show(new MapUIView({
                 router: this.router,
@@ -2797,6 +2801,10 @@ var frontend = (function() {
 
             this.displayingImage = undefined;
             this.listenTo(this.imageSelection, "change", this.onDomRefresh);
+        },
+
+        onClose: function() {
+            this.displayingImage = undefined;
         },
 
         onDomRefresh: function onDomRefresh() {
