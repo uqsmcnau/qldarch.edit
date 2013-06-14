@@ -2045,6 +2045,8 @@ var frontend = (function() {
         model: FulltextResult,
 
         parse: function(results) {
+            console.log("parsing results");
+            console.log(results);
             return results.response.docs;
         },
 
@@ -2072,17 +2074,21 @@ var frontend = (function() {
             var newURL = this.buildURL(searchstring);
             if (this.url !== newURL) {
                 this.url = newURL;
-                this.fetch();
+                console.log("About to fetch: " + this.url);
+                this.fetch({ reset: true });
             }
         },
 
         buildURL: function(searchstring) {
+            console.log("buildURL: " + searchstring);
             var query = encodeURIComponent(searchstring.indexOf(":") >= 0 ?
                 searchstring :
                 _(searchstring.split(/\s+/))
                     .map(function(s) { return this.defaultField + ":" + s; }, this)
                     .join(" "));
                 
+            console.log("buildURL: " + query);
+
             return this.solrURL +
                 "?q=" +
                 query +
@@ -3018,7 +3024,7 @@ var frontend = (function() {
             console.log("\tRESET:DISPLAYED_ENTITIES: " + collection.length);
             console.log(collection);
         });
-
+*/
         fulltextTranscriptModel.on("reset", function(collection) {
             console.log("\tRESET:FulltextTranscriptModel: " + collection.length);
             console.log(collection);
@@ -3027,7 +3033,6 @@ var frontend = (function() {
             console.log("\tRESET:FulltextArticleModel: " + collection.length);
             console.log(collection);
         });
-*/
         /*
         predicatedImages.on("add", function(model) {
             console.log("\t ADD:PredicatedImages: " + model.id);
