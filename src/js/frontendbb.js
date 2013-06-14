@@ -153,11 +153,13 @@ var frontend = (function() {
         initialize: function() { },
 
         serialize: function() {
-            return encodeURIComponent(this.get('selection')) 
-                + "/" + encodeURIComponent(this.get('type'));
+            console.log("Serializing CSM: " + JSON.stringify(this.toJSON()));
+            return encodeURIComponent(encodeURIComponent(this.get('selection')) 
+                + "/" + encodeURIComponent(this.get('type')));
         },
 
         deserialize: function(string) {
+            console.log("Deserializing CSM: " + string);
             var components = string.split("/");
             if (components.length != 2) {
                 return this.defaults;
@@ -694,6 +696,7 @@ var frontend = (function() {
                         (this.router.currentRoute.route !==
                              this.router.contentViews[this.type.id])) {
 
+                                 console.log("Routing to image?");
                     this.router.navigate(this.router.contentViews[this.type.id] + "/" +
                             this.selection.serialize(),
                             { trigger: true, replace: this.typeview.forgetroute });
