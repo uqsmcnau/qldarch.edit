@@ -153,13 +153,11 @@ var frontend = (function() {
         initialize: function() { },
 
         serialize: function() {
-            console.log("Serializing CSM: " + JSON.stringify(this.toJSON()));
             return encodeURIComponent(encodeURIComponent(this.get('selection')) 
                 + "/" + encodeURIComponent(this.get('type')));
         },
 
         deserialize: function(string) {
-            console.log("Deserializing CSM: " + string);
             var components = string.split("/");
             if (components.length != 2) {
                 return this.defaults;
@@ -392,6 +390,7 @@ var frontend = (function() {
         _update: function() { },
         
         _click: function _click() {
+            console.log("navigating to " + JSON.stringify(this.model.toJSON()));
             this.router.navigate("mapsearch", { trigger: true, replace: false });
         },
     });
@@ -2368,7 +2367,9 @@ var frontend = (function() {
             this._setupIcons();
 
             this.listenTo(this.entitySearch, "change", this._updateSelected);
-            this.listenTo(this.entities, "all", this._updateIcons);
+            this.listenTo(this.entities, "add", this._updateIcons);
+            this.listenTo(this.entities, "remove", this._updateIcons);
+            this.listenTo(this.entities, "reset", this._updateIcons);
         },
         
         serializeData: function() {
@@ -2414,6 +2415,10 @@ var frontend = (function() {
 
         onClose: function() {
             this.entitiesOnMap.setPredicate(_.no);
+            this.map.getMap().events.unregister("moveend", this, this._updateSelected);
+            this.map.events.removeListener("selected", this._featureClicked);
+            this.map.events.removeListener("vectorschanged", this._updateSelected);
+            this.map.getMap().destroy();
         },
 
         // Don't try to keep in sync. Let this view export an entitiesOnMap collection.
