@@ -390,7 +390,6 @@ var frontend = (function() {
         _update: function() { },
         
         _click: function _click() {
-            console.log("navigating to " + JSON.stringify(this.model.toJSON()));
             this.router.navigate("mapsearch", { trigger: true, replace: false });
         },
     });
@@ -694,8 +693,6 @@ var frontend = (function() {
                 if (this.router.contentViews[this.type.id] &&
                         (this.router.currentRoute.route !==
                              this.router.contentViews[this.type.id])) {
-
-                                 console.log("Routing to image?");
                     this.router.navigate(this.router.contentViews[this.type.id] + "/" +
                             this.selection.serialize(),
                             { trigger: true, replace: this.typeview.forgetroute });
@@ -2483,7 +2480,7 @@ var frontend = (function() {
             // FIXME: This is a clear sign I shouldn't be using entitySearch in the mapSearch.
             //   It now has its own model, so it should be using that instead.
             this.entitySearch.set({ entityids: selection ? [ selection ] : [] });
-            this.router.navigate("mapsearch/" + this.model.serialize(), { trigger: false, replace: false });
+            this.router.navigate("mapsearch/" + this.model.serialize(), { trigger: false, replace: true });
         },
 
         isOnScreenPredicator: function isOnScreenPredicator() {
