@@ -765,6 +765,10 @@ var frontend = (function() {
     });
 
     var isScrolledIntoView = function isScrolledIntoView(container, target) {
+        if (!$(container).offset() || !$(target).offset()) {
+            // Abort this and assume it is in view.
+            return true;
+        }
         var ctop = $(container).offset().top;
         var cbot = ctop + $(container).height();
 
