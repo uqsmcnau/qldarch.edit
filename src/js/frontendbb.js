@@ -459,8 +459,23 @@ var frontend = (function() {
         },
     });
 
-    var ContentTypeView = Backbone.View.extend({
+    var ContentTypeView = Backbone.Marionette.CompositeView.extend({
         className: 'typeview',
+        template: "#contenttypeTemplate",
+        itemViewContainer: ".contentlist",
+
+        itemView: ContentTypeItemView,
+        itemViewOptions: function() {
+            return {
+                typeview: this,
+                router: this.router,
+                selection: this.selection,
+                type: this.type,
+                predicatedImages: this.predicatedImages,
+                displayedImages: this.displayedImages,
+            };
+        },
+
         initialize: function(options) {
             _.bindAll(this);
 
@@ -507,7 +522,6 @@ var frontend = (function() {
             }));
 
             this.model.each(function(contentItem) {
-                var format = contentItem.get(DCT_FORMAT);
                 if (this._includeItem(contentItem, this.type.id)) {
                     var itemView = new ContentItemView({
                         typeview: this,
@@ -592,8 +606,16 @@ var frontend = (function() {
 
     });
 
-    var ContentItemView = Backbone.View.extend({
+    var ContentItemView = Backbone.Marionette.ItemView.extend({
         className: "contententry",
+        template: "#listitemviewTemplate",
+
+        serializeData: function() {
+            return {
+                label: this._labeltext(this.model.get1(QA_LABEL, logmultiple), 40),
+            };
+        },
+
         initialize: function(options) {
             _.bindAll(this);
 
@@ -612,55 +634,34 @@ var frontend = (function() {
             this.rendered = false;
             this.visible = false;
             this.predicate = this._defaultPredicate;
-            this.selection.on("change", this._update);
-            this.offset = 0;
+            this.listenTo(this.selection, "change", this._update);
 
-            this.displayedImages.on("add", this._addImage);
-            this.displayedImages.on("remove", this._removeImage);
-            this.displayedImages.on("reset", this._resetImage);
+            this.listenTo(this.displayedImages, "add", this._addImage);
+            this.listenTo(this.displayedImages, "remove", this._removeImage);
+            this.listenTo(this.displayedImages, "reset", this._resetImage);
 
-            _.checkarg(options.initalize).withDefault(_.identity).call(this);
+            this.listenTo(this.selection, "change", this._updateSelected);
         },
         
         events: {
             "click"   : "_select"
         },
 
-        render: function() {
-            this.$el.text(this._labeltext(this.model.get1(DCT_TITLE, logmultiple), 40));
-
-            this.rendered = true;
-            this.visible = true;
-
-            return this;
+        onRender: function() {
+            this._updateSelected();
         },
 
-        _update: function() {
-            if (this.rendered) {
-                if (this.predicate(this.model)) {
-                    if (!this.visible) {
-                        this.$placeholder.after(this.$el).detach();
-                        this.visible = true;
-                    }
-                    this.predicatedImages.add(this.model);
-                    this._cascadeUpdate();
-                } else {
-                    if (this.visible) {
-                        this.$el.after(this.$placeholder).detach();
-                        this.visible = false;
-                    }
-                    this.predicatedImages.remove(this.model);
-                }
-            }
+        _updateSelected: function _updateSelected() {
             if (this.selection.get("selection") === this.model.id) {
                 this.$el.addClass("selected");
-                this.$el.parents(".contentlist").scrollTop(this.offset);
+                var container = this.$el.parents(".contentlist");
+                if (!isScrolledIntoView(container, this.$el)) {
+                    container.scrollTo(this.$el);
+                }
             } else {
                 this.$el.removeClass("selected");
             }
         },
-
-        _cascadeUpdate: function() {},
 
         _labeltext: function(label, maxlength) {
             if (_.isUndefined(label)) {
@@ -681,8 +682,6 @@ var frontend = (function() {
         _select: function() {
             var newSelection = (this.selection.get('selection') !== this.model.id) ?
                 this.model.id : undefined;
-
-            this.offset = this.$el.parents(".contentlist").scrollTop();
 
             this.selection.set({
                 'selection': newSelection,
@@ -2729,7 +2728,7 @@ var frontend = (function() {
 
     var MapEntityListItemView = Backbone.Marionette.ItemView.extend({
         className: "entityentry",
-        template: "#mapentitylistitemviewTemplate",
+        template: "#listitemviewTemplate",
         serializeData: function() {
             return {
                 label: this.model.get1(QA_LABEL, true),
