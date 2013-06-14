@@ -530,8 +530,6 @@ div.mapcontainer>div {
 
 .multiimagepreview {
     position: relative;
-    height: 300px;
-    overflow: hidden;
 }
 
 .notifyingImage {
