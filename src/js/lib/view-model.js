@@ -57,6 +57,9 @@ Backbone.ViewCollection = (function(Backbone, _, undefined) {
         Collection.apply(this, [[], options]);
         this.sources = options.sources;
         this.initializeViewCollection();
+        this.trackSort = !!options.trackSort;
+        this.name = (options.name || "Unnamed ViewCollection");
+        this.options = options;
     };
 
     _.extend(ViewCollection.prototype, Collection.prototype, {
@@ -75,8 +78,10 @@ Backbone.ViewCollection = (function(Backbone, _, undefined) {
                 this.listenTo(collection, "remove", this.setComputedAttributes, this);
                 this.listenTo(collection, "reset", this.setComputedAttributes, this);
                 this.listenTo(collection, "change", this.setComputedAttributes, this);
-                this.listenTo(collection, "sort", this.setComputedAttributes, this);
                 this.listenTo(collection, "destroy", this.setComputedAttributes, this);
+                if (this.trackSort) {
+                    this.listenTo(collection, "sort", this.setComputedAttributes, this);
+                }
             }, this);
         }
     });

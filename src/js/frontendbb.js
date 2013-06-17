@@ -428,7 +428,7 @@ var frontend = (function() {
                 if (artifactType.id && this.content[artifactType.id]) {
                     return new ContentTypeView({
                         router: this.router,
-                        model: this._subViewModel(artifactType),
+                        artifacts: this.content[artifactType.id],
                         type: artifactType,
                         search: this.search,
                         selection: this.selection,
@@ -448,14 +448,6 @@ var frontend = (function() {
             }, this);
 
             return this;
-        },
-
-        _update: function() {
-            _(this.contentViews).each(function(view) { view._update(); });
-        },
-
-        _subViewModel: function(type) {
-            return this.content[type.id];
         },
     });
 
@@ -477,133 +469,94 @@ var frontend = (function() {
         },
 
         initialize: function(options) {
-            _.bindAll(this);
-
-            options = _.checkarg(options).withDefault({})
-            this.template = _.template($("#contenttypeTemplate").html());
-
             this.router = _.checkarg(options.router).throwNoArg("options.router");
             this.type = _.checkarg(options.type).throwNoArg("options.type");
             this.search = _.checkarg(options.search).throwNoArg("options.search");
             this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
             this.entitySearch = _.checkarg(options.entitySearch)
                 .throwNoArg("options.entitySearch");
-            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.artifacts = _.checkarg(options.artifacts).throwNoArg("options.artifacts");
             this.predicatedImages = _.checkarg(options.predicatedImages)
                 .throwNoArg("options.predicatedImages");
             this.displayedImages = _.checkarg(options.displayedImages)
                 .throwNoArg("options.displayedImages");
 
-            this.itemviews = {};
+            this.model = new (Backbone.ViewModel.extend({
+                computed_attributes: {
+                    uri: this.get('type').id,
+                    label: this.get('type').get1(QA_LABEL, logmultiple),
+                },
+            }))({
+                source_models: {
+                    type: this.type,
+                },
+            });
 
-            this.model.on("reset", this.render);
-            this.search.on("change", this._update);
-            this.entitySearch.on("change", this._update);
+            this.collection = new (ViewCollection.extend({
+                computeModelArray: function() {
+                    var entityids = this.sources.entitySearch.get('entityids');
+                    var predicate = _.yes;
 
-            this.$placeholder = $('<span display="none" data-uri="' + this.type.id + '"/>');
-            this.rendered = false;
-            this.visible = false;
-            this.predicate = this._defaultPredicate;
-            this.itemViews = [];
+                    if (entityids && entityids.length > 0) {
+                        predicate = function relatedToOneOfPredicate(artifact) {
+                            if (_.any(artifact.geta(QA_RELATED_TO), function(related) {
+                                return _.contains(entityids, related);
+                            }, this)) {
+                                return true;
+                            } else {
+                                return false;
+                            }
+                        };
+                    } else {
+                        var searchstring = this.sources.search.get('searchstring');
+                        predicate = function partialStringPredicate(artifact) {
+                            var val = $.trim(searchstring);
+
+                            return !val || _.any(val.split(/\W/), function(word) {
+                                return word !== "" &&
+                                    _.chain(artifact.attributes).keys().any(function(key) {
+                                        var lcword = word.toLowerCase();
+                                        return _.any(artifact.geta(key), function(label) {
+                                            return label.toLowerCase().indexOf(lcword) != -1;
+                                        }, this);
+                                    }, this).value();
+                            }, this);
+                        };
+                    }
+
+                    return this.sources.artifacts.filter(function(artifact) {
+                        var typeid = this.sources.type.id;
+                        if (typeid === QA_INTERVIEW_TYPE)
+                            return predicate(artifact);
+
+                        if (!artifact.get1(QA_HAS_FILE, false, false))
+                            return false;
+
+                        if (_.contains([QA_LINEDRAWING_TYPE, QA_PHOTOGRAPH_TYPE], typeid) &&
+                                !(artifact.get1(DCT_FORMAT) === "image/jpeg");
+                            return false;
+                        }
+
+                        return predicate(artifact);
+                    }, this);
+                },
+            }))({
+                sources: {
+                    artifacts: this.artifacts,
+                    search: this.search,
+                    entitySearch: this.entitySearch,
+                    type: this.type
+                },
+                name: "ContentTypeViewCollection::" + this.type.id,
+                tracksort: false,
+            });
 
             this.forgetroute = true;
             this.router.on('route:viewimage', function () { this.forgetroute = true }, this);
             this.router.on('route:viewentity', function () { this.forgetroute = false }, this);
             this.router.on('route:frontpage', function () { this.forgetroute = false }, this);
             this.router.on('route:mapsearch', function () { this.forgetroute = false }, this);
-
-            _.checkarg(options.initalize).withDefault(_.identity).call(this);
         },
-        
-        render: function() {
-            this.$el.html(this.template({
-                uri: this.type.id,
-                label: this.type.get1(QA_LABEL, logmultiple)
-            }));
-
-            this.model.each(function(contentItem) {
-                if (this._includeItem(contentItem, this.type.id)) {
-                    var itemView = new ContentItemView({
-                        typeview: this,
-                        router: this.router,
-                        model: contentItem,
-                        selection: this.selection,
-                        type: this.type,
-                        predicatedImages: this.predicatedImages,
-                        displayedImages: this.displayedImages,
-                    });
-                    this.itemviews[contentItem.id] = itemView;
-                    this.$('.contentlist').append(itemView.render().el);
-                }
-            }, this);
-
-            this._update();
-            this._setinput();
-
-            this.rendered = true;
-            this.visible = true;
-
-            return this;
-        },
-
-        _includeItem: function(contentItem, typeid) {
-            if (typeid === QA_INTERVIEW_TYPE) return true;
-            if (!contentItem.get1(QA_HAS_FILE, false, false)) return false;
-            if (_.contains([QA_LINEDRAWING_TYPE, QA_PHOTOGRAPH_TYPE], typeid)) {
-                return (contentItem.get1(DCT_FORMAT) === "image/jpeg");
-            }
-            return true;
-        },
-
-        _update: function() {
-            if (this.rendered) {
-                if (this.predicate(this.model)) {
-                    if (!this.visible) {
-                        this.$placeholder.after(this.$el).detach();
-                        this.visible = true;
-                    }
-                    this._cascadeUpdate();
-                } else {
-                    if (this.visible) {
-                        this.$el.after(this.$placeholder).detach();
-                        this.visible = false;
-                        this.predicatedImages.without(this.model.models);
-                    }
-                }
-            }
-        },
-
-        _cascadeUpdate: function() {
-            var entityids = this.entitySearch.get('entityids');
-            if (entityids && entityids.length > 0) {
-                _.each(this.itemviews, function(itemview) {
-                    itemview.setPredicate(itemview.relatedToOneOfPredicator(entityids));
-                }, this);
-            } else {
-                var searchtypes = this.search.get('searchtypes');
-                var searchstring = this.search.get('searchstring');
-                _.each(this.itemviews, function(itemview) {
-                    itemview.setPredicate(itemview.partialStringPredicator(searchstring));
-                }, this);
-            }
-        },
-
-        setPredicate: function(predicate) {
-            this.predicate = predicate ? predicate : this._defaultPredicate;
-            this._update();
-        },
-
-        _defaultPredicate: function(model) {
-            var searchtypes = this.search.get('searchtypes');
-            return _.contains(searchtypes, 'all') ||
-                _.contains(searchtypes, 'fulltext') ||
-                _.contains(searchtypes, this.type.id);
-        },
-
-        _setinput: function() {
-            this._update();
-        },
-
     });
 
     var ContentItemView = Backbone.Marionette.ItemView.extend({
