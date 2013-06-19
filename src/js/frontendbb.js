@@ -394,178 +394,14 @@ var frontend = (function() {
         },
     });
 
-    var DigitalContentView = ToplevelView.extend({
-        template: "#contentTemplate",
-
-        initialize: function(options) {
-            options = _.checkarg(options).withDefault({})
-
-            ToplevelView.prototype.initialize.call(this, options);
-
-            this.content = _.checkarg(options.content).throwNoArg("options.content");
-            this.search = _.checkarg(options.search).throwNoArg("options.search");
-            this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
-            this.contentViews = [];
-            this.entitySearch = _.checkarg(options.entitySearch)
-                .throwNoArg("options.entitySearch");
-            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
-            this.predicatedImages = _.checkarg(options.predicatedImages)
-                .throwNoArg("options.predicatedImages");
-            this.displayedImages = _.checkarg(options.displayedImages)
-                .throwNoArg("options.displayedImages");
-
-            _.checkarg(options.initalize).withDefault(_.identity).call(this);
-
-            this.model.on("reset", this.render, this);
-
-        },
-
-        render: function() {
-            ToplevelView.prototype.render.call(this);
-            this.$el.html(this.template());
-
-            this.contentViews = this.model.map(function(artifactType) {
-                if (artifactType.id && this.content[artifactType.id]) {
-                    return new ContentTypeView({
-                        router: this.router,
-                        artifacts: this.content[artifactType.id],
-                        type: artifactType,
-                        search: this.search,
-                        selection: this.selection,
-                        entitySearch: this.entitySearch,
-                        entities: this.entities,
-                        predicatedImages: this.predicatedImages,
-                        displayedImages: this.displayedImages,
-                    });
-                }
-            }, this);
-
-            _(this.contentViews).each(function(view) {
-                if (view) {
-                    this.$(".columntitle").text("Digital Content");
-                    this.$('.contentdiv').append(view.render().el);
-                }
-            }, this);
-
-            return this;
-        },
-    });
-
-    var ContentTypeView = Backbone.Marionette.CompositeView.extend({
-        className: 'typeview',
-        template: "#contenttypeTemplate",
-        itemViewContainer: ".contentlist",
-
-        itemView: ContentTypeItemView,
-        itemViewOptions: function() {
-            return {
-                typeview: this,
-                router: this.router,
-                selection: this.selection,
-                type: this.type,
-                predicatedImages: this.predicatedImages,
-                displayedImages: this.displayedImages,
-            };
-        },
-
-        initialize: function(options) {
-            this.router = _.checkarg(options.router).throwNoArg("options.router");
-            this.type = _.checkarg(options.type).throwNoArg("options.type");
-            this.search = _.checkarg(options.search).throwNoArg("options.search");
-            this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
-            this.entitySearch = _.checkarg(options.entitySearch)
-                .throwNoArg("options.entitySearch");
-            this.artifacts = _.checkarg(options.artifacts).throwNoArg("options.artifacts");
-            this.predicatedImages = _.checkarg(options.predicatedImages)
-                .throwNoArg("options.predicatedImages");
-            this.displayedImages = _.checkarg(options.displayedImages)
-                .throwNoArg("options.displayedImages");
-
-            this.model = new (Backbone.ViewModel.extend({
-                computed_attributes: {
-                    uri: this.get('type').id,
-                    label: this.get('type').get1(QA_LABEL, logmultiple),
-                },
-            }))({
-                source_models: {
-                    type: this.type,
-                },
-            });
-
-            this.collection = new (ViewCollection.extend({
-                computeModelArray: function() {
-                    var entityids = this.sources.entitySearch.get('entityids');
-                    var predicate = _.yes;
-
-                    if (entityids && entityids.length > 0) {
-                        predicate = function relatedToOneOfPredicate(artifact) {
-                            if (_.any(artifact.geta(QA_RELATED_TO), function(related) {
-                                return _.contains(entityids, related);
-                            }, this)) {
-                                return true;
-                            } else {
-                                return false;
-                            }
-                        };
-                    } else {
-                        var searchstring = this.sources.search.get('searchstring');
-                        predicate = function partialStringPredicate(artifact) {
-                            var val = $.trim(searchstring);
-
-                            return !val || _.any(val.split(/\W/), function(word) {
-                                return word !== "" &&
-                                    _.chain(artifact.attributes).keys().any(function(key) {
-                                        var lcword = word.toLowerCase();
-                                        return _.any(artifact.geta(key), function(label) {
-                                            return label.toLowerCase().indexOf(lcword) != -1;
-                                        }, this);
-                                    }, this).value();
-                            }, this);
-                        };
-                    }
-
-                    return this.sources.artifacts.filter(function(artifact) {
-                        var typeid = this.sources.type.id;
-                        if (typeid === QA_INTERVIEW_TYPE)
-                            return predicate(artifact);
-
-                        if (!artifact.get1(QA_HAS_FILE, false, false))
-                            return false;
-
-                        if (_.contains([QA_LINEDRAWING_TYPE, QA_PHOTOGRAPH_TYPE], typeid) &&
-                                !(artifact.get1(DCT_FORMAT) === "image/jpeg");
-                            return false;
-                        }
-
-                        return predicate(artifact);
-                    }, this);
-                },
-            }))({
-                sources: {
-                    artifacts: this.artifacts,
-                    search: this.search,
-                    entitySearch: this.entitySearch,
-                    type: this.type
-                },
-                name: "ContentTypeViewCollection::" + this.type.id,
-                tracksort: false,
-            });
-
-            this.forgetroute = true;
-            this.router.on('route:viewimage', function () { this.forgetroute = true }, this);
-            this.router.on('route:viewentity', function () { this.forgetroute = false }, this);
-            this.router.on('route:frontpage', function () { this.forgetroute = false }, this);
-            this.router.on('route:mapsearch', function () { this.forgetroute = false }, this);
-        },
-    });
-
     var ContentItemView = Backbone.Marionette.ItemView.extend({
         className: "contententry",
         template: "#listitemviewTemplate",
 
         serializeData: function() {
+            console.log(this.model);
             return {
-                label: this._labeltext(this.model.get1(QA_LABEL, logmultiple), 40),
+                label: this._labeltext(this.model.get1(DCT_TITLE, logmultiple), 40),
             };
         },
 
@@ -578,20 +414,6 @@ var frontend = (function() {
             this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
             this.type = _.checkarg(options.type).throwNoArg("options.type");
             this.typeview = _.checkarg(options.typeview).throwNoArg("options.typeview");
-            this.predicatedImages = _.checkarg(options.predicatedImages)
-                .throwNoArg("options.predicatedImages");
-            this.displayedImages = _.checkarg(options.displayedImages)
-                .throwNoArg("options.displayedImages");
-
-            this.$placeholder = $('<span display="none" data-uri="' + this.model.id + '"/>');
-            this.rendered = false;
-            this.visible = false;
-            this.predicate = this._defaultPredicate;
-            this.listenTo(this.selection, "change", this._update);
-
-            this.listenTo(this.displayedImages, "add", this._addImage);
-            this.listenTo(this.displayedImages, "remove", this._removeImage);
-            this.listenTo(this.displayedImages, "reset", this._resetImage);
 
             this.listenTo(this.selection, "change", this._updateSelected);
         },
@@ -653,67 +475,6 @@ var frontend = (function() {
                 this.router.navigate("", { trigger: true, replace: false });
             }
         },
-
-        setPredicate: function(predicate) {
-            this.predicate = predicate ? predicate : this._defaultPredicate;
-            this._update();
-        },
-
-        _defaultPredicate: function(model) {
-            return true;
-        },
-
-        partialStringPredicator: function(value) {
-            return _.bind(function() {
-                var val = $.trim(value);
-
-                return !val || _.any(val.split(/\W/), function(word) {
-                    return word !== "" &&
-                        _.chain(this.model.attributes).keys().any(function(key) {
-                            var lcword = word.toLowerCase();
-                            return _.any(this.model.geta(key), function(label) {
-                                return label.toLowerCase().indexOf(lcword) != -1;
-                            }, this);
-                        }, this).value();
-                }, this);
-            }, this);
-        },
-
-        relatedToOneOfPredicator: function(entityids) {
-            return function() {
-                if (_.any(this.model.geta(QA_RELATED_TO), function(related) {
-                    return _.contains(entityids, related);
-                }, this)) {
-                    return true;
-                } else {
-                    return false;
-                }
-            };
-        },
-
-        _addImage: function _addImage(image) {
-            if (image.id === this.model.id) {
-                this.$el.addClass("displayed");
-                if (!this.selection.get("selection")) {
-                    var container = this.$el.parents(".contentlist");
-                    if (!isScrolledIntoView(container, this.$el)) {
-                        container.scrollTo(this.$el);
-                    }
-                }
-            }
-        },
-
-        _removeImage: function _removeImage(image) {
-            if (image.id === this.model.id) {
-                this.$el.removeClass("displayed");
-            }
-        },
-
-        _resetImage: function _resetImage(collection) {
-            if (collection.contains(this.model)) {
-                this._addImage(this.model);
-            }
-        },
     });
 
     var isScrolledIntoView = function isScrolledIntoView(container, target) {
@@ -732,6 +493,175 @@ var frontend = (function() {
         return isInView;
     };
 
+    var ContentListView = Backbone.Marionette.CompositeView.extend({
+        className: 'typeview',
+        template: "#contenttypeTemplate",
+        itemViewContainer: ".contentlist",
+
+        itemView: ContentItemView,
+        itemViewOptions: function() {
+            return {
+                typeview: this,
+                router: this.router,
+                selection: this.selection,
+                type: this.model.get('type'),
+            };
+        },
+
+        initialize: function(options) {
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.search = _.checkarg(options.search).throwNoArg("options.search");
+            this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
+            this.entitySearch = _.checkarg(options.entitySearch)
+                .throwNoArg("options.entitySearch");
+
+            this.collection = new ContentListView.prototype.ViewCollection({
+                name: "ContentListViewCollection::" + this.model.get('type').id,
+                tracksort: false,
+                sources: {
+                    artifacts: this.model.get('artifacts'),
+                    search: this.search,
+                    entitySearch: this.entitySearch,
+                    type: this.model.get('type'),
+                },
+            });
+
+            this.forgetroute = true;
+            this.listenTo(this.router, 'route:viewimage',
+                    function () { this.forgetroute = true });
+            this.listenTo(this.router, 'route:viewentity',
+                    function () { this.forgetroute = false });
+            this.listenTo(this.router, 'route:frontpage',
+                    function () { this.forgetroute = false });
+            this.listenTo(this.router, 'route:mapsearch',
+                    function () { this.forgetroute = false });
+        },
+
+        ViewModel: Backbone.ViewModel.extend({
+            computed_attributes: {
+                type: function() {
+                    return this.get('type');
+                },
+                uri: function() {
+                    return this.get('type').id;
+                },
+                label: function() {
+                    return this.get('type').get1(QA_LABEL, logmultiple);
+                },
+            },
+        }),
+
+        ViewCollection: Backbone.ViewCollection.extend({
+            computeModelArray: function() {
+                var entityids = this.sources.entitySearch.get('entityids');
+                var predicate = _.yes;
+
+                if (entityids && entityids.length > 0) {
+                    predicate = function relatedToOneOfPredicate(artifact) {
+                        if (_.any(artifact.geta(QA_RELATED_TO), function(related) {
+                            return _.contains(entityids, related);
+                        }, this)) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    };
+                } else {
+                    var searchstring = this.sources.search.get('searchstring');
+                    predicate = function partialStringPredicate(artifact) {
+                        var val = $.trim(searchstring);
+
+                        return !val || _.any(val.split(/\W/), function(word) {
+                            return word !== "" &&
+                                _.chain(artifact.attributes).keys().any(function(key) {
+                                    var lcword = word.toLowerCase();
+                                    return _.any(artifact.geta(key), function(label) {
+                                        return label.toLowerCase().indexOf(lcword) != -1;
+                                    }, this);
+                                }, this).value();
+                        }, this);
+                    };
+                }
+
+                return this.sources.artifacts.filter(function(artifact) {
+                    var typeid = this.sources.type.id;
+                    if (typeid === QA_INTERVIEW_TYPE) {
+                        return predicate(artifact);
+                    } else if (!artifact.get1(QA_HAS_FILE, false, false)) {
+                        return false;
+                    } else if (_.contains([QA_LINEDRAWING_TYPE, QA_PHOTOGRAPH_TYPE], typeid) &&
+                            !(artifact.get1(DCT_FORMAT) === "image/jpeg")) {
+                        return false;
+                    } else {
+                        return predicate(artifact);
+                    }
+                }, this);
+            },
+        }),
+    });
+
+    var DigitalContentView = Backbone.Marionette.CompositeView.extend({
+        template: "#contentTemplate",
+        itemViewContainer: ".contentdiv",
+
+        itemView: ContentListView,
+        itemViewOptions: function() {
+            return {
+                router: this.router,
+                search: this.search,
+                selection: this.selection,
+                entitySearch: this.entitySearch,
+                entities: this.entities,
+                predicatedImages: this.predicatedImages,
+            };
+        },
+
+        serializeData: function() {
+            return {
+                title: "Digital Content",
+            };
+        },
+
+        initialize: function(options) {
+            options = _.checkarg(options).withDefault({});
+            // FIXME: content here is an array, not a collection.
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.content = _.checkarg(options.content).throwNoArg("options.content");
+            this.artifacts = _.checkarg(options.artifacts).throwNoArg("options.artifacts");
+            this.search = _.checkarg(options.search).throwNoArg("options.search");
+            this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
+            this.entitySearch = _.checkarg(options.entitySearch)
+                .throwNoArg("options.entitySearch");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.predicatedImages = _.checkarg(options.predicatedImages)
+                .throwNoArg("options.predicatedImages");
+
+            this.collection = new (Backbone.ViewCollection.extend({
+                computeModelArray: function() {
+                    var r = this.sources.artifacts.chain().
+                        filter(function(type) {
+                            return type.id && this.sources[type.id];
+                        }, this).
+                        map(function(type) {
+                            return new ContentListView.prototype.ViewModel({
+                                artifacts: this.sources[type.id],
+                                source_models: {
+                                    type: type,
+                                },
+                            });
+                        }, this).
+                        value();
+                    return r;
+                },
+            }))({
+                name: "DigitalContent ViewCollection",
+                sources: _.extend({
+                    artifacts: this.artifacts,
+                }, this.content),
+            });
+        },
+    });
+
     var EntityContentView = ToplevelView.extend({
         template: "#contentTemplate",
 
@@ -748,7 +678,7 @@ var frontend = (function() {
         render: function() {
             ToplevelView.prototype.render.call(this);
 
-            this.$el.html(this.template());
+            this.$el.html(this.template({ title: "People and Things" }));
             this.model.each(function(entityType) {
                 if (entityType.id) {
                     var entityView = new EntityTypeView({
@@ -758,7 +688,6 @@ var frontend = (function() {
                         search: this.search,
                         content: this.content,
                     });
-                    this.$(".columntitle").text("People and Things");
                     this.$('.contentdiv').append(entityView.render().el);
                 }
             }, this);
@@ -2001,8 +1930,6 @@ var frontend = (function() {
         model: FulltextResult,
 
         parse: function(results) {
-            console.log("parsing results");
-            console.log(results);
             return results.response.docs;
         },
 
@@ -2030,21 +1957,17 @@ var frontend = (function() {
             var newURL = this.buildURL(searchstring);
             if (this.url !== newURL) {
                 this.url = newURL;
-                console.log("About to fetch: " + this.url);
                 this.fetch({ reset: true });
             }
         },
 
         buildURL: function(searchstring) {
-            console.log("buildURL: " + searchstring);
             var query = encodeURIComponent(searchstring.indexOf(":") >= 0 ?
                 searchstring :
                 _(searchstring.split(/\s+/))
                     .map(function(s) { return this.defaultField + ":" + s; }, this)
                     .join(" "));
                 
-            console.log("buildURL: " + query);
-
             return this.solrURL +
                 "?q=" +
                 query +
@@ -2076,7 +1999,7 @@ var frontend = (function() {
 
         render: function() {
             ToplevelView.prototype.render.call(this);
-            this.$el.html(this.template());
+            this.$el.html(this.template({ title: "Fulltext Search Results" }));
 
             if (_.isUndefined(this.interviewView)) {
                 this.interviewView = new FulltextTypeView({
@@ -2106,7 +2029,6 @@ var frontend = (function() {
             }
 
 
-            this.$(".columntitle").text("Fulltext Search Results");
             this.$('.contentdiv').append(this.interviewView.render().el);
             this.$('.contentdiv').append(this.articleView.render().el);
 
@@ -3012,7 +2934,7 @@ var frontend = (function() {
         var contentView = new DigitalContentView({
             router: router,
             id: "maincontent",
-            model: artifacts,
+            artifacts: artifacts,
             content: {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Interview": interviews,
                 "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": photographs,
@@ -3127,7 +3049,7 @@ var frontend = (function() {
             searchView.append("#column1");
             mapButtonView.append("#column1");
             fulltextView.append("#column1");
-            contentView.append("#column2");
+            $("#column2").empty().append(contentView.render().$el);
             entityView.append("#column3");
             $("#column1,#column2,#column3").show();
 
@@ -3146,7 +3068,7 @@ var frontend = (function() {
             transcriptView.detach();
             mapSearchView.close();
             contentpaneView.attach("#column12");
-            contentView.append("#column3");
+            $("#column3").empty().append(contentView.render().$el);
             $("#column12,#column3").show();
         }, entitySearchModel);
 
@@ -3161,7 +3083,7 @@ var frontend = (function() {
             contentpaneView.detach();
             transcriptView.detach();
             mapSearchView.close();
-            contentView.append("#column1");
+            $("#column1").empty().append(contentView.render().$el);
             imageContentView.append("#column23");
             pdfContentView.detach();
             $("#column1,#column23").show();
@@ -3179,7 +3101,7 @@ var frontend = (function() {
             transcriptView.detach();
             mapSearchView.close();
             imageContentView.detach();
-            contentView.append("#column1");
+            $("#column1").empty().append(contentView.render().$el);
             pdfContentView.append("#column23");
             $("#column1,#column23").show();
         }, contentSearchModel);
@@ -3193,7 +3115,7 @@ var frontend = (function() {
             fulltextView.detach();
             entityView.detach();
             contentpaneView.detach();
-            contentView.detach();
+            contentView.close();
             imageContentView.detach();
             pdfContentView.detach();
             mapSearchView.close();
@@ -3214,7 +3136,7 @@ var frontend = (function() {
             imageContentView.detach();
             pdfContentView.detach();
             $("#column12").empty().append(mapSearchView.render().$el);
-            contentView.append("#column3");
+            $("#column3").empty().append(contentView.render().$el);
             $("#column12,#column3").show();
         }, contentSearchModel);
 
