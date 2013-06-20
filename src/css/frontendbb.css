@@ -324,6 +324,7 @@ div.contentpanetabs {
 
 .imagemetadata {
     border: 1px solid lightgrey;
+    background: white;
     padding-top: 10px;
     position: absolute;
     top: 1px;
