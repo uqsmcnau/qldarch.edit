@@ -394,206 +394,16 @@ var frontend = (function() {
         },
     });
 
-    var DigitalContentView = ToplevelView.extend({
-        template: "#contentTemplate",
-
-        initialize: function(options) {
-            options = _.checkarg(options).withDefault({})
-
-            ToplevelView.prototype.initialize.call(this, options);
-
-            this.content = _.checkarg(options.content).throwNoArg("options.content");
-            this.search = _.checkarg(options.search).throwNoArg("options.search");
-            this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
-            this.contentViews = [];
-            this.entitySearch = _.checkarg(options.entitySearch)
-                .throwNoArg("options.entitySearch");
-            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
-            this.predicatedImages = _.checkarg(options.predicatedImages)
-                .throwNoArg("options.predicatedImages");
-            this.displayedImages = _.checkarg(options.displayedImages)
-                .throwNoArg("options.displayedImages");
-
-            _.checkarg(options.initalize).withDefault(_.identity).call(this);
-
-            this.model.on("reset", this.render, this);
-
-        },
-
-        render: function() {
-            ToplevelView.prototype.render.call(this);
-            this.$el.html(this.template());
-
-            this.contentViews = this.model.map(function(artifactType) {
-                if (artifactType.id && this.content[artifactType.id]) {
-                    return new ContentTypeView({
-                        router: this.router,
-                        model: this._subViewModel(artifactType),
-                        type: artifactType,
-                        search: this.search,
-                        selection: this.selection,
-                        entitySearch: this.entitySearch,
-                        entities: this.entities,
-                        predicatedImages: this.predicatedImages,
-                        displayedImages: this.displayedImages,
-                    });
-                }
-            }, this);
-
-            _(this.contentViews).each(function(view) {
-                if (view) {
-                    this.$(".columntitle").text("Digital Content");
-                    this.$('.contentdiv').append(view.render().el);
-                }
-            }, this);
-
-            return this;
-        },
-
-        _update: function() {
-            _(this.contentViews).each(function(view) { view._update(); });
-        },
-
-        _subViewModel: function(type) {
-            return this.content[type.id];
-        },
-    });
-
-    var ContentTypeView = Backbone.View.extend({
-        className: 'typeview',
-        initialize: function(options) {
-            _.bindAll(this);
-
-            options = _.checkarg(options).withDefault({})
-            this.template = _.template($("#contenttypeTemplate").html());
-
-            this.router = _.checkarg(options.router).throwNoArg("options.router");
-            this.type = _.checkarg(options.type).throwNoArg("options.type");
-            this.search = _.checkarg(options.search).throwNoArg("options.search");
-            this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
-            this.entitySearch = _.checkarg(options.entitySearch)
-                .throwNoArg("options.entitySearch");
-            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
-            this.predicatedImages = _.checkarg(options.predicatedImages)
-                .throwNoArg("options.predicatedImages");
-            this.displayedImages = _.checkarg(options.displayedImages)
-                .throwNoArg("options.displayedImages");
-
-            this.itemviews = {};
-
-            this.model.on("reset", this.render);
-            this.search.on("change", this._update);
-            this.entitySearch.on("change", this._update);
-
-            this.$placeholder = $('<span display="none" data-uri="' + this.type.id + '"/>');
-            this.rendered = false;
-            this.visible = false;
-            this.predicate = this._defaultPredicate;
-            this.itemViews = [];
-
-            this.forgetroute = true;
-            this.router.on('route:viewimage', function () { this.forgetroute = true }, this);
-            this.router.on('route:viewentity', function () { this.forgetroute = false }, this);
-            this.router.on('route:frontpage', function () { this.forgetroute = false }, this);
-            this.router.on('route:mapsearch', function () { this.forgetroute = false }, this);
-
-            _.checkarg(options.initalize).withDefault(_.identity).call(this);
-        },
-        
-        render: function() {
-            this.$el.html(this.template({
-                uri: this.type.id,
-                label: this.type.get1(QA_LABEL, logmultiple)
-            }));
-
-            this.model.each(function(contentItem) {
-                var format = contentItem.get(DCT_FORMAT);
-                if (this._includeItem(contentItem, this.type.id)) {
-                    var itemView = new ContentItemView({
-                        typeview: this,
-                        router: this.router,
-                        model: contentItem,
-                        selection: this.selection,
-                        type: this.type,
-                        predicatedImages: this.predicatedImages,
-                        displayedImages: this.displayedImages,
-                    });
-                    this.itemviews[contentItem.id] = itemView;
-                    this.$('.contentlist').append(itemView.render().el);
-                }
-            }, this);
-
-            this._update();
-            this._setinput();
-
-            this.rendered = true;
-            this.visible = true;
-
-            return this;
-        },
-
-        _includeItem: function(contentItem, typeid) {
-            if (typeid === QA_INTERVIEW_TYPE) return true;
-            if (!contentItem.get1(QA_HAS_FILE, false, false)) return false;
-            if (_.contains([QA_LINEDRAWING_TYPE, QA_PHOTOGRAPH_TYPE], typeid)) {
-                return (contentItem.get1(DCT_FORMAT) === "image/jpeg");
-            }
-            return true;
-        },
-
-        _update: function() {
-            if (this.rendered) {
-                if (this.predicate(this.model)) {
-                    if (!this.visible) {
-                        this.$placeholder.after(this.$el).detach();
-                        this.visible = true;
-                    }
-                    this._cascadeUpdate();
-                } else {
-                    if (this.visible) {
-                        this.$el.after(this.$placeholder).detach();
-                        this.visible = false;
-                        this.predicatedImages.without(this.model.models);
-                    }
-                }
-            }
-        },
-
-        _cascadeUpdate: function() {
-            var entityids = this.entitySearch.get('entityids');
-            if (entityids && entityids.length > 0) {
-                _.each(this.itemviews, function(itemview) {
-                    itemview.setPredicate(itemview.relatedToOneOfPredicator(entityids));
-                }, this);
-            } else {
-                var searchtypes = this.search.get('searchtypes');
-                var searchstring = this.search.get('searchstring');
-                _.each(this.itemviews, function(itemview) {
-                    itemview.setPredicate(itemview.partialStringPredicator(searchstring));
-                }, this);
-            }
-        },
-
-        setPredicate: function(predicate) {
-            this.predicate = predicate ? predicate : this._defaultPredicate;
-            this._update();
-        },
-
-        _defaultPredicate: function(model) {
-            var searchtypes = this.search.get('searchtypes');
-            return _.contains(searchtypes, 'all') ||
-                _.contains(searchtypes, 'fulltext') ||
-                _.contains(searchtypes, this.type.id);
-        },
-
-        _setinput: function() {
-            this._update();
-        },
-
-    });
-
-    var ContentItemView = Backbone.View.extend({
+    var ContentItemView = Backbone.Marionette.ItemView.extend({
         className: "contententry",
+        template: "#listitemviewTemplate",
+
+        serializeData: function() {
+            return {
+                label: this._labeltext(this.model.get1(DCT_TITLE, logmultiple), 40),
+            };
+        },
+
         initialize: function(options) {
             _.bindAll(this);
 
@@ -603,64 +413,29 @@ var frontend = (function() {
             this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
             this.type = _.checkarg(options.type).throwNoArg("options.type");
             this.typeview = _.checkarg(options.typeview).throwNoArg("options.typeview");
-            this.predicatedImages = _.checkarg(options.predicatedImages)
-                .throwNoArg("options.predicatedImages");
-            this.displayedImages = _.checkarg(options.displayedImages)
-                .throwNoArg("options.displayedImages");
 
-            this.$placeholder = $('<span display="none" data-uri="' + this.model.id + '"/>');
-            this.rendered = false;
-            this.visible = false;
-            this.predicate = this._defaultPredicate;
-            this.selection.on("change", this._update);
-            this.offset = 0;
-
-            this.displayedImages.on("add", this._addImage);
-            this.displayedImages.on("remove", this._removeImage);
-            this.displayedImages.on("reset", this._resetImage);
-
-            _.checkarg(options.initalize).withDefault(_.identity).call(this);
+            this.listenTo(this.selection, "change", this._updateSelected);
         },
         
         events: {
             "click"   : "_select"
         },
 
-        render: function() {
-            this.$el.text(this._labeltext(this.model.get1(DCT_TITLE, logmultiple), 40));
-
-            this.rendered = true;
-            this.visible = true;
-
-            return this;
+        onRender: function() {
+            this._updateSelected();
         },
 
-        _update: function() {
-            if (this.rendered) {
-                if (this.predicate(this.model)) {
-                    if (!this.visible) {
-                        this.$placeholder.after(this.$el).detach();
-                        this.visible = true;
-                    }
-                    this.predicatedImages.add(this.model);
-                    this._cascadeUpdate();
-                } else {
-                    if (this.visible) {
-                        this.$el.after(this.$placeholder).detach();
-                        this.visible = false;
-                    }
-                    this.predicatedImages.remove(this.model);
-                }
-            }
+        _updateSelected: function _updateSelected() {
             if (this.selection.get("selection") === this.model.id) {
                 this.$el.addClass("selected");
-                this.$el.parents(".contentlist").scrollTop(this.offset);
+                var container = this.$el.parents(".contentlist");
+                if (!isScrolledIntoView(container, this.$el)) {
+                    container.scrollTo(this.$el);
+                }
             } else {
                 this.$el.removeClass("selected");
             }
         },
-
-        _cascadeUpdate: function() {},
 
         _labeltext: function(label, maxlength) {
             if (_.isUndefined(label)) {
@@ -682,8 +457,6 @@ var frontend = (function() {
             var newSelection = (this.selection.get('selection') !== this.model.id) ?
                 this.model.id : undefined;
 
-            this.offset = this.$el.parents(".contentlist").scrollTop();
-
             this.selection.set({
                 'selection': newSelection,
                 'type': newSelection ? this.type.id : undefined,
@@ -699,67 +472,6 @@ var frontend = (function() {
                 }
             } else {
                 this.router.navigate("", { trigger: true, replace: false });
-            }
-        },
-
-        setPredicate: function(predicate) {
-            this.predicate = predicate ? predicate : this._defaultPredicate;
-            this._update();
-        },
-
-        _defaultPredicate: function(model) {
-            return true;
-        },
-
-        partialStringPredicator: function(value) {
-            return _.bind(function() {
-                var val = $.trim(value);
-
-                return !val || _.any(val.split(/\W/), function(word) {
-                    return word !== "" &&
-                        _.chain(this.model.attributes).keys().any(function(key) {
-                            var lcword = word.toLowerCase();
-                            return _.any(this.model.geta(key), function(label) {
-                                return label.toLowerCase().indexOf(lcword) != -1;
-                            }, this);
-                        }, this).value();
-                }, this);
-            }, this);
-        },
-
-        relatedToOneOfPredicator: function(entityids) {
-            return function() {
-                if (_.any(this.model.geta(QA_RELATED_TO), function(related) {
-                    return _.contains(entityids, related);
-                }, this)) {
-                    return true;
-                } else {
-                    return false;
-                }
-            };
-        },
-
-        _addImage: function _addImage(image) {
-            if (image.id === this.model.id) {
-                this.$el.addClass("displayed");
-                if (!this.selection.get("selection")) {
-                    var container = this.$el.parents(".contentlist");
-                    if (!isScrolledIntoView(container, this.$el)) {
-                        container.scrollTo(this.$el);
-                    }
-                }
-            }
-        },
-
-        _removeImage: function _removeImage(image) {
-            if (image.id === this.model.id) {
-                this.$el.removeClass("displayed");
-            }
-        },
-
-        _resetImage: function _resetImage(collection) {
-            if (collection.contains(this.model)) {
-                this._addImage(this.model);
             }
         },
     });
@@ -780,6 +492,175 @@ var frontend = (function() {
         return isInView;
     };
 
+    var ContentListView = Backbone.Marionette.CompositeView.extend({
+        className: 'typeview',
+        template: "#contenttypeTemplate",
+        itemViewContainer: ".contentlist",
+
+        itemView: ContentItemView,
+        itemViewOptions: function() {
+            return {
+                typeview: this,
+                router: this.router,
+                selection: this.selection,
+                type: this.model.get('type'),
+            };
+        },
+
+        initialize: function(options) {
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.search = _.checkarg(options.search).throwNoArg("options.search");
+            this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
+            this.entitySearch = _.checkarg(options.entitySearch)
+                .throwNoArg("options.entitySearch");
+
+            this.collection = new ContentListView.prototype.ViewCollection({
+                name: "ContentListViewCollection::" + this.model.get('type').id,
+                tracksort: false,
+                sources: {
+                    artifacts: this.model.get('artifacts'),
+                    search: this.search,
+                    entitySearch: this.entitySearch,
+                    type: this.model.get('type'),
+                },
+            });
+
+            this.forgetroute = true;
+            this.listenTo(this.router, 'route:viewimage',
+                    function () { this.forgetroute = true });
+            this.listenTo(this.router, 'route:viewentity',
+                    function () { this.forgetroute = false });
+            this.listenTo(this.router, 'route:frontpage',
+                    function () { this.forgetroute = false });
+            this.listenTo(this.router, 'route:mapsearch',
+                    function () { this.forgetroute = false });
+        },
+
+        ViewModel: Backbone.ViewModel.extend({
+            computed_attributes: {
+                type: function() {
+                    return this.get('type');
+                },
+                uri: function() {
+                    return this.get('type').id;
+                },
+                label: function() {
+                    return this.get('type').get1(QA_LABEL, logmultiple);
+                },
+            },
+        }),
+
+        ViewCollection: Backbone.ViewCollection.extend({
+            computeModelArray: function() {
+                var entityids = this.sources.entitySearch.get('entityids');
+                var predicate = _.yes;
+
+                if (entityids && entityids.length > 0) {
+                    predicate = function relatedToOneOfPredicate(artifact) {
+                        if (_.any(artifact.geta(QA_RELATED_TO), function(related) {
+                            return _.contains(entityids, related);
+                        }, this)) {
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    };
+                } else {
+                    var searchstring = this.sources.search.get('searchstring');
+                    predicate = function partialStringPredicate(artifact) {
+                        var val = $.trim(searchstring);
+
+                        return !val || _.any(val.split(/\W/), function(word) {
+                            return word !== "" &&
+                                _.chain(artifact.attributes).keys().any(function(key) {
+                                    var lcword = word.toLowerCase();
+                                    return _.any(artifact.geta(key), function(label) {
+                                        return label.toLowerCase().indexOf(lcword) != -1;
+                                    }, this);
+                                }, this).value();
+                        }, this);
+                    };
+                }
+
+                return this.sources.artifacts.filter(function(artifact) {
+                    var typeid = this.sources.type.id;
+                    if (typeid === QA_INTERVIEW_TYPE) {
+                        return predicate(artifact);
+                    } else if (!artifact.get1(QA_HAS_FILE, false, false)) {
+                        return false;
+                    } else if (_.contains([QA_LINEDRAWING_TYPE, QA_PHOTOGRAPH_TYPE], typeid) &&
+                            !(artifact.get1(DCT_FORMAT) === "image/jpeg")) {
+                        return false;
+                    } else {
+                        return predicate(artifact);
+                    }
+                }, this);
+            },
+        }),
+    });
+
+    var DigitalContentView = Backbone.Marionette.CompositeView.extend({
+        template: "#contentTemplate",
+        itemViewContainer: ".contentdiv",
+
+        itemView: ContentListView,
+        itemViewOptions: function() {
+            return {
+                router: this.router,
+                search: this.search,
+                selection: this.selection,
+                entitySearch: this.entitySearch,
+                entities: this.entities,
+                predicatedImages: this.predicatedImages,
+            };
+        },
+
+        serializeData: function() {
+            return {
+                title: "Digital Content",
+            };
+        },
+
+        initialize: function(options) {
+            options = _.checkarg(options).withDefault({});
+            // FIXME: content here is an array, not a collection.
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.content = _.checkarg(options.content).throwNoArg("options.content");
+            this.artifacts = _.checkarg(options.artifacts).throwNoArg("options.artifacts");
+            this.search = _.checkarg(options.search).throwNoArg("options.search");
+            this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
+            this.entitySearch = _.checkarg(options.entitySearch)
+                .throwNoArg("options.entitySearch");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.predicatedImages = _.checkarg(options.predicatedImages)
+                .throwNoArg("options.predicatedImages");
+
+            this.collection = new (Backbone.ViewCollection.extend({
+                computeModelArray: function() {
+                    var r = this.sources.artifacts.chain().
+                        filter(function(type) {
+                            return type.id && this.sources[type.id];
+                        }, this).
+                        map(function(type) {
+                            return new ContentListView.prototype.ViewModel({
+                                artifacts: this.sources[type.id],
+                                source_models: {
+                                    type: type,
+                                },
+                            });
+                        }, this).
+                        value();
+                    return r;
+                },
+            }))({
+                name: "DigitalContent ViewCollection",
+                sources: _.extend({
+                    artifacts: this.artifacts,
+                }, this.content),
+            });
+        },
+    });
+
     var EntityContentView = ToplevelView.extend({
         template: "#contentTemplate",
 
@@ -796,7 +677,7 @@ var frontend = (function() {
         render: function() {
             ToplevelView.prototype.render.call(this);
 
-            this.$el.html(this.template());
+            this.$el.html(this.template({ title: "People and Things" }));
             this.model.each(function(entityType) {
                 if (entityType.id) {
                     var entityView = new EntityTypeView({
@@ -806,7 +687,6 @@ var frontend = (function() {
                         search: this.search,
                         content: this.content,
                     });
-                    this.$(".columntitle").text("People and Things");
                     this.$('.contentdiv').append(entityView.render().el);
                 }
             }, this);
@@ -2049,8 +1929,6 @@ var frontend = (function() {
         model: FulltextResult,
 
         parse: function(results) {
-            console.log("parsing results");
-            console.log(results);
             return results.response.docs;
         },
 
@@ -2078,21 +1956,17 @@ var frontend = (function() {
             var newURL = this.buildURL(searchstring);
             if (this.url !== newURL) {
                 this.url = newURL;
-                console.log("About to fetch: " + this.url);
                 this.fetch({ reset: true });
             }
         },
 
         buildURL: function(searchstring) {
-            console.log("buildURL: " + searchstring);
             var query = encodeURIComponent(searchstring.indexOf(":") >= 0 ?
                 searchstring :
                 _(searchstring.split(/\s+/))
                     .map(function(s) { return this.defaultField + ":" + s; }, this)
                     .join(" "));
                 
-            console.log("buildURL: " + query);
-
             return this.solrURL +
                 "?q=" +
                 query +
@@ -2124,7 +1998,7 @@ var frontend = (function() {
 
         render: function() {
             ToplevelView.prototype.render.call(this);
-            this.$el.html(this.template());
+            this.$el.html(this.template({ title: "Fulltext Search Results" }));
 
             if (_.isUndefined(this.interviewView)) {
                 this.interviewView = new FulltextTypeView({
@@ -2154,7 +2028,6 @@ var frontend = (function() {
             }
 
 
-            this.$(".columntitle").text("Fulltext Search Results");
             this.$('.contentdiv').append(this.interviewView.render().el);
             this.$('.contentdiv').append(this.articleView.render().el);
 
@@ -2729,7 +2602,7 @@ var frontend = (function() {
 
     var MapEntityListItemView = Backbone.Marionette.ItemView.extend({
         className: "entityentry",
-        template: "#mapentitylistitemviewTemplate",
+        template: "#listitemviewTemplate",
         serializeData: function() {
             return {
                 label: this.model.get1(QA_LABEL, true),
@@ -3060,7 +2933,7 @@ var frontend = (function() {
         var contentView = new DigitalContentView({
             router: router,
             id: "maincontent",
-            model: artifacts,
+            artifacts: artifacts,
             content: {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Interview": interviews,
                 "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": photographs,
@@ -3175,7 +3048,7 @@ var frontend = (function() {
             searchView.append("#column1");
             mapButtonView.append("#column1");
             fulltextView.append("#column1");
-            contentView.append("#column2");
+            $("#column2").empty().append(contentView.render().$el);
             entityView.append("#column3");
             $("#column1,#column2,#column3").show();
 
@@ -3194,7 +3067,7 @@ var frontend = (function() {
             transcriptView.detach();
             mapSearchView.close();
             contentpaneView.attach("#column12");
-            contentView.append("#column3");
+            $("#column3").empty().append(contentView.render().$el);
             $("#column12,#column3").show();
         }, entitySearchModel);
 
@@ -3209,7 +3082,7 @@ var frontend = (function() {
             contentpaneView.detach();
             transcriptView.detach();
             mapSearchView.close();
-            contentView.append("#column1");
+            $("#column1").empty().append(contentView.render().$el);
             imageContentView.append("#column23");
             pdfContentView.detach();
             $("#column1,#column23").show();
@@ -3227,7 +3100,7 @@ var frontend = (function() {
             transcriptView.detach();
             mapSearchView.close();
             imageContentView.detach();
-            contentView.append("#column1");
+            $("#column1").empty().append(contentView.render().$el);
             pdfContentView.append("#column23");
             $("#column1,#column23").show();
         }, contentSearchModel);
@@ -3241,7 +3114,7 @@ var frontend = (function() {
             fulltextView.detach();
             entityView.detach();
             contentpaneView.detach();
-            contentView.detach();
+            contentView.close();
             imageContentView.detach();
             pdfContentView.detach();
             mapSearchView.close();
@@ -3262,7 +3135,7 @@ var frontend = (function() {
             imageContentView.detach();
             pdfContentView.detach();
             $("#column12").empty().append(mapSearchView.render().$el);
-            contentView.append("#column3");
+            $("#column3").empty().append(contentView.render().$el);
             $("#column12,#column3").show();
         }, contentSearchModel);
 

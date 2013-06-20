@@ -7,44 +7,43 @@
 // http://github.com/tommyh/backbone-view-model
 
 Backbone.ViewModel = (function(Backbone, _, undefined){
-  'use strict';
+    'use strict';
 
-  var Model = Backbone.Model,
-    ViewModel = function(attributes, options) {
-      Model.apply(this, [attributes, options]);
-      this.initializeViewModel();
-    };
+    var Model = Backbone.Model;
+    var ViewModel = Model.extend({
+        constructor: function(attributes, options) {
+            Model.apply(this, [attributes, options]);
+            this.initializeViewModel();
+        },
+        initializeViewModel: function(){
+            this.set(this.get("source_models"));
+            this.source_models = _.union(
+                _.values(this.get('source_models')),
+                (this.get('source_model') || []));
 
-  _.extend(ViewModel.prototype, Model.prototype, {
+            this.setComputedAttributes();
+            this.bindToChangesInSourceModel();
+        },
 
-    initializeViewModel: function(){
-      this.set(this.get("source_models"));
-      this.source_models = _.union(_.values(this.get('source_models')), (this.get('source_model') || []));
-      this.setComputedAttributes();
-      this.bindToChangesInSourceModel();
-    },
+        setComputedAttributes: function(){
+            _.each(this.computed_attributes, function(value, key){
+                var val = value.call(this);
+                this.set(key, val);
+            }, this);
+        },
 
-    setComputedAttributes: function(){
-      _.each(this.computed_attributes, function(value, key){
-        var val = value.call(this);
-        this.set(key, val);
-      }, this);
-    },
+        bindToChangesInSourceModel: function(){
+            _.each(this.source_models, function(model) {
+                model.on("change", this.setComputedAttributes, this);
+                model.on("add", this.setComputedAttributes, this);
+                model.on("remove", this.setComputedAttributes, this);
+                model.on("reset", this.setComputedAttributes, this);
+            }, this);
+        }
 
-    bindToChangesInSourceModel: function(){
-      _.each(this.source_models, function(model) {
-          model.on("change", this.setComputedAttributes, this);
-          model.on("add", this.setComputedAttributes, this);
-          model.on("remove", this.setComputedAttributes, this);
-          model.on("reset", this.setComputedAttributes, this);
-      }, this);
-    }
+    });
 
-  });
-
-  ViewModel.extend = Model.extend;
-
-  return ViewModel;
+    return ViewModel;
 })(Backbone, _);
 
 Backbone.ViewCollection = (function(Backbone, _, undefined) {
@@ -56,6 +55,9 @@ Backbone.ViewCollection = (function(Backbone, _, undefined) {
     var ViewCollection = function(options) {
         Collection.apply(this, [[], options]);
         this.sources = options.sources;
+        this.trackSort = !!options.trackSort;
+        this.name = (options.name || "Unnamed ViewCollection");
+        this.options = options;
         this.initializeViewCollection();
     };
 
@@ -66,17 +68,20 @@ Backbone.ViewCollection = (function(Backbone, _, undefined) {
         },
 
         setComputedAttributes: function() {
-            this.set(this.computeModelArray());
+            var cma = this.computeModelArray();
+            this.set(cma);
         },
 
         bindToChangesInSources: function(){
-            _.each(this.sources, function(collection) {
+            _.each(this.sources, function(collection, key) {
                 this.listenTo(collection, "add", this.setComputedAttributes, this);
                 this.listenTo(collection, "remove", this.setComputedAttributes, this);
                 this.listenTo(collection, "reset", this.setComputedAttributes, this);
                 this.listenTo(collection, "change", this.setComputedAttributes, this);
-                this.listenTo(collection, "sort", this.setComputedAttributes, this);
                 this.listenTo(collection, "destroy", this.setComputedAttributes, this);
+                if (this.trackSort) {
+                    this.listenTo(collection, "sort", this.setComputedAttributes, this);
+                }
             }, this);
         }
     });
