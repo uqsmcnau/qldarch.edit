@@ -399,7 +399,6 @@ var frontend = (function() {
         template: "#listitemviewTemplate",
 
         serializeData: function() {
-            console.log(this.model);
             return {
                 label: this._labeltext(this.model.get1(DCT_TITLE, logmultiple), 40),
             };
