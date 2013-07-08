@@ -237,7 +237,7 @@ var frontend = (function() {
         },
     });
 
-    var PredicatedImages = Backbone.Collection.extend({});
+    var PredicatedImagesMap = Backbone.Model.extend({});
 
     var ToplevelView = Backbone.View.extend({
         template: "",
@@ -492,6 +492,54 @@ var frontend = (function() {
         return isInView;
     };
 
+    var PredicatedImages = Backbone.ViewCollection.extend({
+        computeModelArray: function() {
+            var entityids = this.sources.entitySearch.get('entityids');
+            var predicate = _.yes;
+
+            if (entityids && entityids.length > 0) {
+                predicate = function relatedToOneOfPredicate(artifact) {
+                    if (_.any(artifact.geta(QA_RELATED_TO), function(related) {
+                        return _.contains(entityids, related);
+                    }, this)) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                };
+            } else {
+                var searchstring = this.sources.search.get('searchstring');
+                predicate = function partialStringPredicate(artifact) {
+                    var val = $.trim(searchstring);
+
+                    return !val || _.any(val.split(/\W/), function(word) {
+                        return word !== "" &&
+                            _.chain(artifact.attributes).keys().any(function(key) {
+                                var lcword = word.toLowerCase();
+                                return _.any(artifact.geta(key), function(label) {
+                                    return label.toLowerCase().indexOf(lcword) != -1;
+                                }, this);
+                            }, this).value();
+                    }, this);
+                };
+            }
+
+            return this.sources.artifacts.filter(function(artifact) {
+                var typeid = this.sources.type.id;
+                if (typeid === QA_INTERVIEW_TYPE) {
+                    return predicate(artifact);
+                } else if (!artifact.get1(QA_HAS_FILE, false, false)) {
+                    return false;
+                } else if (_.contains([QA_LINEDRAWING_TYPE, QA_PHOTOGRAPH_TYPE], typeid) &&
+                        !(artifact.get1(DCT_FORMAT) === "image/jpeg")) {
+                    return false;
+                } else {
+                    return predicate(artifact);
+                }
+            }, this);
+        },
+    });
+
     var ContentListView = Backbone.Marionette.CompositeView.extend({
         className: 'typeview',
         template: "#contenttypeTemplate",
@@ -513,8 +561,10 @@ var frontend = (function() {
             this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
             this.entitySearch = _.checkarg(options.entitySearch)
                 .throwNoArg("options.entitySearch");
+            this.predicatedImages = _.checkarg(options.predicatedImages)
+                .throwNoArg("options.predicatedImages");
 
-            this.collection = new ContentListView.prototype.ViewCollection({
+            this.collection = new PredicatedImages({
                 name: "ContentListViewCollection::" + this.model.get('type').id,
                 tracksort: false,
                 sources: {
@@ -524,6 +574,7 @@ var frontend = (function() {
                     type: this.model.get('type'),
                 },
             });
+            this.predicatedImages.set(this.model.get('type').id, this.collection);
 
             this.forgetroute = true;
             this.listenTo(this.router, 'route:viewimage',
@@ -534,6 +585,10 @@ var frontend = (function() {
                     function () { this.forgetroute = false });
             this.listenTo(this.router, 'route:mapsearch',
                     function () { this.forgetroute = false });
+        },
+
+        onClose : function() {
+            this.predicatedImages.set(this.model.get('type').id, undefined);
         },
 
         ViewModel: Backbone.ViewModel.extend({
@@ -550,53 +605,6 @@ var frontend = (function() {
             },
         }),
 
-        ViewCollection: Backbone.ViewCollection.extend({
-            computeModelArray: function() {
-                var entityids = this.sources.entitySearch.get('entityids');
-                var predicate = _.yes;
-
-                if (entityids && entityids.length > 0) {
-                    predicate = function relatedToOneOfPredicate(artifact) {
-                        if (_.any(artifact.geta(QA_RELATED_TO), function(related) {
-                            return _.contains(entityids, related);
-                        }, this)) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    };
-                } else {
-                    var searchstring = this.sources.search.get('searchstring');
-                    predicate = function partialStringPredicate(artifact) {
-                        var val = $.trim(searchstring);
-
-                        return !val || _.any(val.split(/\W/), function(word) {
-                            return word !== "" &&
-                                _.chain(artifact.attributes).keys().any(function(key) {
-                                    var lcword = word.toLowerCase();
-                                    return _.any(artifact.geta(key), function(label) {
-                                        return label.toLowerCase().indexOf(lcword) != -1;
-                                    }, this);
-                                }, this).value();
-                        }, this);
-                    };
-                }
-
-                return this.sources.artifacts.filter(function(artifact) {
-                    var typeid = this.sources.type.id;
-                    if (typeid === QA_INTERVIEW_TYPE) {
-                        return predicate(artifact);
-                    } else if (!artifact.get1(QA_HAS_FILE, false, false)) {
-                        return false;
-                    } else if (_.contains([QA_LINEDRAWING_TYPE, QA_PHOTOGRAPH_TYPE], typeid) &&
-                            !(artifact.get1(DCT_FORMAT) === "image/jpeg")) {
-                        return false;
-                    } else {
-                        return predicate(artifact);
-                    }
-                }, this);
-            },
-        }),
     });
 
     var DigitalContentView = Backbone.Marionette.CompositeView.extend({
@@ -2456,7 +2464,7 @@ var frontend = (function() {
         },
 
         initialize: function(options) {
-            _.bindAll(this, "_imageSelectionLoop");
+            _.bindAll(this, "_imageSelectionLoop", "_setImageList");
 
             _.checkarg(options).throwNoArg("options");
 
@@ -2524,6 +2532,9 @@ var frontend = (function() {
                 if (newImage) this.displayedImages.displayed(newImage.id);
             });
 
+            this.listenTo(this.predicatedImages, "change", this._setImageList);
+            this._setImageList();
+
             this.imageSelection = new ImageSelection({});
 
             this._imageSelectionLoop(3000);
@@ -2569,21 +2580,26 @@ var frontend = (function() {
             return entity.has(GEO_LAT) && entity.has(GEO_LONG);
         },
 
+        _setImageList : function _setImageList() {
+            var list = this.predicatedImages.get(QA_PHOTOGRAPH_TYPE);
+            this.imageList = list ? list : [];
+        },
+
         _imageSelectionLoop: function _imageSelectionLoop(delay) {
             var entityids = this.entitySearch.get("entityids");
             if (entityids &&
                (entityids.length == 1) &&
-               (this.predicatedImages.length > 0) &&
+               (this.imageList.length > 0) &&
                (this.$el.filter(":visible").length > 0)) {
                     var index = this.imageSelection.get("index");
-                    if (index < 0 || (index + 1) >= this.predicatedImages.length) {
+                    if (index < 0 || (index + 1) >= this.imageList.length) {
                         this.imageSelection.set({
-                            image: this.predicatedImages.at(0),
+                            image: this.imageList.at(0),
                             index: 0,
                         });
                     } else {
                         this.imageSelection.set({
-                            image: this.predicatedImages.at(index + 1),
+                            image: this.imageList.at(index + 1),
                             index: index + 1,
                         });
                     }
@@ -2696,6 +2712,7 @@ var frontend = (function() {
         },
 
         onDomRefresh: function onDomRefresh() {
+            console.log("onDomRefresh");
             if (this.$el.filter(":visible").length > 0) {
                 var image = this.imageSelection.get("image");
                 var displayed = this.displayedImage.get("image");
@@ -2767,7 +2784,7 @@ var frontend = (function() {
 
         var mapSearchModel = new MapSearchModel();
 
-        var predicatedImages = new PredicatedImages();
+        var predicatedImages = new PredicatedImagesMap();
 
         var displayedImages = new DisplayedImages();
 
@@ -2910,15 +2927,9 @@ var frontend = (function() {
             console.log("\tRESET:FulltextArticleModel: " + collection.length);
             console.log(collection);
         });
-        /*
-        predicatedImages.on("add", function(model) {
-            console.log("\t ADD:PredicatedImages: " + model.id);
+        predicatedImages.on("change", function(model) {
+            console.log("\t CHANGE:PredicatedImages: " + model.id);
         });
-
-        predicatedImages.on("remove", function(model) {
-            console.log("\t REMOVE:PredicatedImages: " + model.id);
-        });
-*/
         var searchView = new GeneralSearchView({
             id: "mainsearch",
             model: searchModel,
@@ -3018,6 +3029,7 @@ var frontend = (function() {
             files: files,
         });
 
+        console.log("Creating MSV");
         var mapSearchView = new MapSearchView({
             router: router,
             entities: entities,
