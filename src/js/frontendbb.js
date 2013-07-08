@@ -235,6 +235,16 @@ var frontend = (function() {
                 console.log("Undisplayed image that wasn't registered as displayed");
             }
         },
+
+        isDisplayed: function isDisplayed(imageid) {
+            var image = this.get(imageid);
+            if (image) {
+                var count = image.get("count");
+                return count > 0;
+            } else {
+                return false;
+            }
+        },
     });
 
     var PredicatedImagesMap = Backbone.Model.extend({});
@@ -413,8 +423,13 @@ var frontend = (function() {
             this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
             this.type = _.checkarg(options.type).throwNoArg("options.type");
             this.typeview = _.checkarg(options.typeview).throwNoArg("options.typeview");
+            this.displayedImages = _.checkarg(options.displayedImages)
+                .throwNoArg("options.displayedImages");
 
             this.listenTo(this.selection, "change", this._updateSelected);
+            this.listenTo(this.displayedImages, "add", this._updateDisplayed);
+            this.listenTo(this.displayedImages, "remove", this._updateDisplayed);
+            this.listenTo(this.displayedImages, "reset", this._updateDisplayed);
         },
         
         events: {
@@ -423,6 +438,7 @@ var frontend = (function() {
 
         onRender: function() {
             this._updateSelected();
+            this._updateDisplayed();
         },
 
         _updateSelected: function _updateSelected() {
@@ -434,6 +450,20 @@ var frontend = (function() {
                 }
             } else {
                 this.$el.removeClass("selected");
+            }
+        },
+
+        _updateDisplayed: function _updateDisplayed() {
+            if (this.displayedImages.isDisplayed(this.model.id)) {
+                this.$el.addClass("displayed");
+                if (this.$el.siblings(".selected").length == 0) {
+                    var container = this.$el.parents(".contentlist");
+                    if (!isScrolledIntoView(container, this.$el)) {
+                        container.scrollTo(this.$el);
+                    }
+                }
+            } else {
+                this.$el.removeClass("displayed");
             }
         },
 
@@ -552,6 +582,7 @@ var frontend = (function() {
                 router: this.router,
                 selection: this.selection,
                 type: this.model.get('type'),
+                displayedImages : this.displayedImages,
             };
         },
 
@@ -563,6 +594,8 @@ var frontend = (function() {
                 .throwNoArg("options.entitySearch");
             this.predicatedImages = _.checkarg(options.predicatedImages)
                 .throwNoArg("options.predicatedImages");
+            this.displayedImages = _.checkarg(options.displayedImages)
+                .throwNoArg("options.displayedImages");
 
             this.collection = new PredicatedImages({
                 name: "ContentListViewCollection::" + this.model.get('type').id,
@@ -620,6 +653,7 @@ var frontend = (function() {
                 entitySearch: this.entitySearch,
                 entities: this.entities,
                 predicatedImages: this.predicatedImages,
+                displayedImages: this.displayedImages,
             };
         },
 
@@ -642,6 +676,8 @@ var frontend = (function() {
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.predicatedImages = _.checkarg(options.predicatedImages)
                 .throwNoArg("options.predicatedImages");
+            this.displayedImages = _.checkarg(options.displayedImages)
+                .throwNoArg("options.displayedImages");
 
             this.collection = new (Backbone.ViewCollection.extend({
                 computeModelArray: function() {
@@ -2712,7 +2748,6 @@ var frontend = (function() {
         },
 
         onDomRefresh: function onDomRefresh() {
-            console.log("onDomRefresh");
             if (this.$el.filter(":visible").length > 0) {
                 var image = this.imageSelection.get("image");
                 var displayed = this.displayedImage.get("image");
@@ -2927,9 +2962,11 @@ var frontend = (function() {
             console.log("\tRESET:FulltextArticleModel: " + collection.length);
             console.log(collection);
         });
+        /*
         predicatedImages.on("change", function(model) {
             console.log("\t CHANGE:PredicatedImages: " + model.id);
         });
+        */
         var searchView = new GeneralSearchView({
             id: "mainsearch",
             model: searchModel,
@@ -3029,7 +3066,6 @@ var frontend = (function() {
             files: files,
         });
 
-        console.log("Creating MSV");
         var mapSearchView = new MapSearchView({
             router: router,
             entities: entities,
