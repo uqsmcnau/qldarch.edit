@@ -315,12 +315,13 @@ var frontend = (function() {
         _beforeDetach: function() {},
     });
 
-    var GeneralSearchView = ToplevelView.extend({
+    var GeneralSearchView = Backbone.Marionette.ItemView.extend({
         template: "#searchdivTemplate",
 
         initialize: function(options) {
-            ToplevelView.prototype.initialize.call(this, options);
-            this.proper = options.proper;
+            _.bindAll(this);
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
             this.suppressUpdate = false;
 
             this.optionTemplate = _.template($("#searchtypeoptionTemplate").html());
@@ -334,10 +335,7 @@ var frontend = (function() {
             "change select" : "_select",
         },
 
-        render: function() {
-            ToplevelView.prototype.render.call(this);
-
-            this.$el.html(this.template(this.model.toJSON()));
+        onRender: function() {
             this.proper.each(function(entity) {
                 this.$("select").append(this.optionTemplate({
                     label: entity.get1(QA_LABEL),
@@ -3093,7 +3091,7 @@ var frontend = (function() {
             pdfContentView.detach();
             transcriptView.detach();
             mapSearchView.close();
-            searchView.append("#column1");
+            $("#column1").empty().append(searchView.render().$el);
             mapButtonView.append("#column1");
             fulltextView.append("#column1");
             $("#column2").empty().append(contentView.render().$el);
@@ -3106,7 +3104,7 @@ var frontend = (function() {
             entitySearchModel.set(entitySearchModel.deserialize(id));
 
             $("#column123,#column1,#column2,#column23").hide();
-            searchView.detach();
+            searchView.close();
             mapButtonView.detach();
             fulltextView.detach();
             entityView.detach();
@@ -3123,7 +3121,7 @@ var frontend = (function() {
             contentSearchModel.set(contentSearchModel.deserialize(id));
 
             $("#column123,#column2,#column3").hide();
-            searchView.detach();
+            searchView.close();
             mapButtonView.detach();
             fulltextView.detach();
             entityView.detach();
@@ -3140,7 +3138,7 @@ var frontend = (function() {
             contentSearchModel.set(contentSearchModel.deserialize(id));
 
             $("#column123,#column2,#column3").hide();
-            searchView.detach();
+            searchView.close();
             mapButtonView.detach();
             fulltextView.detach();
             entityView.detach();
@@ -3157,7 +3155,7 @@ var frontend = (function() {
             contentSearchModel.set(contentSearchModel.deserialize(id));
 
             $("#column12,#column1,#column2,#column3, #column23").hide();
-            searchView.detach();
+            searchView.close();
             mapButtonView.detach();
             fulltextView.detach();
             entityView.detach();
@@ -3174,7 +3172,7 @@ var frontend = (function() {
             mapSearchModel.set(mapSearchModel.deserialize(state));
 
             $("#column123,#column1,#column2,#column23").hide();
-            searchView.detach();
+            searchView.close();
             mapButtonView.detach();
             fulltextView.detach();
             entityView.detach();
