@@ -375,27 +375,18 @@ var frontend = (function() {
         },
     });
 
-    var MapSearchButtonView = ToplevelView.extend({
+    var MapSearchButtonView = Backbone.Marionette.ItemView.extend({
         className: "mapsearchbutton",
         template: "#mapsearchbuttonTemplate",
 
         initialize: function(options) {
-            ToplevelView.prototype.initialize.call(this, options);
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.model = new Backbone.Model();
         },
         
         events: {
             "click"   : "_click"
         },
-        
-        render: function() {
-            ToplevelView.prototype.render.call(this);
-
-            this.$el.html(this.template());
-            
-            return this;
-        },
-
-        _update: function() { },
         
         _click: function _click() {
             this.router.navigate("mapsearch", { trigger: true, replace: false });
@@ -2033,7 +2024,7 @@ var frontend = (function() {
             this.interviews = _.checkarg(options.interviews).throwNoArg("options.interviews");
             this.articles = _.checkarg(options.articles).throwNoArg("options.articles");
 
-            this.model.on("change:searchtypes", this._update);
+            this.model.on("change", this._update);
 
             if (options.initialize) { options.initialize.call(this); }
         },
@@ -2191,15 +2182,21 @@ var frontend = (function() {
         render: function() {
             var objectId = this.model.get(this.idField);
             if (objectId) {
-                var title = this.objects.get(objectId).get1(this.titleProp);
-                title = title ? title : "Interview not found";
-                this.$el.html(this.template({
-                    title: title,
-                    exerpt: this._labeltext(this.model.get(this.itemField), 110),
-                }));
+                var object = this.objects.get(objectId);
+                if (object) {
+                    var title = object.get1(this.titleProp);
+                    title = title ? title : "Interview not found";
+                    this.$el.html(this.template({
+                        title: title,
+                        exerpt: this._labeltext(this.model.get(this.itemField), 110),
+                    }));
 
-                this.rendered = true;
-                this.visible = true;
+                    this.rendered = true;
+                    this.visible = true;
+                } else {
+                    console.log("Object " + objectId + " not found");
+                    console.log(this.objects);
+                }
             } else {
                 console.log("Non-interview found in results");
                 console.log(this.model);
@@ -2877,7 +2874,10 @@ var frontend = (function() {
                     return JSON_ROOT + "fileSummary?ID=" + encodeURIComponent(ids[0]);
                 } else {
                     var rawids = _.reduce(ids, function(memo, id) {
-                        match = id.match(/http:\/\/qldarch.net\/omeka\/files\/show\/([0-9]*)/);
+                        console.log(id);
+                        console.log(JSON.stringify(id));
+//                        match = id.match(/http:\/\/qldarch.net\/omeka\/files\/show\/([0-9]*)/);
+                        var match = /http:\/\/qldarch.net\/omeka\/files\/show\/([0-9]*)/.exec(id);
                         if (match) {
                             memo.idlist.push(match[1]);
                         } else {
@@ -2951,7 +2951,6 @@ var frontend = (function() {
             console.log("\tRESET:DISPLAYED_ENTITIES: " + collection.length);
             console.log(collection);
         });
-*/
         fulltextTranscriptModel.on("reset", function(collection) {
             console.log("\tRESET:FulltextTranscriptModel: " + collection.length);
             console.log(collection);
@@ -2960,7 +2959,6 @@ var frontend = (function() {
             console.log("\tRESET:FulltextArticleModel: " + collection.length);
             console.log(collection);
         });
-        /*
         predicatedImages.on("change", function(model) {
             console.log("\t CHANGE:PredicatedImages: " + model.id);
         });
@@ -3092,7 +3090,7 @@ var frontend = (function() {
             transcriptView.detach();
             mapSearchView.close();
             $("#column1").empty().append(searchView.render().$el);
-            mapButtonView.append("#column1");
+            $("#column1").append(mapButtonView.render().$el);
             fulltextView.append("#column1");
             $("#column2").empty().append(contentView.render().$el);
             entityView.append("#column3");
@@ -3105,7 +3103,7 @@ var frontend = (function() {
 
             $("#column123,#column1,#column2,#column23").hide();
             searchView.close();
-            mapButtonView.detach();
+            mapButtonView.close();
             fulltextView.detach();
             entityView.detach();
             imageContentView.detach();
@@ -3122,7 +3120,7 @@ var frontend = (function() {
 
             $("#column123,#column2,#column3").hide();
             searchView.close();
-            mapButtonView.detach();
+            mapButtonView.close();
             fulltextView.detach();
             entityView.detach();
             contentpaneView.detach();
@@ -3139,7 +3137,7 @@ var frontend = (function() {
 
             $("#column123,#column2,#column3").hide();
             searchView.close();
-            mapButtonView.detach();
+            mapButtonView.close();
             fulltextView.detach();
             entityView.detach();
             contentpaneView.detach();
@@ -3156,7 +3154,7 @@ var frontend = (function() {
 
             $("#column12,#column1,#column2,#column3, #column23").hide();
             searchView.close();
-            mapButtonView.detach();
+            mapButtonView.close();
             fulltextView.detach();
             entityView.detach();
             contentpaneView.detach();
@@ -3173,7 +3171,7 @@ var frontend = (function() {
 
             $("#column123,#column1,#column2,#column23").hide();
             searchView.close();
-            mapButtonView.detach();
+            mapButtonView.close();
             fulltextView.detach();
             entityView.detach();
             contentpaneView.detach();
