@@ -1788,39 +1788,48 @@ var frontend = (function() {
         },
     });
 
-    var PdfContentView = ToplevelView.extend({
+    var PdfContentViewModel = Backbone.ViewModel.extend({
+        computed_attributes: {
+            contentDescription: function() {
+                var contentSearchModel = this.get('contentSearchModel');
+                var content = this.get('content');
+                var contentId = contentSearchModel.get('selection');
+                var type = contentSearchModel.get('type');
+                if (contentId && type && _.contains(_.keys(content), type)) {
+                    return content[type].get(contentId);
+                } else {
+                    return undefined;
+                }
+            },
+        },
+    });
+
+    var PdfContentView = Backbone.Marionette.extend({
         className: "imagepane",
         template: "#imagecontentTemplate",
 
         initialize: function(options) {
-            options || (options = {});
-            ToplevelView.prototype.initialize.call(this, options);
+            _.bindAll(this);
+            this.contentSearchModel = _.checkarg(options.contentSearchModel)
+                .throwNoArg("options.contentSearchModel");
 
             this.pdfTemplate = _.template($("#pdfTemplate").html());
             this.infoTemplate = _.template($("#infopanelTemplate").html());
             this.detailItemTemplate = _.template($("#entitydetailItemTemplate").html());
             this.content = options.content;
-            this.contentDescription = undefined;
             this.properties = options.properties;
             this.entities = options.entities;
             this.files = options.files;
 
-            this.model.on("change", this._updateContentDescription);
-            _.each(_.values(this.content), function(collection) {
-                collection.on("reset", this._updateContentDescription, this)
-            }, this);
+            this.model = new PdfContentViewModel({
+                source_models: _.extend({
+                    contentSearchModel: this.contentSearchModel,
+                }, content),
+            });
         },
 
         events: {
             "click .imagedisplay"   : "_togglemetadata",
-        },
-
-        render: function() {
-            ToplevelView.prototype.render.call(this);
-
-            this.$el.html(this.template());
-            this._update();
-            return this;
         },
 
         _update: function() {
@@ -1849,14 +1858,22 @@ var frontend = (function() {
             }
         },
 
+        title
+        uri
+
+
         _displayPdf: function(file) {
             document.title = "QldArch: " + this.contentDescription.get1(DCT_TITLE, logmultiple);
+
+            // Make this one view.
 
             this.$(".columntitle").text(this.contentDescription.get1(DCT_TITLE));
             this.$(".imagedisplay").append(this.pdfTemplate({
                 uri: this.contentDescription.id,
             }));
             this.$(".imagedisplay div.info").remove();
+
+            // Make this one view.
 
             PDFJS.disableWorker = true;
             var url = "/omeka/archive/files/" + file.get1(QA_SYSTEM_LOCATION, true, true);
@@ -1878,6 +1895,8 @@ var frontend = (function() {
                     });
                 });
             });
+
+            // Make this one view.
 
             this.$(".propertylist").empty();
             var metadata = _(this.contentDescription.predicates()).map(function(property) {
@@ -1921,28 +1940,6 @@ var frontend = (function() {
                 label: this.properties.get(QA_SYSTEM_LOCATION).get1(QA_LABEL, logmultiple),
                 value: '<a target="_blank" href="' + link + '">' + link + '</a>',
             }));
-        },
-
-        // FIXME: This is slightly ridiculous. I should introduce the ViewModel concept of
-        // derivied for views and then this can be a direct model application.
-        _updateContentDescription: function() {
-            var contentId = this.model.get('selection');
-            var type = this.model.get('type');
-            if (contentId && type && _.contains(_(this.content).keys(), type)) {
-                var newContent = this.content[type].get(contentId);
-                if (newContent) {
-                    if (newContent !== this.contentDescription) {
-                        this.contentDescription = newContent;
-                        this._update();
-                    }
-                } else {
-                    this.contentDescription = undefined;
-                    this._update();
-                }
-            } else {
-                this.contentDescription = undefined;
-                this._update();
-            }
         },
 
         _togglemetadata: function() {
@@ -3053,7 +3050,7 @@ var frontend = (function() {
 
         var pdfContentView = new PdfContentView({
             router: router,
-            model: contentSearchModel,
+            contentSearchModel: contentSearchModel,
             properties: properties,
             content: {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Article": articles,
