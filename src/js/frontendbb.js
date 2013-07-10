@@ -1359,7 +1359,7 @@ var frontend = (function() {
     });
 
     var EntityDetailItemView = Backbone.Marionette.ItemView.extend({
-        template: "#entitydetailItemTemplate",
+        template: "#detailItemTemplate",
     });
         
     var EntityDetailView = Backbone.Marionette.CompositeView.extend({
@@ -1439,7 +1439,7 @@ var frontend = (function() {
 
             this.imageTemplate = _.template($("#imageTemplate").html());
             this.infoTemplate = _.template($("#infopanelTemplate").html());
-            this.detailItemTemplate = _.template($("#entitydetailItemTemplate").html());
+            this.detailItemTemplate = _.template($("#detailItemTemplate").html());
             this.content = options.content;
             this.contentDescription = undefined;
             this.properties = options.properties;
@@ -1788,6 +1788,60 @@ var frontend = (function() {
         },
     });
 
+    var PdfDisplayView = Backbone.Marionette.extend({
+        template: "#pdfTemplate",
+
+        initialize: function(options) {
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
+            this.model = new (Backbone.ViewModel.extend({
+                computed_attributes: {
+                    url: function() {
+                        var files = this.get('files');
+                        if (!files) {
+                            return undefined;
+                        } else {
+                            return "/omeka/archive/files/" +
+                                file.get1(QA_SYSTEM_LOCATION, true, true);
+                        }
+                    },
+                },
+            }))({
+                source_models: files,
+            });
+        },
+
+        render: function() {
+            PDFJS.disableWorker = true;
+            var url = this.model.get('url');
+            if (_.isUndefined(url)) {
+                this.$("canvas").hide();
+                this.$(".info").show();
+
+            } else {
+                this.$(".info").hide();
+                this.$("canvas").show();
+                var that = this;
+                PDFJS.getDocument(url).then(function displayFirstPage(pdf) {
+                    pdf.getPage(1).then(function displayPage(page) {
+                        var scale = 1.0;
+                        var viewport = page.getViewport(scale);
+
+                        // Prepare canvaas using PDF page dimensions.
+                        var canvas = that.$("canvas").get(0);
+                        var context = canvas.getContext("2d");
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+
+                        page.render({
+                            canvasContext: context, 
+                            viewport: viewport,
+                        });
+                    });
+                });
+            }
+        },
+    });
+
     var PdfContentViewModel = Backbone.ViewModel.extend({
         computed_attributes: {
             contentDescription: function() {
@@ -1801,12 +1855,174 @@ var frontend = (function() {
                     return undefined;
                 }
             },
+            contentId: function() {
+                return contentSearchModel.get('selection');
+            },
         },
     });
 
-    var PdfContentView = Backbone.Marionette.extend({
+    var FileModel = Backbone.ViewModel.extend({
+        computed_attributes: {
+            contentId: function() {
+                return this.get('contentId');
+            },
+
+            hasFiles: {
+                contentFiles: function() {
+                    var content = this.get('contentDescription');
+                    var files = this.get('files');
+                    if (content.get1(QA_HAS_FILE)) {
+                        files.getp(content.geta(QA_HAS_FILE),
+                            _.partial(this.fileUpdater, content), this);
+                        return true;
+                    } else {
+                        return false;
+                    }
+                },
+            },
+
+            fileUpdater: function(oldContent, files) {
+                var currContent = this.get('contentDescription');
+                if (oldContent == currContent) {
+                    this.set('files', files);
+                }
+            },
+        },
+    });
+
+    var ContentPropertyViewCollection = Backbone.ViewCollection.extend({
+        computeModelArray: function() {
+            var contentDescription = this.sources['contentDescription'];
+            var properties = this.sources['properties'];
+            var entities = this.sources['entities'];
+
+            if (!contentDescription || !properties || !entities) {
+                return [];
+            }
+
+            var metadata = _(this.contentDescription.predicates()).map(function(predicate) {
+                var propDefn = this.properties.get(predicate);
+                if (!propDefn) {
+                    console.log("Property not found in ontology: " + predicate);
+                    return undefined;
+                } else if (propDefn.get1(QA_DISPLAY, true, true)) {
+                    var value = contentDescription.get1(predicate, logmultiple);
+                    var precedence = propDefn.get1(QA_DISPLAY_PRECEDENCE);
+                    precedence = precedence ? precedence : MAX_PRECEDENCE;
+
+                    if (propDefn.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
+                        if (entities.get(value) && entities.get(value).get1(QA_LABEL)) {
+                            return {
+                                label: propDefn.get1(QA_LABEL, logmultiple),
+                                value: this.entities.get(value).get1(QA_LABEL, logmultiple),
+                                precedence: precedence,
+                                uri: predicate,
+                            };
+                        } else {
+                            console.log("ObjectProperty(" + predicate + ") failed resolve");
+                            console.log(entities.get(value));
+                            return undefined;
+                        }
+                    } else {
+                        return {
+                            label: propDefn.get1(QA_LABEL, logmultiple),
+                            value: value,
+                            precedence: precedence,
+                            uri: predicate,
+                        };
+                    }
+                } else {
+                    return undefined;
+                }
+            }, this);
+
+            var models = _.chain(metadata).compact().sortBy('precedence').map(function(entry) {
+                return new Backbone.Model(entry, { idAttribute: "uri" });
+            }, this).value();
+
+            return models;
+        },
+    });
+
+    var ContentDetailItemView = Backbone.Marionette.ItemView.extend({
+        template: "#detailItemTemplate",
+    });
+        
+    var ContentDetailView = Backbone.Marionette.CompositeView.extend({
+        className: 'entitydetail',
+        template: "#entitydetailTemplate",
+        itemViewContainer: ".propertylist",
+
+        itemView: EntityDetailItemView,
+
+        modelEvents: {
+            "change": "render",
+        },
+
+        initialize: function(options) {
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.entitySearch = _.checkarg(options.entitySearch)
+                .throwNoArg("options.entitySearch");
+
+            // Both the title and the list are dependent on the currently selected entity.
+            // To avoid duplication this selection logic is computed in an intermediary
+            // ViewModel.
+            this.selectedEntity = new (Backbone.ViewModel.extend({
+                computed_attributes: {
+                    entity: function() {
+                        var entityids = this.get('selectedEntities').get('entityids');
+                        return (entityids && entityids.length == 1)
+                            ? this.get('entities').get(entityids[0])
+                            : undefined;
+                    }
+                },
+            }))({
+                source_models: {
+                    entities: this.entities,
+                    selectedEntities: this.entitySearch,
+                },
+            });
+
+            // At some point I will need to generalise the concept of a derived model that
+            // consists of plucking a set of rdf predicates from an rdf description.
+            // For now do it explicitly.
+            // Note: We need 1) the rdf description; 2) the predicate 3) the default value
+            // in the case the rdf description doesn't exist; 4) the default value should
+            // the predicate not be contained in the description.
+            this.model = new (Backbone.ViewModel.extend({
+                computed_attributes: {
+                    title: function() {
+                        var entity = this.get('source_model').get('entity');
+                        var title = entity ? entity.get1(QA_LABEL) : "No selected location";
+                        return title ? title : "No known title";
+                    }
+                },
+            }))({
+                source_model: this.selectedEntity,
+            });
+
+            // This collection contains a prededence ordered list of models containing
+            // label->value pairs.
+            this.collection = new EntityPropertyViewCollection({
+                sources: {
+                    selectedEntity: this.selectedEntity,
+                    properties: this.properties,
+                    entities: this.entities,
+                },
+            });
+
+        },
+    });
+
+    var PdfContentView = Backbone.Marionette.Layout.extend({
         className: "imagepane",
         template: "#imagecontentTemplate",
+
+        regions: { // FIXME: remap these.
+            content: ".content",
+            metadata: ".imagemetadata",
+        },
 
         initialize: function(options) {
             _.bindAll(this);
@@ -1815,7 +2031,7 @@ var frontend = (function() {
 
             this.pdfTemplate = _.template($("#pdfTemplate").html());
             this.infoTemplate = _.template($("#infopanelTemplate").html());
-            this.detailItemTemplate = _.template($("#entitydetailItemTemplate").html());
+            this.detailItemTemplate = _.template($("#detailItemTemplate").html());
             this.content = options.content;
             this.properties = options.properties;
             this.entities = options.entities;
@@ -1830,6 +2046,9 @@ var frontend = (function() {
 
         events: {
             "click .imagedisplay"   : "_togglemetadata",
+        },
+
+        onRender: {
         },
 
         _update: function() {
@@ -1860,7 +2079,6 @@ var frontend = (function() {
 
         title
         uri
-
 
         _displayPdf: function(file) {
             document.title = "QldArch: " + this.contentDescription.get1(DCT_TITLE, logmultiple);
@@ -1897,6 +2115,10 @@ var frontend = (function() {
             });
 
             // Make this one view.
+            //
+            // contentDescription
+            // properties
+            // entities
 
             this.$(".propertylist").empty();
             var metadata = _(this.contentDescription.predicates()).map(function(property) {

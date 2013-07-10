@@ -97,7 +97,7 @@
                 <div class="propertylist"></div>
             </div>
         </script>
-        <script type="text/template" id="entitydetailItemTemplate">
+        <script type="text/template" id="detailItemTemplate">
             <div class="propertypair span-8 last">
                 <span class="propertylabel span-3"><%= label %></span>
                 <span class="propertyvalue span-5 last" type="text"><%= value %></span>
@@ -124,7 +124,8 @@
             <img style="display:none" data-uri="<%= uri %>" src="http://qldarch.net/omeka/archive/files/<%= systemlocation %>" title="<%= label %>"/>
         </script>
         <script type="text/template" id="pdfTemplate">
-            <canvas data-uri="<%= uri %>"></canvas>
+            <canvas></canvas>
+            <div class="info"><%= message %></div>
         </script>
         <script type="text/template" id="infopanelTemplate">
             <div class="info"><%= message %></div>
