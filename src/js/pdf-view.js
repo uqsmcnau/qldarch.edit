@@ -1,14 +1,3 @@
- 
-        _displayAnArticle: function(files) {
-            var file = selectFileByMimeType(files, "application/pdf");
-            if (file) {
-                this._displayPdf(file);
-                return true;
-            } else {
-                return false;
-            }
-        },
-
     var ContentPropertyViewCollection = Backbone.ViewCollection.extend({
         computeModelArray: function() {
             var contentDescription = this.sources['contentDescription'];
@@ -124,19 +113,23 @@
         },
     });
 
-    var FileModel = Backbone.ViewModel.extend({
+    var AsyncFileModel = Backbone.ViewModel.extend({
         computed_attributes: {
             contentId: function() {
-                return this.get('contentId');
+                console.log("contentId: --");
+                console.log(this.get('contentDescription'));
+                return this.get('contentDescription').get('uri');
             },
 
             hasFiles: {
                 contentFiles: function() {
                     var content = this.get('contentDescription');
                     var files = this.get('files');
-                    if (content.get1(QA_HAS_FILE)) {
+                    if (files) {
                         files.getp(content.geta(QA_HAS_FILE),
                             _.partial(this.fileUpdater, content), this);
+                    }
+                    if (content.get1(QA_HAS_FILE)) {
                         return true;
                     } else {
                         return false;
@@ -145,6 +138,9 @@
             },
 
             fileUpdater: function(oldContent, files) {
+                console.log("Updating files in AsyncFileModel oldcontent/files");
+                console.log(oldContent);
+                console.log(files);
                 var currContent = this.get('contentDescription');
                 if (oldContent == currContent) {
                     this.set('files', files);
@@ -156,21 +152,27 @@
     var PdfDisplayViewModel = Backbone.ViewModel.extend({
         computed_attributes: {
             url: function() {
-                var fileCollections = this.get('files');
-                var fileCollection = files ? filecollections[QA_ARTICLE_TYPE] : undefined;
-
-                var contentModel = this.get('contentModel');
-
-
-                var file = fileResource ?
-                    selectFileByMimeType(fileResource, "application/pdf") : undefined;
-
-                if (!file) {
+                var fileModel = this.get('fileModel');
+                if (!fileModel.get('hasFiles')) {
                     return undefined;
-                } else {
+                }
+                var files = fileModel.get('files');
+
+                var fileCollection = files ? files[QA_ARTICLE_TYPE] : undefined;
+
+                var file = fileCollection ?
+                    selectFileByMimeType(fileCollection, "application/pdf") : undefined;
+
+                if (file) {
                     return "/omeka/archive/files/" +
                         file.get1(QA_SYSTEM_LOCATION, true, true);
+                } else {
+                    return undefined;
                 }
+            },
+
+            contentId: function() {
+                return this.get('fileModel').get('contentId');
             },
         },
     });
@@ -180,13 +182,15 @@
 
         initialize: function(options) {
             this.files = _.checkarg(options.files).throwNoArg("options.files");
-            this.contentModel = _.checkarg(options.contentModel)
-                .throwNoArg("options.contentModel");
+            this.contentDescription = _.checkarg(options.contentDescription)
+                .throwNoArg("options.contentDescription");
 
             this.model = new PdfDisplayViewModel({
                 source_models: {
-                    files: this.files,
-                    contentModel: this.contentModel,
+                    fileModel: new AsyncFileModel({
+                        contentDescription: this.contentDescription,
+                        files: this.files,
+                    }),
                 },
             });
         },
@@ -197,7 +201,7 @@
         },
 
         _renderInfoBox: function () {
-            this.$(".info").text("Content not found (" + this.selection.get('selection') + ")");
+            this.$(".info").text("Content not found (" + this.model.get('contentId') + ")");
         },
 
         _renderPdfDisplay: function() {
@@ -233,7 +237,7 @@
     });
 
     // Depends on: contentSearchModel, and various content collections keyed by type.
-    var PdfContentViewModel = Backbone.ViewModel.extend({
+    var ContentDescriptionModel = Backbone.ViewModel.extend({
         computed_attributes: {
             contentDescription: function() {
                 var contentSearchModel = this.get('contentSearchModel');
@@ -244,8 +248,10 @@
 
                 var contentId = contentSearchModel.get('selection');
 
-                if (contentId && type && _.contains(_.keys(content), type)) {
-                    return content[type].get(contentId);
+                // Note: The various content collections should be included in the
+                // source_models keyed by their type URI.
+                if (contentId && type && _(this.source_models).contains(type)) {
+                    return this.source_models[type].get(contentId);
                 } else {
                     return undefined;
                 }
@@ -276,7 +282,7 @@
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.files = _.checkarg(options.files).throwNoArg("options.files");
 
-            this.model = new PdfContentViewModel({
+            this.model = new ContentDescriptionModel({
                 source_models: _.extend({
                     contentSearchModel: this.contentSearchModel,
                 }, content),
@@ -289,7 +295,7 @@
 
         onRender: {
             this.content.show(new PdfDisplayView({
-                contentModel: this.model,
+                contentDescription: this.model,
                 files: this.files,
             }));
 
@@ -300,6 +306,3 @@
             });
         },
     });
-
-
-
