@@ -2749,8 +2749,6 @@ var frontend = (function() {
     var AsyncFileModel = Backbone.ViewModel.extend({
         computed_attributes: {
             contentId: function() {
-                console.log("contentId: --");
-                console.log(this.get('contentDescription'));
                 return this.get('contentDescription').get('uri');
             },
 
@@ -2758,9 +2756,6 @@ var frontend = (function() {
                 var content = this.get('contentDescription');
                 var files = this.get('files');
                 if (files) {
-                    console.log("In AFM");
-                    console.log(files);
-                    console.log(content);
                     files.getp(content.geta(QA_HAS_FILE),
                         _.partial(this.fileUpdater, content), this);
                 }
@@ -2773,9 +2768,6 @@ var frontend = (function() {
         },
 
         fileUpdater: function(oldContent, files) {
-            console.log("Updating files in AsyncFileModel oldcontent/files");
-            console.log(oldContent);
-            console.log(files);
             var currContent = this.get('contentDescription');
             if (oldContent == currContent) {
                 this.set('files', files);
@@ -2787,26 +2779,34 @@ var frontend = (function() {
     var PdfDisplayViewModel = Backbone.ViewModel.extend({
         computed_attributes: {
             url: function() {
+                console.log("PDVM::url");
                 var fileModel = this.get('fileModel');
                 if (!fileModel.get('hasFiles')) {
+                    console.log("url undefined");
                     return undefined;
                 }
                 var files = fileModel.get('files');
+                console.log(files);
 
-                var fileCollection = files ? files[QA_ARTICLE_TYPE] : undefined;
-
-                var file = fileCollection ?
-                    selectFileByMimeType(fileCollection, "application/pdf") : undefined;
+                var file = files ? selectFileByMimeType(files, "application/pdf") : undefined;
+                console.log(file);
 
                 if (file) {
+                    console.log("returning /omeka/archive/files/" +
+                        file.get1(QA_SYSTEM_LOCATION, true, true));
                     return "/omeka/archive/files/" +
                         file.get1(QA_SYSTEM_LOCATION, true, true);
                 } else {
+                    console.log("url returning undefined");
                     return undefined;
                 }
             },
 
             contentId: function() {
+                console.log("PDVM::contentId");
+                console.log(this);
+                console.log(this.get('fileModel'));
+                console.log(this.get('fileModel').get('contentId'));
                 return this.get('fileModel').get('contentId');
             },
         },
@@ -2815,11 +2815,20 @@ var frontend = (function() {
     var PdfDisplayView = Backbone.Marionette.ItemView.extend({
         template: "#pdfTemplate",
 
+        serializeData: function() {
+            return {
+                message: "Content not found (" +
+                    this.model.get('contentId') + " @ " + this.model.get('url') + ")",
+            };
+        },
+
         initialize: function(options) {
             this.files = _.checkarg(options.files).throwNoArg("options.files");
             this.contentDescription = _.checkarg(options.contentDescription)
                 .throwNoArg("options.contentDescription");
 
+            console.log("PDV::init");
+            console.log(this.contentDescription);
             this.model = new PdfDisplayViewModel({
                 source_models: {
                     fileModel: new AsyncFileModel({
@@ -2828,20 +2837,18 @@ var frontend = (function() {
                     }),
                 },
             });
+
+            this.listenTo(this.model, "change", function() {
+                console.log("PDV::model changed" + this.serializeData());
+            });
+            this.listenTo(this.model, "change:url", this.render);
         },
 
         onRender: function() {
-            this._renderInfoBox();
-            this._renderPdfDisplay();
-        },
-
-        _renderInfoBox: function () {
-            this.$(".info").text("Content not found (" + this.model.get('contentId') + ")");
-        },
-
-        _renderPdfDisplay: function() {
+            console.log("PDV::onRender");
             PDFJS.disableWorker = true;
             var url = this.model.get('url');
+            console.log(url);
             if (_.isUndefined(url)) {
                 this.$("canvas").hide();
                 this.$(".info").show();
@@ -2849,6 +2856,7 @@ var frontend = (function() {
             } else {
                 this.$(".info").hide();
                 this.$("canvas").show();
+                this.$("canvas").empty();
                 var that = this;
                 PDFJS.getDocument(url).then(function displayFirstPage(pdf) {
                     pdf.getPage(1).then(function displayPage(page) {
@@ -2885,8 +2893,8 @@ var frontend = (function() {
 
                 // Note: The various content collections should be included in the
                 // source_models keyed by their type URI.
-                if (contentId && type && _(this.source_models).contains(type)) {
-                    return this.source_models[type].get(contentId);
+                if (contentId && type && this.has(type)) {
+                    return this.get(type).get(contentId);
                 } else {
                     return undefined;
                 }
@@ -2929,11 +2937,8 @@ var frontend = (function() {
         },
 
         onRender: function() {
-            console.log(this);
-            console.log(this.content);
-            console.log(this.content.show);
             this.content.show(new PdfDisplayView({
-                contentDescription: this.model,
+                contentDescription: this.model.get("contentDescription"),
                 files: this.files,
             }));
 
@@ -3017,8 +3022,6 @@ var frontend = (function() {
                     return JSON_ROOT + "fileSummary?ID=" + encodeURIComponent(ids[0]);
                 } else {
                     var rawids = _.reduce(ids, function(memo, id) {
-                        console.log(id);
-                        console.log(JSON.stringify(id));
 //                        match = id.match(/http:\/\/qldarch.net\/omeka\/files\/show\/([0-9]*)/);
                         var match = /http:\/\/qldarch.net\/omeka\/files\/show\/([0-9]*)/.exec(id);
                         if (match) {
