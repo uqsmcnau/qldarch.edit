@@ -2704,6 +2704,7 @@ var frontend = (function() {
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
+            this.parentView = _.checkarg(options.parentView).throwNoArg("options.parentView");
 
             this.selectedEntity = new (Backbone.ViewModel.extend({
                 computed_attributes: {
@@ -2742,7 +2743,6 @@ var frontend = (function() {
                     entities: this.entities,
                 },
             });
-
         },
     });
 
@@ -2779,34 +2779,22 @@ var frontend = (function() {
     var PdfDisplayViewModel = Backbone.ViewModel.extend({
         computed_attributes: {
             url: function() {
-                console.log("PDVM::url");
                 var fileModel = this.get('fileModel');
                 if (!fileModel.get('hasFiles')) {
-                    console.log("url undefined");
                     return undefined;
                 }
                 var files = fileModel.get('files');
-                console.log(files);
-
                 var file = files ? selectFileByMimeType(files, "application/pdf") : undefined;
-                console.log(file);
 
                 if (file) {
-                    console.log("returning /omeka/archive/files/" +
-                        file.get1(QA_SYSTEM_LOCATION, true, true));
                     return "/omeka/archive/files/" +
                         file.get1(QA_SYSTEM_LOCATION, true, true);
                 } else {
-                    console.log("url returning undefined");
                     return undefined;
                 }
             },
 
             contentId: function() {
-                console.log("PDVM::contentId");
-                console.log(this);
-                console.log(this.get('fileModel'));
-                console.log(this.get('fileModel').get('contentId'));
                 return this.get('fileModel').get('contentId');
             },
         },
@@ -2822,13 +2810,19 @@ var frontend = (function() {
             };
         },
 
+        modelEvents: {
+            "change:url": "render",
+        },
+
+        triggers: {
+            "click" : "display:toggle",
+        },
+
         initialize: function(options) {
             this.files = _.checkarg(options.files).throwNoArg("options.files");
             this.contentDescription = _.checkarg(options.contentDescription)
                 .throwNoArg("options.contentDescription");
 
-            console.log("PDV::init");
-            console.log(this.contentDescription);
             this.model = new PdfDisplayViewModel({
                 source_models: {
                     fileModel: new AsyncFileModel({
@@ -2837,18 +2831,11 @@ var frontend = (function() {
                     }),
                 },
             });
-
-            this.listenTo(this.model, "change", function() {
-                console.log("PDV::model changed" + this.serializeData());
-            });
-            this.listenTo(this.model, "change:url", this.render);
         },
 
         onRender: function() {
-            console.log("PDV::onRender");
             PDFJS.disableWorker = true;
             var url = this.model.get('url');
-            console.log(url);
             if (_.isUndefined(url)) {
                 this.$("canvas").hide();
                 this.$(".info").show();
@@ -2932,21 +2919,24 @@ var frontend = (function() {
             });
         },
 
-        events: {
-            "click .imagedisplay"   : "_togglemetadata",
-        },
-
         onRender: function() {
-            this.content.show(new PdfDisplayView({
+            var pdv = new PdfDisplayView({
                 contentDescription: this.model.get("contentDescription"),
                 files: this.files,
-            }));
+            });
+            this.listenTo(pdv, "display:toggle", this._onMetadataToggle);
+            this.content.show(pdv);
 
             this.metadata.show(new ContentDetailView({
                 entities: this.entities,
                 properties: this.properties,
                 selection: this.contentSearchModel,
+                parentView: this,
             }));
+        },
+
+        _onMetadataToggle: function() {
+            this.$(".imagemetadata").fadeToggle();
         },
     });
 
