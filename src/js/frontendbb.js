@@ -2633,6 +2633,8 @@ var frontend = (function() {
 
     var ContentPropertyViewCollection = Backbone.ViewCollection.extend({
         computeModelArray: function() {
+            console.log("CPVC::computeModelArray");
+            console.log(this);
             var contentDescription = this.sources['contentDescription'];
             var properties = this.sources['properties'];
             var entities = this.sources['entities'];
@@ -2641,8 +2643,8 @@ var frontend = (function() {
                 return [];
             }
 
-            var metadata = _(this.contentDescription.predicates()).map(function(predicate) {
-                var propDefn = this.properties.get(predicate);
+            var metadata = _(contentDescription.predicates()).map(function(predicate) {
+                var propDefn = properties.get(predicate);
                 if (!propDefn) {
                     console.log("Property not found in ontology: " + predicate);
                     return undefined;
@@ -2655,7 +2657,7 @@ var frontend = (function() {
                         if (entities.get(value) && entities.get(value).get1(QA_LABEL)) {
                             return {
                                 label: propDefn.get1(QA_LABEL, logmultiple),
-                                value: this.entities.get(value).get1(QA_LABEL, logmultiple),
+                                value: entities.get(value).get1(QA_LABEL, logmultiple),
                                 precedence: precedence,
                                 uri: predicate,
                             };
@@ -2689,12 +2691,10 @@ var frontend = (function() {
         template: "#detailItemTemplate",
     });
         
-    var ContentDetailView = Backbone.Marionette.CompositeView.extend({
-        className: 'entitydetail',
-        template: "#entitydetailTemplate",
-        itemViewContainer: ".propertylist",
+    var ContentDetailView = Backbone.Marionette.CollectionView.extend({
+        className: 'propertylist',
 
-        itemView: EntityDetailItemView,
+        itemView: ContentDetailItemView,
 
         modelEvents: {
             "change": "render",
@@ -2703,42 +2703,14 @@ var frontend = (function() {
         initialize: function(options) {
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
-            this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
-            this.parentView = _.checkarg(options.parentView).throwNoArg("options.parentView");
-
-            this.selectedEntity = new (Backbone.ViewModel.extend({
-                computed_attributes: {
-                    entity: function() {
-                        var entityids = this.get('selectedEntities').get('selection');
-                        return (entityids && entityids.length == 1)
-                            ? this.get('entities').get(entityids[0])
-                            : undefined;
-                    }
-                },
-            }))({
-                source_models: {
-                    entities: this.entities,
-                    selectedEntities: this.selection,
-                },
-            });
-
-            this.model = new (Backbone.ViewModel.extend({
-                computed_attributes: {
-                    title: function() {
-                        var entity = this.get('source_model').get('entity');
-                        var title = entity ? entity.get1(QA_LABEL) : "No selected location";
-                        return title ? title : "No known title";
-                    }
-                },
-            }))({
-                source_model: this.selectedEntity,
-            });
+            this.contentDescription = _.checkarg(options.contentDescription)
+                .throwNoArg("options.contentDescription");
 
             // This collection contains a prededence ordered list of models containing
             // label->value pairs.
-            this.collection = new EntityPropertyViewCollection({
+            this.collection = new ContentPropertyViewCollection({
                 sources: {
-                    selectedEntity: this.selectedEntity,
+                    contentDescription: this.contentDescription,
                     properties: this.properties,
                     entities: this.entities,
                 },
@@ -2928,10 +2900,9 @@ var frontend = (function() {
             this.content.show(pdv);
 
             this.metadata.show(new ContentDetailView({
-                entities: this.entities,
+                contentDescription: this.model.get("contentDescription"),
                 properties: this.properties,
-                selection: this.contentSearchModel,
-                parentView: this,
+                entities: this.entities,
             }));
         },
 
