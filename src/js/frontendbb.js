@@ -984,15 +984,6 @@ var frontend = (function() {
             }
         },
 
-        _displayAnArticle: function(files) {
-            var file = selectFileByMimeType(files, "application/pdf");
-            if (file) {
-                this._displayPdf(file);
-                return true;
-            } else {
-                return false;
-            }
-        },
         // FIXME: This is slightly ridiculous. I should introduce the ViewModel concept of
         // derivied for views and then this can be a direct model application.
         _updateContentDescription: function() {
@@ -1359,7 +1350,7 @@ var frontend = (function() {
     });
 
     var EntityDetailItemView = Backbone.Marionette.ItemView.extend({
-        template: "#entitydetailItemTemplate",
+        template: "#detailItemTemplate",
     });
         
     var EntityDetailView = Backbone.Marionette.CompositeView.extend({
@@ -1439,7 +1430,7 @@ var frontend = (function() {
 
             this.imageTemplate = _.template($("#imageTemplate").html());
             this.infoTemplate = _.template($("#infopanelTemplate").html());
-            this.detailItemTemplate = _.template($("#entitydetailItemTemplate").html());
+            this.detailItemTemplate = _.template($("#detailItemTemplate").html());
             this.content = options.content;
             this.contentDescription = undefined;
             this.properties = options.properties;
@@ -1785,168 +1776,6 @@ var frontend = (function() {
 
         toFrontpage: function() {
             this.router.navigate("", { trigger: true, replace: false });
-        },
-    });
-
-    var PdfContentView = ToplevelView.extend({
-        className: "imagepane",
-        template: "#imagecontentTemplate",
-
-        initialize: function(options) {
-            options || (options = {});
-            ToplevelView.prototype.initialize.call(this, options);
-
-            this.pdfTemplate = _.template($("#pdfTemplate").html());
-            this.infoTemplate = _.template($("#infopanelTemplate").html());
-            this.detailItemTemplate = _.template($("#entitydetailItemTemplate").html());
-            this.content = options.content;
-            this.contentDescription = undefined;
-            this.properties = options.properties;
-            this.entities = options.entities;
-            this.files = options.files;
-
-            this.model.on("change", this._updateContentDescription);
-            _.each(_.values(this.content), function(collection) {
-                collection.on("reset", this._updateContentDescription, this)
-            }, this);
-        },
-
-        events: {
-            "click .imagedisplay"   : "_togglemetadata",
-        },
-
-        render: function() {
-            ToplevelView.prototype.render.call(this);
-
-            this.$el.html(this.template());
-            this._update();
-            return this;
-        },
-
-        _update: function() {
-            if (this.attached) {
-                if (this.contentDescription && this.contentDescription.get1(QA_HAS_FILE)) {
-                    this.files.getp(this.contentDescription.geta(QA_HAS_FILE),
-                            this._displayAnArticle, this);
-                } else {
-                    this.$(".columntitle").text("Pdf not found");
-                    this.$(".imagedisplay div.info").remove();
-                    this.$(".imagedisplay canvas").remove();
-                    this.$(".imagedisplay").prepend(this.infoTemplate({
-                        message: "Content not found (" + this.model.get('selection') + ")",
-                    }));
-                }
-            }
-        },
-
-        _displayAnArticle: function(files) {
-            var file = selectFileByMimeType(files, "application/pdf");
-            if (file) {
-                this._displayPdf(file);
-                return true;
-            } else {
-                return false;
-            }
-        },
-
-        _displayPdf: function(file) {
-            document.title = "QldArch: " + this.contentDescription.get1(DCT_TITLE, logmultiple);
-
-            this.$(".columntitle").text(this.contentDescription.get1(DCT_TITLE));
-            this.$(".imagedisplay").append(this.pdfTemplate({
-                uri: this.contentDescription.id,
-            }));
-            this.$(".imagedisplay div.info").remove();
-
-            PDFJS.disableWorker = true;
-            var url = "/omeka/archive/files/" + file.get1(QA_SYSTEM_LOCATION, true, true);
-            var that = this;
-            PDFJS.getDocument(url).then(function displayFirstPage(pdf) {
-                pdf.getPage(1).then(function displayPage(page) {
-                    var scale = 1.0;
-                    var viewport = page.getViewport(scale);
-
-                    // Prepare canvaas using PDF page dimensions.
-                    var canvas = that.$("canvas").get(0);
-                    var context = canvas.getContext("2d");
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-
-                    page.render({
-                        canvasContext: context, 
-                        viewport: viewport,
-                    });
-                });
-            });
-
-            this.$(".propertylist").empty();
-            var metadata = _(this.contentDescription.predicates()).map(function(property) {
-                var propMeta = this.properties.get(property);
-                if (!propMeta) {
-                    console.log("Property not found in ontology: " + property);
-                } else if (propMeta.get1(QA_DISPLAY, true, true)) {
-                    var value = this.contentDescription.get1(property, logmultiple);
-                    var precedence = propMeta.get1(QA_DISPLAY_PRECEDENCE);
-                    precedence = precedence ? precedence : MAX_PRECEDENCE;
-
-                    if (propMeta.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
-                        if (this.entities.get(value) &&
-                                this.entities.get(value).get1(QA_LABEL)) {
-                            return {
-                                label: propMeta.get1(QA_LABEL, logmultiple),
-                                value: this.entities.get(value).get1(QA_LABEL, logmultiple),
-                                precedence: precedence,
-                            };
-                        } else {
-                            console.log("ObjectProperty(" + property + ") failed resolve");
-                            console.log(this.entities.get(value));
-                        }
-                    } else {
-                        return {
-                            label: propMeta.get1(QA_LABEL, logmultiple),
-                            value: value,
-                            precedence: precedence,
-                        };
-                    }
-                }
-            }, this);
-
-            _.chain(metadata).filter(_.identity).sortBy('precedence').each(function(entry) {
-                this.$(".propertylist").append(this.detailItemTemplate(entry));
-            }, this);
-
-            var link = '/omeka/archive/files/' + file.get(QA_SYSTEM_LOCATION);
-
-            this.$(".propertylist").append(this.detailItemTemplate({
-                label: this.properties.get(QA_SYSTEM_LOCATION).get1(QA_LABEL, logmultiple),
-                value: '<a target="_blank" href="' + link + '">' + link + '</a>',
-            }));
-        },
-
-        // FIXME: This is slightly ridiculous. I should introduce the ViewModel concept of
-        // derivied for views and then this can be a direct model application.
-        _updateContentDescription: function() {
-            var contentId = this.model.get('selection');
-            var type = this.model.get('type');
-            if (contentId && type && _.contains(_(this.content).keys(), type)) {
-                var newContent = this.content[type].get(contentId);
-                if (newContent) {
-                    if (newContent !== this.contentDescription) {
-                        this.contentDescription = newContent;
-                        this._update();
-                    }
-                } else {
-                    this.contentDescription = undefined;
-                    this._update();
-                }
-            } else {
-                this.contentDescription = undefined;
-                this._update();
-            }
-        },
-
-        _togglemetadata: function() {
-            $(".imagemetadata").fadeToggle();
         },
     });
 
@@ -2802,6 +2631,286 @@ var frontend = (function() {
         },
     });
 
+    var ContentPropertyViewCollection = Backbone.ViewCollection.extend({
+        computeModelArray: function() {
+            console.log("CPVC::computeModelArray");
+            console.log(this);
+            var contentDescription = this.sources['contentDescription'];
+            var properties = this.sources['properties'];
+            var entities = this.sources['entities'];
+
+            if (!contentDescription || !properties || !entities) {
+                return [];
+            }
+
+            var metadata = _(contentDescription.predicates()).map(function(predicate) {
+                var propDefn = properties.get(predicate);
+                if (!propDefn) {
+                    console.log("Property not found in ontology: " + predicate);
+                    return undefined;
+                } else if (propDefn.get1(QA_DISPLAY, true, true)) {
+                    var value = contentDescription.get1(predicate, logmultiple);
+                    var precedence = propDefn.get1(QA_DISPLAY_PRECEDENCE);
+                    precedence = precedence ? precedence : MAX_PRECEDENCE;
+
+                    if (propDefn.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
+                        if (entities.get(value) && entities.get(value).get1(QA_LABEL)) {
+                            return {
+                                label: propDefn.get1(QA_LABEL, logmultiple),
+                                value: entities.get(value).get1(QA_LABEL, logmultiple),
+                                precedence: precedence,
+                                uri: predicate,
+                            };
+                        } else {
+                            console.log("ObjectProperty(" + predicate + ") failed resolve");
+                            console.log(entities.get(value));
+                            return undefined;
+                        }
+                    } else {
+                        return {
+                            label: propDefn.get1(QA_LABEL, logmultiple),
+                            value: value,
+                            precedence: precedence,
+                            uri: predicate,
+                        };
+                    }
+                } else {
+                    return undefined;
+                }
+            }, this);
+
+            var models = _.chain(metadata).compact().sortBy('precedence').map(function(entry) {
+                return new Backbone.Model(entry, { idAttribute: "uri" });
+            }, this).value();
+
+            return models;
+        },
+    });
+
+    var ContentDetailItemView = Backbone.Marionette.ItemView.extend({
+        template: "#detailItemTemplate",
+    });
+        
+    var ContentDetailView = Backbone.Marionette.CollectionView.extend({
+        className: 'propertylist',
+
+        itemView: ContentDetailItemView,
+
+        modelEvents: {
+            "change": "render",
+        },
+
+        initialize: function(options) {
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.contentDescription = _.checkarg(options.contentDescription)
+                .throwNoArg("options.contentDescription");
+
+            // This collection contains a prededence ordered list of models containing
+            // label->value pairs.
+            this.collection = new ContentPropertyViewCollection({
+                sources: {
+                    contentDescription: this.contentDescription,
+                    properties: this.properties,
+                    entities: this.entities,
+                },
+            });
+        },
+    });
+
+    var AsyncFileModel = Backbone.ViewModel.extend({
+        computed_attributes: {
+            contentId: function() {
+                return this.get('contentDescription').get('uri');
+            },
+
+            hasFiles: function() {
+                var content = this.get('contentDescription');
+                var files = this.get('files');
+                if (files) {
+                    files.getp(content.geta(QA_HAS_FILE),
+                        _.partial(this.fileUpdater, content), this);
+                }
+                if (content.get1(QA_HAS_FILE)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            },
+        },
+
+        fileUpdater: function(oldContent, files) {
+            var currContent = this.get('contentDescription');
+            if (oldContent == currContent) {
+                this.set('files', files);
+                this.set('_cd', currContent);
+            }
+        },
+    });
+
+    var PdfDisplayViewModel = Backbone.ViewModel.extend({
+        computed_attributes: {
+            url: function() {
+                var fileModel = this.get('fileModel');
+                if (!fileModel.get('hasFiles')) {
+                    return undefined;
+                }
+                var files = fileModel.get('files');
+                var file = files ? selectFileByMimeType(files, "application/pdf") : undefined;
+
+                if (file) {
+                    return "/omeka/archive/files/" +
+                        file.get1(QA_SYSTEM_LOCATION, true, true);
+                } else {
+                    return undefined;
+                }
+            },
+
+            contentId: function() {
+                return this.get('fileModel').get('contentId');
+            },
+        },
+    });
+
+    var PdfDisplayView = Backbone.Marionette.ItemView.extend({
+        template: "#pdfTemplate",
+
+        serializeData: function() {
+            return {
+                message: "Content not found (" +
+                    this.model.get('contentId') + " @ " + this.model.get('url') + ")",
+            };
+        },
+
+        modelEvents: {
+            "change:url": "render",
+        },
+
+        triggers: {
+            "click" : "display:toggle",
+        },
+
+        initialize: function(options) {
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
+            this.contentDescription = _.checkarg(options.contentDescription)
+                .throwNoArg("options.contentDescription");
+
+            this.model = new PdfDisplayViewModel({
+                source_models: {
+                    fileModel: new AsyncFileModel({
+                        contentDescription: this.contentDescription,
+                        files: this.files,
+                    }),
+                },
+            });
+        },
+
+        onRender: function() {
+            PDFJS.disableWorker = true;
+            var url = this.model.get('url');
+            if (_.isUndefined(url)) {
+                this.$("canvas").hide();
+                this.$(".info").show();
+
+            } else {
+                this.$(".info").hide();
+                this.$("canvas").show();
+                this.$("canvas").empty();
+                var that = this;
+                PDFJS.getDocument(url).then(function displayFirstPage(pdf) {
+                    pdf.getPage(1).then(function displayPage(page) {
+                        var scale = 1.0;
+                        var viewport = page.getViewport(scale);
+
+                        // Prepare canvaas using PDF page dimensions.
+                        var canvas = that.$("canvas").get(0);
+                        var context = canvas.getContext("2d");
+                        canvas.height = viewport.height;
+                        canvas.width = viewport.width;
+
+                        page.render({
+                            canvasContext: context, 
+                            viewport: viewport,
+                        });
+                    });
+                });
+            }
+        },
+    });
+
+    // Depends on: contentSearchModel, and various content collections keyed by type.
+    var ContentDescriptionModel = Backbone.ViewModel.extend({
+        computed_attributes: {
+            contentDescription: function() {
+                var contentSearchModel = this.get('contentSearchModel');
+                var type = contentSearchModel.get('type');
+                if (type !== QA_ARTICLE_TYPE) {
+                    return undefined;
+                }
+
+                var contentId = contentSearchModel.get('selection');
+
+                // Note: The various content collections should be included in the
+                // source_models keyed by their type URI.
+                if (contentId && type && this.has(type)) {
+                    return this.get(type).get(contentId);
+                } else {
+                    return undefined;
+                }
+            },
+
+            contentId: function() {
+                return this.get('contentSearchModel').get('selection');
+            },
+        },
+    });
+
+    var PdfContentView = Backbone.Marionette.Layout.extend({
+        className: "imagepane",
+        template: "#imagecontentTemplate",
+
+        regions: { // FIXME: remap these.
+            content: ".content",
+            metadata: ".imagemetadata",
+        },
+
+        initialize: function(options) {
+            _.bindAll(this);
+
+            this.contentSearchModel = _.checkarg(options.contentSearchModel)
+                .throwNoArg("options.contentSearchModel");
+            this.content = _.checkarg(options.content).throwNoArg("options.content");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
+
+            this.model = new ContentDescriptionModel({
+                source_models: _.extend({
+                    contentSearchModel: this.contentSearchModel,
+                }, this.content),
+            });
+        },
+
+        onRender: function() {
+            var pdv = new PdfDisplayView({
+                contentDescription: this.model.get("contentDescription"),
+                files: this.files,
+            });
+            this.listenTo(pdv, "display:toggle", this._onMetadataToggle);
+            this.content.show(pdv);
+
+            this.metadata.show(new ContentDetailView({
+                contentDescription: this.model.get("contentDescription"),
+                properties: this.properties,
+                entities: this.entities,
+            }));
+        },
+
+        _onMetadataToggle: function() {
+            this.$(".imagemetadata").fadeToggle();
+        },
+    });
+
     function frontendOnReady() {
         var router = new QldarchRouter();
 
@@ -2874,8 +2983,6 @@ var frontend = (function() {
                     return JSON_ROOT + "fileSummary?ID=" + encodeURIComponent(ids[0]);
                 } else {
                     var rawids = _.reduce(ids, function(memo, id) {
-                        console.log(id);
-                        console.log(JSON.stringify(id));
 //                        match = id.match(/http:\/\/qldarch.net\/omeka\/files\/show\/([0-9]*)/);
                         var match = /http:\/\/qldarch.net\/omeka\/files\/show\/([0-9]*)/.exec(id);
                         if (match) {
@@ -3053,7 +3160,7 @@ var frontend = (function() {
 
         var pdfContentView = new PdfContentView({
             router: router,
-            model: contentSearchModel,
+            contentSearchModel: contentSearchModel,
             properties: properties,
             content: {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Article": articles,
@@ -3086,7 +3193,7 @@ var frontend = (function() {
             $("#column123,#column12,#column23").hide();
             contentpaneView.detach();
             imageContentView.detach();
-            pdfContentView.detach();
+            pdfContentView.close();
             transcriptView.detach();
             mapSearchView.close();
             $("#column1").empty().append(searchView.render().$el);
@@ -3107,7 +3214,7 @@ var frontend = (function() {
             fulltextView.detach();
             entityView.detach();
             imageContentView.detach();
-            pdfContentView.detach();
+            pdfContentView.close();
             transcriptView.detach();
             mapSearchView.close();
             contentpaneView.attach("#column12");
@@ -3128,7 +3235,7 @@ var frontend = (function() {
             mapSearchView.close();
             $("#column1").empty().append(contentView.render().$el);
             imageContentView.append("#column23");
-            pdfContentView.detach();
+            pdfContentView.close();
             $("#column1,#column23").show();
         }, contentSearchModel);
 
@@ -3145,7 +3252,7 @@ var frontend = (function() {
             mapSearchView.close();
             imageContentView.detach();
             $("#column1").empty().append(contentView.render().$el);
-            pdfContentView.append("#column23");
+            $("#column23").empty().append(pdfContentView.render().$el);
             $("#column1,#column23").show();
         }, contentSearchModel);
 
@@ -3160,7 +3267,7 @@ var frontend = (function() {
             contentpaneView.detach();
             contentView.close();
             imageContentView.detach();
-            pdfContentView.detach();
+            pdfContentView.close();
             mapSearchView.close();
             transcriptView.append("#column123");
             $("#column123").show();
@@ -3177,7 +3284,7 @@ var frontend = (function() {
             contentpaneView.detach();
             transcriptView.detach();
             imageContentView.detach();
-            pdfContentView.detach();
+            pdfContentView.close();
             $("#column12").empty().append(mapSearchView.render().$el);
             $("#column3").empty().append(contentView.render().$el);
             $("#column12,#column3").show();
