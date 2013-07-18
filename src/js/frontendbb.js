@@ -85,6 +85,7 @@ var frontend = (function() {
     var GEO_LAT = "http://www.w3.org/2003/01/geo/wgs84_pos#lat";
     var GEO_LONG = "http://www.w3.org/2003/01/geo/wgs84_pos#long";
 
+    var SPINNER_GIF = "img/spinner.gif";
     var MAX_PRECEDENCE = 1000000;
     var successDelay = 2000;
     var logmultiple = true;
@@ -1420,159 +1421,104 @@ var frontend = (function() {
         },
     });
 
-    var ImageContentView = ToplevelView.extend({
+    // We could collapse this with PdfContentView by customising the .content
+    // region with a mimetype selected view.
+    var ImageContentView = Backbone.Marionette.Layout.extend({
         className: "imagepane",
         template: "#imagecontentTemplate",
 
+        regions: {
+            content: ".content",
+            metadata: ".imagemetadata",
+        },
+
         initialize: function(options) {
-            options || (options = {});
-            ToplevelView.prototype.initialize.call(this, options);
+            this.contentSearchModel = _.checkarg(options.contentSearchModel)
+                .throwNoArg("options.contentSearchModel");
+            this.content = _.checkarg(options.content).throwNoArg("options.content");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
 
-            this.imageTemplate = _.template($("#imageTemplate").html());
-            this.infoTemplate = _.template($("#infopanelTemplate").html());
-            this.detailItemTemplate = _.template($("#detailItemTemplate").html());
-            this.content = options.content;
-            this.contentDescription = undefined;
-            this.properties = options.properties;
-            this.entities = options.entities;
-            this.files = options.files;
-
-            this.model.on("change", this._updateContentDescription);
-            _.each(_.values(this.content), function(collection) {
-                collection.on("reset", this._updateContentDescription, this)
-            }, this);
-        },
-
-        events: {
-            "click .imagedisplay"   : "_togglemetadata",
-        },
-
-        render: function() {
-            ToplevelView.prototype.render.call(this);
-
-            this.$el.html(this.template());
-            this._update();
-            return this;
-        },
-
-        _update: function() {
-            if (this.attached) {
-                if (this.contentDescription && this.contentDescription.geta(QA_HAS_FILE)) {
-                    this.files.getp(this.contentDescription.geta(QA_HAS_FILE),
-                        this._displayImages, this);
-                } else {
-                    this.$(".columntitle").text("Unknown Image");
-                    this.$(".imagedisplay div.info").remove();
-                    this.$(".imagedisplay").prepend(this.infoTemplate({
-                        message: "Content not found (" + this.model.get('selection') + ")",
-                    }));
-                }
-            }
-        },
-
-        _displayImages: function(files) {
-            var file = selectFileByMimeType(files, "image/jpeg");
-            if (file) {
-                this._displayImage(file);
-                return true;
-            } else {
-                return false;
-            }
-        },
-
-        _displayImage: function(file) {
-            if (this.$(".imagedisplay img").length != 0 &&
-                    this.contentDescription.id === this.$(".imagedisplay img").data("uri")) {
-                return;
-            }
-
-            document.title = "QldArch: " + this.contentDescription.get1(DCT_TITLE, logmultiple);
-
-            this.$(".imagedisplay").append(this.imageTemplate({
-                label: this.contentDescription.get1(DCT_TITLE),
-                systemlocation: file.get1(QA_SYSTEM_LOCATION, true, true),
-                uri: this.contentDescription.id,
-            }));
-
-            var that = this;
-            this.$(".imagedisplay div.info").remove();
-            this.$(".imagedisplay").children("img:first")
-                .fadeOut("slow", function() {
-                    that.$(".columntitle").text(that.contentDescription.get1(DCT_TITLE));
-                    that.$(".imagedisplay").children("img:last")
-                        .fadeIn("slow", function() {
-                            $(this).siblings("img").remove();
-                    });
+            this.model = new ContentDescriptionModel({
+                types: _.keys(this.content),
+                source_models: _.extend({
+                    contentSearchModel: this.contentSearchModel,
+                }, this.content),
             });
-            this.$(".propertylist").empty();
+        },
 
-            var metadata = _(this.contentDescription.predicates()).map(function(property) {
-                var propMeta = this.properties.get(property);
-                if (!propMeta) {
-                    console.log("Property not found in ontology: " + property);
-                } else if (propMeta.get1(QA_DISPLAY, true, true)) {
-                    var value = this.contentDescription.get1(property, logmultiple);
-                    var precedence = propMeta.get1(QA_DISPLAY_PRECEDENCE);
-                    precedence = precedence ? precedence : MAX_PRECEDENCE;
+        onRender: function() {
+            console.log("ICV::onRender");
+            console.log(this.model.get('contentDescription'));
+            var pdv = new ImageDisplayView({
+                contentDescription: this.model.get("contentDescription"),
+                files: this.files,
+            });
+            this.listenTo(pdv, "display:toggle", this._onMetadataToggle);
+            this.content.show(pdv);
 
-                    if (propMeta.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
-                        if (this.entities.get(value) &&
-                                this.entities.get(value).get1(QA_LABEL)) {
-                            return {
-                                label: propMeta.get1(QA_LABEL, logmultiple),
-                                value: this.entities.get(value).get1(QA_LABEL, logmultiple),
-                                precedence: precedence,
-                            };
-                        } else {
-                            console.log("ObjectProperty(" + property + ") failed resolve");
-                            console.log(this.entities.get(value));
-                        }
-                    } else {
-                        return {
-                            label: propMeta.get1(QA_LABEL, logmultiple),
-                            value: value,
-                            precedence: precedence,
-                        };
-                    }
-                }
-            }, this);
-
-            _.chain(metadata).filter(_.identity).sortBy('precedence').each(function(entry) {
-                this.$(".propertylist").append(this.detailItemTemplate(entry));
-            }, this);
-
-            var link = '/omeka/archive/files/' + file.get(QA_SYSTEM_LOCATION);
-
-            this.$(".propertylist").append(this.detailItemTemplate({
-                label: this.properties.get(QA_SYSTEM_LOCATION).get1(QA_LABEL, logmultiple),
-                value: '<a target="_blank" href="' + link + '">' + link + '</a>',
+            this.metadata.show(new ContentDetailView({
+                contentDescription: this.model.get("contentDescription"),
+                properties: this.properties,
+                entities: this.entities,
             }));
         },
 
-        // FIXME: This is slightly ridiculous. I should introduce the ViewModel concept of
-        // derivied for views and then this can be a direct model application.
-        _updateContentDescription: function() {
-            var contentId = this.model.get('selection');
-            var type = this.model.get('type');
-            if (contentId && type && _.contains(_(this.content).keys(), type)) {
-                var newContent = this.content[type].get(contentId);
-                if (newContent) {
-                    if (newContent !== this.contentDescription) {
-                        this.contentDescription = newContent;
-                        this._update();
-                    }
-                } else {
-                    this.contentDescription = undefined;
-                    this._update();
-                }
-            } else {
-                this.contentDescription = undefined;
-                this._update();
-            }
+        _onMetadataToggle: function() {
+            this.$(".imagemetadata").fadeToggle();
+        },
+    });
+
+    var ImageDisplayView = Backbone.Marionette.ItemView.extend({
+        template: "#imagedisplayTemplate",
+
+        serializeData: function() {
+            console.log("IDV::serializeData");
+            console.log(this.model.get('url'));
+            return {
+                message: "Content not found (" +
+                    this.model.get('contentId') + " @ " + this.model.get('url') + ")",
+                systemlocation: this.model.get('url'),
+                label: this.model.get('title'),
+            };
         },
 
-        _togglemetadata: function() {
-            $(".imagemetadata").fadeToggle();
+        modelEvents: {
+            "change:url": "render",
+        },
+
+        triggers: {
+            "click" : "display:toggle",
+        },
+
+        initialize: function(options) {
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
+            this.contentDescription = _.checkarg(options.contentDescription)
+                .throwNoArg("options.contentDescription");
+
+            this.model = new ContentDisplayViewModel({
+                mimetype: "image/jpeg",
+                source_models: {
+                    contentDescription: this.contentDescription,
+                    fileModel: new AsyncFileModel({
+                        contentDescription: this.contentDescription,
+                        files: this.files,
+                    }),
+                },
+            });
+        },
+
+        onRender: function() {
+            var url = this.model.get('url');
+            if (_.isUndefined(url)) {
+                this.$(".image").fadeOut();
+                this.$(".info").fadeIn();
+
+            } else {
+                this.$(".info").fadeOut();
+                this.$(".image").fadeIn();
+            }
         },
     });
 
@@ -2748,21 +2694,24 @@ var frontend = (function() {
         },
     });
 
-    var PdfDisplayViewModel = Backbone.ViewModel.extend({
+    var ContentDisplayViewModel = Backbone.ViewModel.extend({
         computed_attributes: {
+            title: function() {
+                this.get('contentDescription').get(DCT_TITLE);
+            },
             url: function() {
                 var fileModel = this.get('fileModel');
                 if (!fileModel.get('hasFiles')) {
-                    return undefined;
+                    return SPINNER_GIF;
                 }
                 var files = fileModel.get('files');
-                var file = files ? selectFileByMimeType(files, "application/pdf") : undefined;
+                var file = files ? selectFileByMimeType(files, this.get('mimetype')) : undefined;
 
                 if (file) {
                     return "/omeka/archive/files/" +
                         file.get1(QA_SYSTEM_LOCATION, true, true);
                 } else {
-                    return undefined;
+                    return SPINNER_GIF;
                 }
             },
 
@@ -2795,8 +2744,10 @@ var frontend = (function() {
             this.contentDescription = _.checkarg(options.contentDescription)
                 .throwNoArg("options.contentDescription");
 
-            this.model = new PdfDisplayViewModel({
+            this.model = new ContentDisplayViewModel({
+                mimetype: "application/pdf",
                 source_models: {
+                    contentDescription: this.contentDescription,
                     fileModel: new AsyncFileModel({
                         contentDescription: this.contentDescription,
                         files: this.files,
@@ -2844,7 +2795,8 @@ var frontend = (function() {
             contentDescription: function() {
                 var contentSearchModel = this.get('contentSearchModel');
                 var type = contentSearchModel.get('type');
-                if (type !== QA_ARTICLE_TYPE) {
+                var validTypes = this.get('types');
+                if (!_.contains(validTypes, type)) {
                     return undefined;
                 }
 
@@ -2885,6 +2837,7 @@ var frontend = (function() {
             this.files = _.checkarg(options.files).throwNoArg("options.files");
 
             this.model = new ContentDescriptionModel({
+                types: _.keys(this.content),
                 source_models: _.extend({
                     contentSearchModel: this.contentSearchModel,
                 }, this.content),
@@ -3137,7 +3090,7 @@ var frontend = (function() {
 
         var imageContentView = new ImageContentView({
             router: router,
-            model: contentSearchModel,
+            contentSearchModel: contentSearchModel,
             properties: properties,
             content: {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": photographs,
@@ -3192,7 +3145,7 @@ var frontend = (function() {
 
             $("#column123,#column12,#column23").hide();
             contentpaneView.detach();
-            imageContentView.detach();
+            imageContentView.close();
             pdfContentView.close();
             transcriptView.detach();
             mapSearchView.close();
@@ -3213,7 +3166,7 @@ var frontend = (function() {
             mapButtonView.close();
             fulltextView.detach();
             entityView.detach();
-            imageContentView.detach();
+            imageContentView.close();
             pdfContentView.close();
             transcriptView.detach();
             mapSearchView.close();
@@ -3234,7 +3187,7 @@ var frontend = (function() {
             transcriptView.detach();
             mapSearchView.close();
             $("#column1").empty().append(contentView.render().$el);
-            imageContentView.append("#column23");
+            $("#column23").empty().append(imageContentView.render().$el);
             pdfContentView.close();
             $("#column1,#column23").show();
         }, contentSearchModel);
@@ -3250,7 +3203,7 @@ var frontend = (function() {
             contentpaneView.detach();
             transcriptView.detach();
             mapSearchView.close();
-            imageContentView.detach();
+            imageContentView.close();
             $("#column1").empty().append(contentView.render().$el);
             $("#column23").empty().append(pdfContentView.render().$el);
             $("#column1,#column23").show();
@@ -3266,7 +3219,7 @@ var frontend = (function() {
             entityView.detach();
             contentpaneView.detach();
             contentView.close();
-            imageContentView.detach();
+            imageContentView.close();
             pdfContentView.close();
             mapSearchView.close();
             transcriptView.append("#column123");
@@ -3283,7 +3236,7 @@ var frontend = (function() {
             entityView.detach();
             contentpaneView.detach();
             transcriptView.detach();
-            imageContentView.detach();
+            imageContentView.close();
             pdfContentView.close();
             $("#column12").empty().append(mapSearchView.render().$el);
             $("#column3").empty().append(contentView.render().$el);

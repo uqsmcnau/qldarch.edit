@@ -121,7 +121,11 @@
             </div>
         </script>
         <script type="text/template" id="imageTemplate">
-            <img style="display:none" data-uri="<%= uri %>" src="http://qldarch.net/omeka/archive/files/<%= systemlocation %>" title="<%= label %>"/>
+            <img style="display:none" src="http://qldarch.net/omeka/archive/files/<%= systemlocation %>" title="<%= label %>"/>
+        </script>
+        <script type="text/template" id="imagedisplayTemplate">
+            <img style="display:none" class="image" src="<%= systemlocation %>" title="<%= label %>"/>
+            <div style="display:none" class="info"><%= message %></div>
         </script>
         <script type="text/template" id="pdfTemplate">
             <canvas></canvas>
