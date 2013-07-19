@@ -1446,11 +1446,17 @@ var frontend = (function() {
                     contentSearchModel: this.contentSearchModel,
                 }, this.content),
             });
+            // FIXME: Replace with a listenTo when this is no longer a toplevel view.
+            this.model.on("change:contentId", _.bind(this.onModelChanged, this));
         },
 
+        onModelChanged: function() {
+            if (!this.isClosed && this.model.get("contentDescription")) {
+                this.render();
+            }
+        },
+        
         onRender: function() {
-            console.log("ICV::onRender");
-            console.log(this.model.get('contentDescription'));
             var pdv = new ImageDisplayView({
                 contentDescription: this.model.get("contentDescription"),
                 files: this.files,
@@ -1474,8 +1480,6 @@ var frontend = (function() {
         template: "#imagedisplayTemplate",
 
         serializeData: function() {
-            console.log("IDV::serializeData");
-            console.log(this.model.get('url'));
             return {
                 message: "Content not found (" +
                     this.model.get('contentId') + " @ " + this.model.get('url') + ")",
@@ -1503,7 +1507,7 @@ var frontend = (function() {
                     contentDescription: this.contentDescription,
                     fileModel: new AsyncFileModel({
                         contentDescription: this.contentDescription,
-                        files: this.files,
+                        fileDetails: this.files,
                     }),
                 },
             });
@@ -2579,8 +2583,6 @@ var frontend = (function() {
 
     var ContentPropertyViewCollection = Backbone.ViewCollection.extend({
         computeModelArray: function() {
-            console.log("CPVC::computeModelArray");
-            console.log(this);
             var contentDescription = this.sources['contentDescription'];
             var properties = this.sources['properties'];
             var entities = this.sources['entities'];
@@ -2665,6 +2667,10 @@ var frontend = (function() {
     });
 
     var AsyncFileModel = Backbone.ViewModel.extend({
+        defaults: {
+            files: [],
+        },
+
         computed_attributes: {
             contentId: function() {
                 return this.get('contentDescription').get('uri');
@@ -2672,9 +2678,9 @@ var frontend = (function() {
 
             hasFiles: function() {
                 var content = this.get('contentDescription');
-                var files = this.get('files');
-                if (files) {
-                    files.getp(content.geta(QA_HAS_FILE),
+                var fileDetails = this.get('fileDetails');
+                if (fileDetails) {
+                    fileDetails.getp(content.geta(QA_HAS_FILE),
                         _.partial(this.fileUpdater, content), this);
                 }
                 if (content.get1(QA_HAS_FILE)) {
@@ -2750,7 +2756,7 @@ var frontend = (function() {
                     contentDescription: this.contentDescription,
                     fileModel: new AsyncFileModel({
                         contentDescription: this.contentDescription,
-                        files: this.files,
+                        fileDetails: this.files,
                     }),
                 },
             });
