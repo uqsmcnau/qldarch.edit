@@ -2870,6 +2870,53 @@ var frontend = (function() {
         },
     });
 
+    var LoginModel = Backbone.Model.extend({
+        url: JSON_ROOT + "login",
+        defaults: {
+            user: undefined,
+        },
+    });
+
+    var LoginUserView = Backbone.Marionette.ItemView.extend({
+        className: "loginattempt"
+        template: "#loginTemplate",
+
+        triggers: {
+            "click .loginbutton": "attempt:login",
+            "click .cancelbutton": "cancel:login",
+        },
+
+        initialize: function(options) {
+            this.model = _.checkarg(options.loginModel).throwNoArg("options.loginModel");
+        }
+
+        onAttemptLogin: function() {
+            console.log("Attempting login");
+        },
+
+        onCancelLogin: function() {
+            console.log("Cancelling login");
+        },
+
+        onRender: function() {
+            this.delegateEvents();
+        },
+
+        onClose: function() {
+            this.undelegateEvents();
+        },
+    });
+
+    var UserModel = Backbone.Model.extend({
+        defaults: {
+            user: "",
+            auth: false,
+        },
+    });
+
+    var UserView = Backbone.Marionette.ItemView.extend({
+    });
+
     function frontendOnReady() {
         var router = new QldarchRouter();
 
@@ -3137,6 +3184,9 @@ var frontend = (function() {
             files: files,
             displayedImages: displayedImages,
             model: mapSearchModel,
+        });
+
+        var userView = new UserView({
         });
 
         router.on('route:frontpage', function(search) {
