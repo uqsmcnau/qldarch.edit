@@ -37,7 +37,7 @@
                 <a href="http://qldarch.net/?page_id=5">ABOUT</a>
                 <a href="http://qldarch.net/?page_id=8">COLLABORATORS</a>
                 <a href="http://qldarch.net/?page_id=44">DIGITAL STORIES</a>
-                <a href="http://qldarch.net/?page_id=845">SEARCH</a>
+                <a href="#">SEARCH</a>
                 <a href="http://qldarch.net/?page_id=12">CONTRIBUTE</a>
                 <a href="http://qldarch.net/?page_id=10">CONTACT</a>
             </div>
@@ -121,7 +121,10 @@
             </div>
         </script>
         <script type="text/template" id="imageTemplate">
-            <img style="display:none" src="http://qldarch.net/omeka/archive/files/<%= systemlocation %>" title="<%= label %>"/>
+            <img style="display:none" src="http://qldarch.net/omeka/archive/files/<%= systemlocation %>" title="<%= title %>"/>
+        </script>
+        <script type="text/template" id="directimageTemplate">
+            <img style="display:none" src="<%= url %>" title="<%= title %>"/>
         </script>
         <script type="text/template" id="imagedisplayTemplate">
             <img style="display:none" class="image" src="<%= systemlocation %>" title="<%= label %>"/>
@@ -193,19 +196,26 @@
                 <div class="mapentitydesc"></div>
                 <div class="mapentitylist"></div>
             </div>
-            <div class="multiimagepreview span-8 last"></div>
+            <div class="span-8 last">
+                <div class="contentlisttitle">Image Preview</div>
+                <div class="multiimagepreview"></div>
+            </div>
         </script>
-        <script type="text/template" id="notifyingimageTemplate">
-            <div class="contentlisttitle">Image Preview</div>
-        </script>
-
         <script type="text/template" id="relatedcontentTemplate">
-            <div class="relatedcontentbox" data-uri="<%= uri %>">
+            <div class="relatedcontentbox">
                 <div class="contentlisttitle span-16"><%= label %></div>
                 <div class="contentbox">
+<!--
                     <div class="spacer span-5"><div class="relatedimage"></div><img src="img/transparent_190x1.png" style="height:1px;width:100%"/></div>
                     <div class="spacer span-5"><div class="relatedimage"></div><img src="img/transparent_190x1.png" style="height:1px;width:100%"/></div>
+                    -->
                 </div>
+            </div>
+        </script>
+        <script type="text/template" id="previewimageTemplate">
+            <div class="spacer span-5">
+                <div class="relatedimage"></div>
+                <img src="img/transparent_190x1.png" style="height:1px;width:100%"/>
             </div>
         </script>
         <script type="text/template" id="listitemviewTemplate"><%= label %></script>

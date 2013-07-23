@@ -927,241 +927,271 @@ var frontend = (function() {
         },
     });
 
-    var EntitySummaryView = Backbone.View.extend({
-        className: "entitysummary",
-
-        initialize: function(options) {
-            options || (options = {});
-
-            _.bindAll(this);
-            this.summaryTemplate = _.template($("#entitysummaryTemplate").html());
-            this.infoTemplate = _.template($("#infopanelTemplate").html());
-
-            this.entities = options.entities;
-            this.photographs = options.photographs;
-            this.files = options.files;
-
-            this.entity = undefined;
-
-            this._updateContentDescription();
-            this.model.on("change", this._update);
-        },
-
-        render: function() {
-            this._update();
-
-            return this;
-        },
-
-        _update: function() {
-            this._updateContentDescription();
-            if (this.entity && this.contentDescription) {
-                this.files.getp(this.contentDescription.geta(QA_HAS_FILE),
-                        function(files) {
-                            var file = selectFileByMimeType(files, "image/jpeg");
-                            if (file) {
-                                this.$el.html(this.summaryTemplate({
-                                    uri: this.contentDescription.id,
-                                    systemlocation: file.get1(QA_SYSTEM_LOCATION, true, true),
-                                    label: this.contentDescription.get1(DCT_TITLE),
-                                    name: this.entity.get1(QA_LABEL),
-                                    description: this.entity.get1(QA_SUMMARY),
-                                }));
-                            }
-                        }, this);
-            } else if (this.entity && this.entity.get1(QA_SUMMARY)) {
-                this.$el.html(this.summaryTemplate({
-                    uri: "",
-                    systemlocation: "",
-                    label: "",
-                    name: this.entity.get1(QA_LABEL),
-                    description: this.entity.get1(QA_SUMMARY),
-                }));
-                this.$(".summary .summaryImage").hide();
-            } else {
-                this.$el.html(this.infoTemplate({
-                    message: "Individual summary not available",
-                }));
-            }
-        },
-
-        // FIXME: This is slightly ridiculous. I should introduce the ViewModel concept of
-        // derivied for views and then this can be a direct model application.
-        _updateContentDescription: function() {
-            this.contentDescription = undefined;
-            var entityids = this.model.get('entityids');
-            if (entityids && entityids.length == 1) {
-                this.entity = this.entities.get(entityids[0]);
-                if (this.entity) {
-                    var preferredImageURI = this.entity.get1(QA_PREFERRED_IMAGE);
-                    if (preferredImageURI) {
-                        this.contentDescription = this.photographs.get(preferredImageURI);
-                    } else {
-                        var relatedImagesURIs = this.entity.geta(QA_RELATED_TO);
-                        var relatedImages = _.flatmap(relatedImagesURIs, function(uri) {
-                            return this.photographs.get(uri);
-                        }, this);
-                    }
-                }
+    var EntitySummaryModel = Backbone.ViewModel.extend({
+        computed_attributes: {
+            imageUrl: function() {
+                return this.get('preferredImage').get('url');
+            },
+            imageLabel: function() {
+                return this.get('preferredImage').get('title');
+            },
+            name: function() {
+                var entity = this.get('selectedEntity').get('entity');
+                var name = entity ? entity.get1(QA_LABEL) : undefined;
+                return name ? name : "No label available for " + entity.id;
+            },
+            description: function() {
+                var entity = this.get('selectedEntity').get('entity');
+                var summary = entity ? entity.get1(QA_SUMMARY) : undefined;
+                return summary ? name : "No description available for " + entity.id;
+            },
+            entityId: function() {
+                var entity = this.get('selectedEntity').get('entity');
+                return entity ? entity.id : undefined;
             }
         },
     });
 
-    var RelatedImagesView = Backbone.View.extend({
-        className: "relatedcontent",
+    var FirstSelectedEntityModel = Backbone.ViewModel.extend({
+        computed_attributes: {
+            entity: function() {
+                var entitySearchModel = this.get('entitySearchModel');
+                var entityids = entitySearchModel.get('entityids');
+
+                if (!_.isArray(entityids)) { return undefined; }
+
+                var entity = this.get('entities').get(entityids[0]);
+                return entity;
+            },
+        },
+    });
+
+    var EntityPreferredImageModel = Backbone.ViewModel.extend({
+        computed_attributes: {
+            contentDescription: function() {
+                var entity = this.get('firstSelectedEntity').get('entity');
+                if (!entity) { return undefined; }
+                var preferredImageURI = entity.get1(QA_PREFERRED_IMAGE);
+                return preferredImageURI ?
+                    this.get('photographs').get(preferredImageURI) : undefined;
+            },
+        },
+    });
+
+    var EntitySummaryView = Backbone.Marionette.ItemView.extend({
+        className: "entitysummary",
+
+        template: function (serializedData) {
+            if (serializedData.entityId) {
+                return _.template("#entitysummaryTemplate", serializedData);
+            } else {
+                return _.template($("#infopanelTemplate"), {
+                    message: "Individual summary not available",
+                });
+            }
+        },
 
         initialize: function(options) {
-            _.bindAll(this);
+            this.infoTemplate = _.template($("#infopanelTemplate").html());
 
-            options = _.checkarg(options).withDefault({})
+            this.entitySearchModel = _.checkarg(options.entitySearchModel).throwNoArg("options.entitySearchModel");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.photographs = _.checkarg(options.photographs).throwNoArg("options.photographs");
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
 
-            this.frameTemplate = _.template($("#relatedcontentTemplate").html());
+            this.firstSelectedEntity = new FirstSelectedEntityModel({
+                source_models: {
+                    entitySearchModel: this.entitySearchModel,
+                    entities: this.entities,
+                },
+            });
 
+            this.preferredImage = new EntityPreferredImageModel({
+                source_models: {
+                    firstSelectedEntity: this.firstSelectedEntity,
+                    photographs: this.photographs,
+                },
+            });
+
+            this.preferredImageFiles = new AsyncFileModel({
+                _name: "EntitySummaryView::AFM",
+                source_models: {
+                    contentDescriptionSource: this.preferredImage,
+                    fileDetails: this.files,
+                },
+            }),
+
+            this.preferredImageFile = new ContentDisplayViewModel({
+                mimetype: "image/jpeg",
+                source_models: {
+                    contentDescriptionSource: this.preferredImage,
+                    fileModel: this.preferredImageFiles,
+                },
+            });
+
+            this.model = new EntitySummaryModel({
+                source_models: {
+                    selectedEntity: this.firstSelectedEntity,
+                    preferredImage: this.preferredImageFile,
+                },
+            });
+        },
+    });
+
+    var NotifyingImageModel = Backbone.ViewModel.extend({
+        computed_attributes: {
+            contentDescription: function() {
+                return this.get('imageSelection').get('image');
+            },
+        },
+    });
+
+    var NotifyingImageView = Backbone.Marionette.ItemView.extend({
+        className: "notifyingImage",
+        template: "#directimageTemplate",
+
+        initialize: function initialize(options) {
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
+            this.imageSelection = _.checkarg(options.imageSelection)
+                .throwNoArg("options.imageSelection");
+            this.displayedImage = _.checkarg(options.displayedImage)
+                .throwNoArg("options.displayedImage");
+
+            this.contentDescriptionSource = new NotifyingImageModel({
+                source_models: {
+                    imageSelection: this.imageSelection,
+                },
+            });
+
+            this.model = new ContentDisplayViewModel({
+                mimetype: "image/jpeg",
+                source_models: {
+                    contentDescriptionSource: this.contentDescriptionSource,
+                    fileModel: new AsyncFileModel({
+                        _name: "NotifyingImageModel::ASM",
+                        source_models: {
+                            contentDescriptionSource: this.contentDescriptionSource,
+                            fileDetails: this.files,
+                        },
+                    }),
+                },
+            });
+        },
+
+        onClose: function() {
+            this.displayedImage.set("imageId", undefined);
+        },
+
+        onRender: function() {
+            this.listenTo(this.model, "change:url", this.urlChanged);
+        },
+
+        urlChanged: function() {
+            var url = this.model.get('url');
+            var displayedImage = this.displayedImage;
+            var contentId = this.model.get('contentId'));
+
+            this.$("img").fadeOut("slow" function() {
+                if (url) {
+                    $(this).attr("src", url).fadeIn("slow");
+                }
+                displayedImage.set("imageId", contentId);
+            });
+        },
+    });
+
+    var rotatingImageTimer = _.extend({}, Backbone.Events);
+
+    var PreviewImageView = Backbone.Marionette.CompositeView.extend({
+        className: "previewimage",
+        template: "#previewimageTemplate",
+
+        itemViewContainer: ".relatedimage",
+        itemView: NotifyingImageView,
+        itemViewOptions: function(model) {
+            return {
+                files: this.files,
+                imageSelection: this.imageSelection,
+                displayedImage: this.displayedImage,
+            };
+        },
+
+        initialize: function(options) {
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
+            this.imageSelection = _.checkarg(options.imageSelection)
+                .throwNoArg("options.imageSelection");
+            this.displayedImage = _.checkarg(options.displayedImage)
+                .throwNoArg("options.displayedImage");
+
+            this.model = undefined;
+            this.collection = new Backbone.Collection([new Backbone.Model({})]);
+        },
+    });
+
+    var RelatedImagesView = Backbone.Marionette.CompositeView.extend({
+        className: "relatedcontent",
+        template: "#relatedcontentTemplate",
+
+        itemViewContainer: ".contentbox",
+
+        itemView: PreviewImageView,
+        itemViewOptions: function(model) {
+            return {
+                files: this.files,
+                imageSelection: model,
+                displayedImage: this.displayedImage,
+            };
+        },
+
+        serializeData: function() {
+            return {
+                label: this.type.get1(QA_LABEL) || ("Missing label for " + this.type.id),
+            };
+        },
+
+        initialize: function(options) {
             this.images = _.checkarg(options.images).throwNoArg("options.images");
             this.type = _.checkarg(options.type).withDefault({ id: "none" });
             this.files = _.checkarg(options.files).throwNoArg("options.files");
             this.number = _.checkarg(options.number).throwNoArg("options.number");
             this.displayedImages = _.checkarg(options.displayedImages)
                 .throwNoArg("options.displayedImages");
-            this.images.on("reset", this._update, this);
-            this.imageViews = [];
-        },
 
-        render: function() {
-            this._update();
+            this.displayedImage = new Backbone.Model({
+                imageId: undefined,
+            });
 
-            return this;
-        },
+            this.listenTo(this.displayedImage, "change", function(model) {
+                var oldImageId = model.previous("imageId");
+                var newImageId = model.get("imageId");
+                if (oldImageId) this.displayedImages.undisplayed(oldImageId);
+                if (newImageId) this.displayedImages.displayed(newImageId);
+            });
 
-        _update: function() {
-            this.$el.html(this.frameTemplate({
-                uri: this.type.id,
-                label: this.type.get1(QA_LABEL),
-            }));
-
-
+            this.collection = new Backbone.Collection();
             for (var i = 0; i < this.number; i++) {
-                var imageView = new RotatingImageView({
-                    files: this.files,
-                    type: this.type,
-                    images: this.images,
-                    initialIndex: i,
-                    totalViewers: this.number,
-                    initialDelay: (2000 * i),
-                    displayedImages: this.displayedImages,
-                });
-                this.imageViews.push(imageView);
-                $(".contentbox").prepend(imageView.render().el);
+                this.collection.add(new ImageSelection({}));
             }
+            this.listenTo(rotatingImageTimer, "tick", this._updateImageSelections);
         },
 
-        _beforeDetach: function() {
-            _.each(this.imageViews, function(view) {
-                view._beforeDetach();
-            });
-        },
-    });
-
-    var RotatingImageView = Backbone.View.extend({
-        className: "rotatingImage",
-
-        initialize: function(options) {
-            _.bindAll(this);
-
-            options = _.checkarg(options).withDefault({})
-
-            this.template = _.template($("#rotatingimageTemplate").html());
-            this.imageTemplate = _.template($("#imageTemplate").html());
-
-            this.images = _.checkarg(options.images).throwNoArg("options.images");
-            this.index = _.checkarg(options.initialIndex).throwNoArg("options.initialIndex");
-            this.initialIndex = _.checkarg(options.initialIndex)
-                .throwNoArg("options.initialIndex");
-            this.totalViewers = _.checkarg(options.totalViewers)
-                .throwNoArg("options.totalViewers");
-            this.initialDelay = _.checkarg(options.initialDelay)
-                .throwNoArg("options.initialDelay");
-            this.type = _.checkarg(options.type).throwNoArg("options.type");
-            this.files = _.checkarg(options.files).throwNoArg("options.files");
-            this.displayedImages = _.checkarg(options.displayedImages)
-                .throwNoArg("options.displayedImages");
-
-            this.active = false;
+        onClose: function() {
+            this.displayedImage.set('imageId', undefined);
         },
 
-        render: function() {
-            if (!this.active) {
-                this._update();
-            }
-
-            return this;
-        },
-
-        _update: function() {
-            if (!this.active) {
-                this.active = true;
-                this._fadeInImage(this.initialDelay);
-            }
-        },
-
-        _fadeOutImage: function() {
-            if (this.active) {
-                var that = this;
-                this.$("img").fadeOut("slow", function() {
-                    that.displayedImages.undisplayed($(this).data("uri"));
-                    $(this).remove();
-                    if (that.active) {
-                        that._fadeInImage(0);
-                    }
-                });
-            }
-        },
-
-        _fadeInImage: function(delay) {
-            if (this.active) {
-                this.index = (this.index + 3 < this.images.length) ?
-                    this.index + 3 :
-                    this.index % 3;
-
-                var image = this.images.at(this.index);
-                if (image) {
-                    this.files.getp(image.geta(QA_HAS_FILE),
-                            function(files) {
-                                var file = selectFileByMimeType(files, "image/jpeg");
-                                if (file) {
-                                    this.$el.html(this.imageTemplate({
-                                        uri: image.id,
-                                        systemlocation: file.get1(QA_SYSTEM_LOCATION, true, true),
-                                        label: image.get1(DCT_TITLE),
-                                    }));
-
-                                    var that = this;
-                                    _.delay(function fadeInImage() {
-                                        that.$("img").fadeIn("slow", function() {
-                                            _.delay(that._fadeOutImage, 6000);
-                                        });
-                                    }, delay);
-                                } else {
-                                    console.log("No image/jpeg found for " + image.id + " " +
-                                        this.initialIndex + " " + this.type.id);
-                                }
-                            }, this);
-                    this.displayedImages.displayed(image.id);
+        _updateImageSelections: function _updateImageSelections(delay) {
+            this.collection.each(function(imageSelection, index, imageSelections) {
+                var oldIndex = imageSelection.get('index');
+                var newIndex = (oldIndex < 0) ? index : oldIndex + imageSelections.length;
+                if (newIndex < this.images.length) {
+                    imageSelection.set({
+                        image: this.images.at(newIndex),
+                        index: newIndex,
+                    });
                 } else {
-                    console.log("No image found in collection: " + this.index);
-                    console.log(this.images);
+                    imageSelection.set(ImageSelection.defaults);
                 }
-            }
-        },
-
-        _beforeDetach: function() {
-            var that = this;
-            this.active = false;
-            $("img").each(function () {
-                that.displayedImages.undisplayed($(this).data("uri"));
-            });
-            this.undelegateEvents();
-            this.remove();
+            }, this);
         },
     });
 
@@ -1204,8 +1234,7 @@ var frontend = (function() {
             this.$el.html(this.template());
 
             this.summaryView = new EntitySummaryView({
-                    router: this.router,
-                    model: this.model,
+                    entitySearchModel: this.model,
                     entities: this.entities,
                     photographs: this.photographs,
                     files: this.files,
@@ -1268,10 +1297,10 @@ var frontend = (function() {
 
         _beforeDetach: function() {
             if (this.relatedPhotographView) {
-                this.relatedPhotographView._beforeDetach();
+                this.relatedPhotographView.close();
             }
             if (this.relatedLineDrawingView) {
-                this.relatedLineDrawingView._beforeDetach();
+                this.relatedLineDrawingView.close();
             }
         },
 
@@ -1457,15 +1486,20 @@ var frontend = (function() {
         },
         
         onRender: function() {
+            if (!this.model.get('contentDescription')) {
+                console.log("ImageContentView::onRender, contentDescription not ready, deferring");
+                _.delay(_.bind(this.onRender, this), 2000);
+                return;
+            }
             var pdv = new ImageDisplayView({
-                contentDescription: this.model.get("contentDescription"),
+                contentDescriptionSource: this.model.get("contentDescriptionSource"),
                 files: this.files,
             });
             this.listenTo(pdv, "display:toggle", this._onMetadataToggle);
             this.content.show(pdv);
 
             this.metadata.show(new ContentDetailView({
-                contentDescription: this.model.get("contentDescription"),
+                contentDescriptionSource: this.model,
                 properties: this.properties,
                 entities: this.entities,
             }));
@@ -1498,16 +1532,19 @@ var frontend = (function() {
 
         initialize: function(options) {
             this.files = _.checkarg(options.files).throwNoArg("options.files");
-            this.contentDescription = _.checkarg(options.contentDescription)
-                .throwNoArg("options.contentDescription");
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
 
             this.model = new ContentDisplayViewModel({
                 mimetype: "image/jpeg",
                 source_models: {
-                    contentDescription: this.contentDescription,
+                    contentDescriptionSource: this.contentDescriptionSource,
                     fileModel: new AsyncFileModel({
-                        contentDescription: this.contentDescription,
-                        fileDetails: this.files,
+                        _name: "ImageDisplayView::ASM",
+                        source_models: {
+                            contentDescriptionSource: this.contentDescriptionSource,
+                            fileDetails: this.files,
+                        },
                     }),
                 },
             });
@@ -2332,14 +2369,14 @@ var frontend = (function() {
             })
 
             this.displayedImage = new Backbone.Model({
-                image: undefined,
+                imageId: undefined,
             });
 
             this.listenTo(this.displayedImage, "change", function(model) {
-                var oldImage = model.previous("image");
-                var newImage = model.get("image");
-                if (oldImage) this.displayedImages.undisplayed(oldImage.id);
-                if (newImage) this.displayedImages.displayed(newImage.id);
+                var oldImageId = model.previous("imageId");
+                var newImageId = model.get("imageId");
+                if (oldImageId) this.displayedImages.undisplayed(oldImageId);
+                if (newImageId) this.displayedImages.displayed(newImageId);
             });
 
             this.listenTo(this.predicatedImages, "change", this._setImageList);
@@ -2351,7 +2388,7 @@ var frontend = (function() {
         },
 
         onClose: function() {
-            this.displayedImage.set('image', undefined);
+            this.displayedImage.set('imageId', undefined);
         },
 
         onRender: function onRender() {
@@ -2496,108 +2533,23 @@ var frontend = (function() {
         }
     });
 
-    var NotifyingImageView = Backbone.Marionette.ItemView.extend({
-        className: "notifyingImage",
-        template: "#notifyingimageTemplate",
-
-        initialize: function initialize(options) {
-            _.bindAll(this);
-
-            options = _.checkarg(options).withDefault({})
-
-            this.imageTemplate = _.template($("#imageTemplate").html());
-
-            this.files = _.checkarg(options.files).throwNoArg("options.files");
-            this.imageSelection = _.checkarg(options.imageSelection)
-                .throwNoArg("options.imageSelection");
-            this.displayedImage = _.checkarg(options.displayedImage)
-                .throwNoArg("options.displayedImage");
-
-            this.displayingImage = undefined;
-            this.listenTo(this.imageSelection, "change", this.onDomRefresh);
-        },
-
-        onClose: function() {
-            this.displayingImage = undefined;
-        },
-
-        onDomRefresh: function onDomRefresh() {
-            if (this.$el.filter(":visible").length > 0) {
-                var image = this.imageSelection.get("image");
-                var displayed = this.displayedImage.get("image");
-
-                if (this.displayingImage === image) {
-                    return;
-                }
-                if (this.displayingImage !== displayed) {
-                    console.log("Not ready for new-image event, discarding");
-                    return;
-                }
-
-                // Note which image we are currently in the process of displaying.
-                this.displayingImage = image;
-
-                this._fadeInImageSelection();
-            } else {
-                this.displayingImage = undefined;
-                this.$("img").remove();
-                this.displayedImage.set("image", undefined);
-            }
-        },
-
-        _fadeInImageSelection: function _fadeInImageSelection() {
-            if (_.isUndefined(this.displayingImage)) {
-                this.$("img:visible").fadeOut("slow", function() {
-                    $(this).remove();
-                });
-                this.displayedImage.set("image", undefined);
-            } else {
-                this.files.getp(this.displayingImage.geta(QA_HAS_FILE),
-                        _.partial(this._displayJpegFile, this.displayingImage), this);
-            }
-        },
-
-        _displayJpegFile: function _displayJpegFile(image, files) {
-            var file = selectFileByMimeType(files, "image/jpeg");
-            if (file) {
-                this.$el.append(this.imageTemplate({
-                    uri: image.id,
-                    systemlocation: file.get1(QA_SYSTEM_LOCATION, true, true),
-                    label: image.get1(DCT_TITLE),
-                }));
-
-                var hidden = this.$("img:hidden");
-                var visible = this.$("img:visible");
-
-                hidden.fadeIn("slow");
-                visible.fadeOut("slow", function() {
-                    $(this).remove();
-                });
-
-                this.displayedImage.set("image", image);
-            } else {
-                console.log("No image/jpeg found for " + image.id);
-            }
-        },
-    });
-
     var ContentPropertyViewCollection = Backbone.ViewCollection.extend({
         computeModelArray: function() {
-            var contentDescription = this.sources['contentDescription'];
+            var cd = this.sources['contentDescriptionSource'].get('contentDescription');
             var properties = this.sources['properties'];
             var entities = this.sources['entities'];
 
-            if (!contentDescription || !properties || !entities) {
+            if (!cd || !properties || !entities) {
                 return [];
             }
 
-            var metadata = _(contentDescription.predicates()).map(function(predicate) {
+            var metadata = _(cd.predicates()).map(function(predicate) {
                 var propDefn = properties.get(predicate);
                 if (!propDefn) {
                     console.log("Property not found in ontology: " + predicate);
                     return undefined;
                 } else if (propDefn.get1(QA_DISPLAY, true, true)) {
-                    var value = contentDescription.get1(predicate, logmultiple);
+                    var value = cd.get1(predicate, logmultiple);
                     var precedence = propDefn.get1(QA_DISPLAY_PRECEDENCE);
                     precedence = precedence ? precedence : MAX_PRECEDENCE;
 
@@ -2651,14 +2603,14 @@ var frontend = (function() {
         initialize: function(options) {
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
-            this.contentDescription = _.checkarg(options.contentDescription)
-                .throwNoArg("options.contentDescription");
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
 
             // This collection contains a prededence ordered list of models containing
             // label->value pairs.
             this.collection = new ContentPropertyViewCollection({
                 sources: {
-                    contentDescription: this.contentDescription,
+                    contentDescriptionSource: this.contentDescriptionSource,
                     properties: this.properties,
                     entities: this.entities,
                 },
@@ -2673,17 +2625,19 @@ var frontend = (function() {
 
         computed_attributes: {
             contentId: function() {
-                return this.get('contentDescription').get('uri');
+                var cd = this.get('contentDescriptionSource').get('contentDescription');
+                return cd ? cd.get('uri') : undefined;
             },
 
             hasFiles: function() {
-                var content = this.get('contentDescription');
+                var cd = this.get('contentDescriptionSource').get('contentDescription');
+                if (!cd) { return false; }
                 var fileDetails = this.get('fileDetails');
                 if (fileDetails) {
-                    fileDetails.getp(content.geta(QA_HAS_FILE),
-                        _.partial(this.fileUpdater, content), this);
+                    fileDetails.getp(cd.geta(QA_HAS_FILE),
+                        _.partial(this.fileUpdater, cd), this);
                 }
-                if (content.get1(QA_HAS_FILE)) {
+                if (cd.get1(QA_HAS_FILE)) {
                     return true;
                 } else {
                     return false;
@@ -2692,7 +2646,7 @@ var frontend = (function() {
         },
 
         fileUpdater: function(oldContent, files) {
-            var currContent = this.get('contentDescription');
+            var currContent = this.get('contentDescriptionSource').get('contentDescription');
             if (oldContent == currContent) {
                 this.set('files', files);
                 this.set('_cd', currContent);
@@ -2703,10 +2657,17 @@ var frontend = (function() {
     var ContentDisplayViewModel = Backbone.ViewModel.extend({
         computed_attributes: {
             title: function() {
-                this.get('contentDescription').get(DCT_TITLE);
+                var cd = this.get('contentDescriptionSource').get('contentDescription');
+                if (cd) {
+                    var title = cd.get1(DCT_TITLE);
+                    return title ? title : "No title available for " + cd.id;
+                } else {
+                    return "No content specified";
+                }
             },
             url: function() {
                 var fileModel = this.get('fileModel');
+
                 if (!fileModel.get('hasFiles')) {
                     return SPINNER_GIF;
                 }
@@ -2714,8 +2675,8 @@ var frontend = (function() {
                 var file = files ? selectFileByMimeType(files, this.get('mimetype')) : undefined;
 
                 if (file) {
-                    return "/omeka/archive/files/" +
-                        file.get1(QA_SYSTEM_LOCATION, true, true);
+                    var sysloc = file.get1(QA_SYSTEM_LOCATION, true, true);
+                    return sysloc ? "/omeka/archive/files/" + sysloc : SPINNER_GIF;
                 } else {
                     return SPINNER_GIF;
                 }
@@ -2753,10 +2714,13 @@ var frontend = (function() {
             this.model = new ContentDisplayViewModel({
                 mimetype: "application/pdf",
                 source_models: {
-                    contentDescription: this.contentDescription,
+                    contentDescriptionSource: this.contentDescriptionSource,
                     fileModel: new AsyncFileModel({
-                        contentDescription: this.contentDescription,
-                        fileDetails: this.files,
+                        _name: "PdfDisplayView::AFM",
+                        source_models: {
+                            contentDescriptionSource: this.contentDescriptionSource,
+                            fileDetails: this.files,
+                        },
                     }),
                 },
             });
@@ -2852,14 +2816,14 @@ var frontend = (function() {
 
         onRender: function() {
             var pdv = new PdfDisplayView({
-                contentDescription: this.model.get("contentDescription"),
+                contentDescriptionSource: this.model,
                 files: this.files,
             });
             this.listenTo(pdv, "display:toggle", this._onMetadataToggle);
             this.content.show(pdv);
 
             this.metadata.show(new ContentDetailView({
-                contentDescription: this.model.get("contentDescription"),
+                contentDescriptionSource: this.model,
                 properties: this.properties,
                 entities: this.entities,
             }));
@@ -3083,7 +3047,6 @@ var frontend = (function() {
 
         var contentpaneView = new ContentPaneView({
             router: router,
-            id: "contentpane",
             related: entityRelatedContentModel,
             model: entitySearchModel,
             entities: entities,
@@ -3250,6 +3213,15 @@ var frontend = (function() {
         }, contentSearchModel);
 
         Backbone.history.start();
+
+        rotatingImageTimer.on("tick", function() {
+            _.delay(function() {
+                rotatingImageTimer.trigger("tick");
+            }, 3000);
+        });
+        rotatingImageTimer.on("tick", function() { console.log("3sec tick"); });
+        rotatingImageTimer.trigger("tick");
+
 
         _.defer(function() {
             properties.fetch({ reset: true });

@@ -278,7 +278,21 @@ span.button.tab.selected {
 }
 
 div.contentpanetabs {
+    overflow:hidden;
     margin-bottom: 20px;
+}
+
+.contentpane div.content * {
+    overflow:hidden;
+}
+
+.previewimage {
+    display:inline-block;
+}
+
+.relatedimage {
+    width: 100%;
+    height: 100%;
 }
 
 .imagepane * {
