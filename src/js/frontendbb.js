@@ -937,12 +937,12 @@ var frontend = (function() {
             },
             name: function() {
                 var entity = this.get('selectedEntity').get('entity');
-                var name = entity ? entity.get1(QA_LABEL) : undefined;
+                var name = entity ? entity.get1(QA_LABEL) : "No selected entity";
                 return name ? name : "No label available for " + entity.id;
             },
             description: function() {
                 var entity = this.get('selectedEntity').get('entity');
-                var summary = entity ? entity.get1(QA_SUMMARY) : undefined;
+                var summary = entity ? entity.get1(QA_SUMMARY) : "No entity selected";
                 return summary ? name : "No description available for " + entity.id;
             },
             entityId: function() {
@@ -983,9 +983,9 @@ var frontend = (function() {
 
         template: function (serializedData) {
             if (serializedData.entityId) {
-                return _.template("#entitysummaryTemplate", serializedData);
+                return _.template($("#entitysummaryTemplate").html(), serializedData);
             } else {
-                return _.template($("#infopanelTemplate"), {
+                return _.template($("#infopanelTemplate").html(), {
                     message: "Individual summary not available",
                 });
             }
@@ -1035,6 +1035,24 @@ var frontend = (function() {
                     preferredImage: this.preferredImageFile,
                 },
             });
+
+            this.listenTo(this.model, "change:name", this.nameChanged);
+            this.listenTo(this.model, "change:description", this.descriptionChanged);
+            this.listenTo(this.model, "change:imageLabel", this.imageLabelChanged);
+            this.listenTo(this.model, "change:imageUrl", this.imageUrlChanged);
+        },
+
+        nameChanged: function() {
+            this.$(".name").text(this.model.get('name'));
+        },
+        descriptionChanged: function() {
+            this.$(".biotext").text(this.model.get('description'));
+        },
+        imageLabelChanged: function() {
+            this.$(".summaryImage img").attr("title", this.model.get('imageLabel'));
+        },
+        imageUrlChanged: function() {
+            this.$(".summaryImage img").attr("src", this.model.get('imageUrl'));
         },
     });
 
@@ -1050,12 +1068,20 @@ var frontend = (function() {
         className: "notifyingImage",
         template: "#directimageTemplate",
 
+        serializeData: function() {
+            return {
+                viewid: this.viewId,
+                title: this.model.get('title'),
+                url: this.model.get('url'),
+                contentId: this.model.get('contentId'),
+            };
+        },
+
         initialize: function initialize(options) {
             this.files = _.checkarg(options.files).throwNoArg("options.files");
             this.imageSelection = _.checkarg(options.imageSelection)
                 .throwNoArg("options.imageSelection");
-            this.displayedImage = _.checkarg(options.displayedImage)
-                .throwNoArg("options.displayedImage");
+            this.viewId = _.uniqueId("NotifyingImageView_");
 
             this.contentDescriptionSource = new NotifyingImageModel({
                 source_models: {
@@ -1079,7 +1105,7 @@ var frontend = (function() {
         },
 
         onClose: function() {
-            this.displayedImage.set("imageId", undefined);
+            this.triggerMethod("undisplay");
         },
 
         onRender: function() {
@@ -1088,14 +1114,14 @@ var frontend = (function() {
 
         urlChanged: function() {
             var url = this.model.get('url');
-            var displayedImage = this.displayedImage;
-            var contentId = this.model.get('contentId'));
+            var contentId = this.model.get('contentId');
+            var that = this;
 
-            this.$("img").fadeOut("slow" function() {
+            this.$("img").fadeOut("slow", function() {
                 if (url) {
                     $(this).attr("src", url).fadeIn("slow");
                 }
-                displayedImage.set("imageId", contentId);
+                that.triggerMethod("display", contentId);
             });
         },
     });
@@ -1112,7 +1138,6 @@ var frontend = (function() {
             return {
                 files: this.files,
                 imageSelection: this.imageSelection,
-                displayedImage: this.displayedImage,
             };
         },
 
@@ -1120,11 +1145,14 @@ var frontend = (function() {
             this.files = _.checkarg(options.files).throwNoArg("options.files");
             this.imageSelection = _.checkarg(options.imageSelection)
                 .throwNoArg("options.imageSelection");
-            this.displayedImage = _.checkarg(options.displayedImage)
-                .throwNoArg("options.displayedImage");
+            this.viewId = _.uniqueId("PreviewImageView_");
 
             this.model = undefined;
             this.collection = new Backbone.Collection([new Backbone.Model({})]);
+        },
+
+        onItemviewDisplay: function(view, contentId) {
+            this.triggerMethod("display", view.viewId, contentId);
         },
     });
 
@@ -1139,7 +1167,6 @@ var frontend = (function() {
             return {
                 files: this.files,
                 imageSelection: model,
-                displayedImage: this.displayedImage,
             };
         },
 
@@ -1149,6 +1176,16 @@ var frontend = (function() {
             };
         },
 
+        onItemviewDisplay: function(view, viewId, contentId) {
+            if (this.displayed[viewId]) {
+                this.displayedImages.undisplayed(this.displayed[viewId]);
+            }
+            this.displayed[viewId] = contentId;
+            if (contentId) {
+                this.displayedImages.displayed(contentId);
+            }
+        },
+
         initialize: function(options) {
             this.images = _.checkarg(options.images).throwNoArg("options.images");
             this.type = _.checkarg(options.type).withDefault({ id: "none" });
@@ -1156,42 +1193,51 @@ var frontend = (function() {
             this.number = _.checkarg(options.number).throwNoArg("options.number");
             this.displayedImages = _.checkarg(options.displayedImages)
                 .throwNoArg("options.displayedImages");
+            this.viewId = _.uniqueId("RelatedImagesView_");
+            this.lastUpdate = 0;
 
-            this.displayedImage = new Backbone.Model({
-                imageId: undefined,
-            });
-
-            this.listenTo(this.displayedImage, "change", function(model) {
-                var oldImageId = model.previous("imageId");
-                var newImageId = model.get("imageId");
-                if (oldImageId) this.displayedImages.undisplayed(oldImageId);
-                if (newImageId) this.displayedImages.displayed(newImageId);
-            });
+            this.displayed = {};
 
             this.collection = new Backbone.Collection();
             for (var i = 0; i < this.number; i++) {
-                this.collection.add(new ImageSelection({}));
+                this.collection.add(new ImageSelection({
+                    initialIndex: i,
+                }));
             }
             this.listenTo(rotatingImageTimer, "tick", this._updateImageSelections);
         },
 
         onClose: function() {
-            this.displayedImage.set('imageId', undefined);
+            _.each(this.displayed, function(value) {
+                if (value) {
+                    this.displayedImages.undisplayed(value);
+                }
+            }, this);
+            this.displayed = {};
         },
 
         _updateImageSelections: function _updateImageSelections(delay) {
-            this.collection.each(function(imageSelection, index, imageSelections) {
-                var oldIndex = imageSelection.get('index');
-                var newIndex = (oldIndex < 0) ? index : oldIndex + imageSelections.length;
-                if (newIndex < this.images.length) {
-                    imageSelection.set({
-                        image: this.images.at(newIndex),
-                        index: newIndex,
-                    });
-                } else {
-                    imageSelection.set(ImageSelection.defaults);
-                }
-            }, this);
+            var oldest = this.collection.min(function(imageSelection) {
+                return imageSelection.get('lastUpdate');
+            });
+            var initialIndex = oldest.get('initialIndex');
+            var oldIndex = oldest.get('index');
+            var newIndex = oldIndex + this.collection.length + 10;
+            var currentUpdate = ++this.lastUpdate;
+
+            if ((oldIndex >= 0) && (newIndex < this.images.length)) {
+                oldest.set({
+                    image: this.images.at(newIndex),
+                    index: newIndex,
+                    lastUpdate: currentUpdate,
+                });
+            } else {
+                oldest.set({
+                    image: this.images.at(initialIndex),
+                    index: initialIndex,
+                    lastUpdate: currentUpdate,
+                });
+            }
         },
     });
 
@@ -1255,36 +1301,40 @@ var frontend = (function() {
         _update: function() {
             if (this.state === "Content") {
                 var that = this;
-                this.relatedPhotographView = new RelatedImagesView({
-                    images: new SubCollection(this.photographs, {
-                        name: "related_photographs",
-                        tracksort: true,
-                        type: QA_PHOTOGRAPH_TYPE,
-                        predicate: function(model) {
-                                return that.entity &&
-                                    _(that.entity.geta(QA_RELATED_TO)).contains(model.id);
-                            },
-                        }),
-                    type: this.artifacts.get(QA_PHOTOGRAPH_TYPE),
-                    files: this.files,
-                    number: 3,
-                    displayedImages: this.displayedImages,
-                });
-                this.relatedLineDrawingView = new RelatedImagesView({
-                    images: new SubCollection(this.linedrawings, {
-                        name: "related_linedrawings",
-                        tracksort: true,
-                        type: QA_LINEDRAWING_TYPE,
-                        predicate: function(model) {
-                                return that.entity &&
-                                    _(that.entity.geta(QA_RELATED_TO)).contains(model.id);
-                            },
-                        }),
-                    type: this.artifacts.get(QA_LINEDRAWING_TYPE),
-                    files: this.files,
-                    number: 3,
-                    displayedImages: this.displayedImages,
-                });
+                if (_.isUndefined(this.relatedPhotographView)) {
+                    this.relatedPhotographView = new RelatedImagesView({
+                        images: new SubCollection(this.photographs, {
+                            name: "related_photographs",
+                            tracksort: true,
+                            type: QA_PHOTOGRAPH_TYPE,
+                            predicate: function(model) {
+                                    return that.entity &&
+                                        _(that.entity.geta(QA_RELATED_TO)).contains(model.id);
+                                },
+                            }),
+                        type: this.artifacts.get(QA_PHOTOGRAPH_TYPE),
+                        files: this.files,
+                        number: 3,
+                        displayedImages: this.displayedImages,
+                    });
+                }
+                if (_.isUndefined(this.relatedLineDrawingView)) {
+                    this.relatedLineDrawingView = new RelatedImagesView({
+                        images: new SubCollection(this.linedrawings, {
+                            name: "related_linedrawings",
+                            tracksort: true,
+                            type: QA_LINEDRAWING_TYPE,
+                            predicate: function(model) {
+                                    return that.entity &&
+                                        _(that.entity.geta(QA_RELATED_TO)).contains(model.id);
+                                },
+                            }),
+                        type: this.artifacts.get(QA_LINEDRAWING_TYPE),
+                        files: this.files,
+                        number: 3,
+                        displayedImages: this.displayedImages,
+                    });
+                }
                 this.$(".content").empty();
                 this.$(".content").append(this.relatedPhotographView.render().$el);
                 this.$(".content").append(this.relatedLineDrawingView.render().$el);
@@ -2530,6 +2580,8 @@ var frontend = (function() {
         defaults: {
             'image': undefined,
             'index': -1,
+            'lastUpdate': -1,
+            'initialIndex': -1,
         }
     });
 
@@ -3219,7 +3271,6 @@ var frontend = (function() {
                 rotatingImageTimer.trigger("tick");
             }, 3000);
         });
-        rotatingImageTimer.on("tick", function() { console.log("3sec tick"); });
         rotatingImageTimer.trigger("tick");
 
 

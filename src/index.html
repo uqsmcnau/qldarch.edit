@@ -78,13 +78,13 @@
             <option value="<%= value %>"><%= label %></option>
         </script>
         <script type="text/template" id="contentpaneTemplate">
-            <div class="summary"></div>
-            <div class="contentpanetabs">
+            <div class="summary span-16"></div>
+            <div class="contentpanetabs span-16">
                 <span type="Content" class="button tab">Related Content</span>
                 <span type="Network" class="button tab">Related Network</span>
                 <span type="Timeline" class="button tab">Related Timeline</span>
             </div>
-            <div class="content"></div>
+            <div class="content span-16"></div>
         </script>
         <script type="text/template" id="fulltextEntry">
             <span style="display:block" class="fulltextitem">
@@ -105,9 +105,9 @@
             </div>
         </script>
         <script type="text/template" id="entitysummaryTemplate">
-            <h2><%= name %></h2>
+            <h2 class="name"><%= name %></h2>
             <div class="summaryImage span-8">
-                <img data-uri="<%= uri %>" src="http://qldarch.net/omeka/archive/files/<%= systemlocation %>" title="<%= label %>"/>
+                <img src="<%= imageUrl %>" title="<%= imageLabel %>"/>
             </div>
             <div class="summaryDescription span-8 last">
                 <span class="biotext"><%= description %></span>
@@ -204,12 +204,7 @@
         <script type="text/template" id="relatedcontentTemplate">
             <div class="relatedcontentbox">
                 <div class="contentlisttitle span-16"><%= label %></div>
-                <div class="contentbox">
-<!--
-                    <div class="spacer span-5"><div class="relatedimage"></div><img src="img/transparent_190x1.png" style="height:1px;width:100%"/></div>
-                    <div class="spacer span-5"><div class="relatedimage"></div><img src="img/transparent_190x1.png" style="height:1px;width:100%"/></div>
-                    -->
-                </div>
+                <div class="contentbox"></div>
             </div>
         </script>
         <script type="text/template" id="previewimageTemplate">
