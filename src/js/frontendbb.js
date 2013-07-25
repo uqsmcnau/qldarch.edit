@@ -1188,7 +1188,7 @@ var frontend = (function() {
 
         initialize: function(options) {
             this.images = _.checkarg(options.images).throwNoArg("options.images");
-            this.type = _.checkarg(options.type).withDefault({ id: "none" });
+            this.type = _.checkarg(options.type).throwNoArg("options.type");
             this.files = _.checkarg(options.files).throwNoArg("options.files");
             this.number = _.checkarg(options.number).throwNoArg("options.number");
             this.displayedImages = _.checkarg(options.displayedImages)
@@ -1198,12 +1198,16 @@ var frontend = (function() {
 
             this.displayed = {};
 
+            this.model = undefined;
             this.collection = new Backbone.Collection();
             for (var i = 0; i < this.number; i++) {
                 this.collection.add(new ImageSelection({
                     initialIndex: i,
                 }));
             }
+        },
+
+        onRender: function() {
             this.listenTo(rotatingImageTimer, "tick", this._updateImageSelections);
         },
 
@@ -1216,7 +1220,7 @@ var frontend = (function() {
             this.displayed = {};
         },
 
-        _updateImageSelections: function _updateImageSelections(delay) {
+        _updateImageSelections: function _updateImageSelections() {
             var oldest = this.collection.min(function(imageSelection) {
                 return imageSelection.get('lastUpdate');
             });
@@ -1224,6 +1228,7 @@ var frontend = (function() {
             var oldIndex = oldest.get('index');
             var newIndex = oldIndex + this.collection.length + 10;
             var currentUpdate = ++this.lastUpdate;
+
 
             if ((oldIndex >= 0) && (newIndex < this.images.length)) {
                 oldest.set({
@@ -1241,17 +1246,153 @@ var frontend = (function() {
         },
     });
 
-    var ContentPaneView = ToplevelView.extend({
+    var EntityContentPaneModel = Backbone.ViewModel.extend({
+        defaults: {
+            state: "Content",
+        },
+
+        computed_attributes: {
+            entity: function() {
+                var entityids = this.get('entitySearchModel').get('entityids');
+                return (entityids && entityids.length == 1) ?
+                    this.get('entities').get(entityids[0]) :
+                    undefined;
+            },
+        },
+    });
+
+    var EntityRelatedContentView = Backbone.Marionette.CollectionView.extend({
+        className : "relatedcontentpane",
+
+        itemView: RelatedImagesView,
+        itemViewOptions: function(model) {
+            return {
+                images: model.get('images'),
+                type: this.artifacts.get(model.get('type')),
+                files: this.files,
+                number: 3,
+                displayedImages: this.displayedImages,
+            };
+        },
+
+        initialize: function(options) {
+            this.artifacts = _.checkarg(options.artifacts)
+                .throwNoArg("options.artifacts");
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
+            this.displayedImages = _.checkarg(options.displayedImages)
+                .throwNoArg("options.displayedImages");
+            this.entityModel = _.checkarg(options.entityModel).throwNoArg("options.entityModel");
+            this.photographs = _.checkarg(options.photographs).throwNoArg("options.photographs");
+            this.linedrawings = _.checkarg(options.linedrawings)
+                .throwNoArg("options.linedrawings");
+
+            var entityModel = this.entityModel;
+            this.collection = new Backbone.Collection([
+                new Backbone.Model({
+                    type: QA_PHOTOGRAPH_TYPE,
+                    images: new SubCollection(this.photographs, {
+                        name: "related_photographs",
+                        tracksort: true,
+                        type: QA_PHOTOGRAPH_TYPE,
+                        predicate: function(model) {
+                            var entity = entityModel.get('entity');
+                            return entity && _(entity.geta(QA_RELATED_TO)).contains(model.id);
+                        },
+                    }),
+                }),
+                new Backbone.Model({
+                    type: QA_LINEDRAWING_TYPE,
+                    images: new SubCollection(this.linedrawings, {
+                        name: "related_linedrawings",
+                        tracksort: true,
+                        type: QA_LINEDRAWING_TYPE,
+                        predicate: function(model) {
+                            var entity = entityModel.get('entity');
+                            return entity && _(entity.geta(QA_RELATED_TO)).contains(model.id);
+                        },
+                    }),
+                }),
+            ]);
+        },
+    });
+
+    var UnimplementedEntityRelatedView = Backbone.Marionette.ItemView.extend({
+        className: "unimplemented",
+        template: "#infopanelTemplate",
+
+        serializeData: function() {
+            return {
+                message: this.state + " Tab disabled pending deploying relatedTo inferencing",
+            };
+        },
+
+        initialize: function(options) {
+            this.state = _.checkarg(options.state).throwNoArg("options.state");
+        },
+    });
+
+    var EntityContentPaneTabs = Backbone.Marionette.ItemView.extend({
+        className: "entitycontentpanetabs",
+        template: "#contentpanetabsTemplate",
+
+        triggers: {
+            "click " : "display:toggle",
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        events: {
+            "click span"   : "_selecttab"
+        },
+
+        _selecttab: function(event) {
+            var newState = $(event.target).attr("type");
+            this.triggerMethod("select:tab", newState);
+        },
+    });
+
+    var EntityContentPaneView = Backbone.Marionette.Layout.extend({
         className: "contentpane",
         template: "#contentpaneTemplate",
 
+        regions: {
+            summary: ".summary",
+            tabs: ".contentpanetabs",
+            content: ".content",
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        states: {
+            Content: function(view) {
+                return new EntityRelatedContentView({
+                    artifacts: view.artifacts,
+                    files: view.files,
+                    displayedImages: view.displayedImages,
+                    entityModel: view.model,
+                    photographs: view.photographs,
+                    linedrawings: view.linedrawings,
+                });
+            },
+            Network: function(view) {
+                return new UnimplementedEntityRelatedView({
+                    state: "Network",
+                });
+            },
+            Timeline: function(view) {
+                return new UnimplementedEntityRelatedView({
+                    state: "Timeline",
+                });
+            },
+        },
+
         initialize: function(options) {
-            options = _.checkarg(options).withDefault({})
-
-            ToplevelView.prototype.initialize.call(this, options);
-
-            this.infoTemplate = _.template($("#infopanelTemplate").html());
-
+            this.entitySearchModel = _.checkarg(options.entitySearchModel)
+                .throwNoArg("options.entitySearchModel");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.photographs = _.checkarg(options.photographs).throwNoArg("options.photographs");
             this.linedrawings = _.checkarg(options.linedrawings)
@@ -1262,112 +1403,37 @@ var frontend = (function() {
             this.displayedImages = _.checkarg(options.displayedImages)
                 .throwNoArg("options.displayedImages");
 
-            this.state = undefined;
-            this.entity = undefined;
-
-            this._updateContentDescription();
-
-            this.model.on("change", this._updateContentDescription);
+            this.model = new EntityContentPaneModel({
+                source_models: {
+                    entitySearchModel: this.entitySearchModel,
+                    entities: this.entities,
+                },
+            });
         },
 
-        events: {
-            "click span"   : "_selecttab"
-        },
-
-        render: function() {
-            ToplevelView.prototype.render.call(this);
-
-            this.$el.html(this.template());
-
+        onRender: function() {
+            this.listenTo(this.model, "change:state", this.setTab);
             this.summaryView = new EntitySummaryView({
-                    entitySearchModel: this.model,
+                    entitySearchModel: this.entitySearchModel,
                     entities: this.entities,
                     photographs: this.photographs,
                     files: this.files,
                 });
-            this.$('.summary').html(this.summaryView.render().el);
-
-            this.$(".button:first").click(); // Calls this._update();
-
-            return this;
+            this.summary.show(this.summaryView);
+            this.tabview = new EntityContentPaneTabs({});
+            this.listenTo(this.tabview, "select:tab", this.onSelectTab);
+            this.tabs.show(this.tabview);
+            this.setTab(this.model, this.model.get('state'));
         },
 
-        _selecttab: function(event) {
-            this.state = $(event.target).attr("type");
-
-            this._update();
-        },
-
-        _update: function() {
-            if (this.state === "Content") {
-                var that = this;
-                if (_.isUndefined(this.relatedPhotographView)) {
-                    this.relatedPhotographView = new RelatedImagesView({
-                        images: new SubCollection(this.photographs, {
-                            name: "related_photographs",
-                            tracksort: true,
-                            type: QA_PHOTOGRAPH_TYPE,
-                            predicate: function(model) {
-                                    return that.entity &&
-                                        _(that.entity.geta(QA_RELATED_TO)).contains(model.id);
-                                },
-                            }),
-                        type: this.artifacts.get(QA_PHOTOGRAPH_TYPE),
-                        files: this.files,
-                        number: 3,
-                        displayedImages: this.displayedImages,
-                    });
-                }
-                if (_.isUndefined(this.relatedLineDrawingView)) {
-                    this.relatedLineDrawingView = new RelatedImagesView({
-                        images: new SubCollection(this.linedrawings, {
-                            name: "related_linedrawings",
-                            tracksort: true,
-                            type: QA_LINEDRAWING_TYPE,
-                            predicate: function(model) {
-                                    return that.entity &&
-                                        _(that.entity.geta(QA_RELATED_TO)).contains(model.id);
-                                },
-                            }),
-                        type: this.artifacts.get(QA_LINEDRAWING_TYPE),
-                        files: this.files,
-                        number: 3,
-                        displayedImages: this.displayedImages,
-                    });
-                }
-                this.$(".content").empty();
-                this.$(".content").append(this.relatedPhotographView.render().$el);
-                this.$(".content").append(this.relatedLineDrawingView.render().$el);
-            } else {
-                this.$(".content").html(this.infoTemplate({
-                    message: this.state + " Tab disabled pending deploying relatedTo inferencing",
-                }));
+        onSelectTab: function(newState) {
+            if (this.states[newState]) {
+                this.model.set('state', newState);
             }
         },
 
-        _beforeDetach: function() {
-            if (this.relatedPhotographView) {
-                this.relatedPhotographView.close();
-            }
-            if (this.relatedLineDrawingView) {
-                this.relatedLineDrawingView.close();
-            }
-        },
-
-        // FIXME: This is slightly ridiculous. I should introduce the ViewModel concept of
-        // derivied for views and then this can be a direct model application.
-        _updateContentDescription: function() {
-            this.contentDescription = undefined;
-            var entityids = this.model.get('entityids');
-            if (entityids && entityids.length == 1) {
-                this.entity = this.entities.get(entityids[0]);
-                if (this.entity) {
-                    var preferredImageURI = this.entity.get1(QA_PREFERRED_IMAGE);
-                    if (preferredImageURI) {
-                        this.contentDescription = this.photographs.get(preferredImageURI);
-                    }
-                }
-            }
+        setTab: function(model, value) {
+            this.content.show(this.states[value](this));
         },
     });
 
@@ -2678,7 +2744,8 @@ var frontend = (function() {
         computed_attributes: {
             contentId: function() {
                 var cd = this.get('contentDescriptionSource').get('contentDescription');
-                return cd ? cd.get('uri') : undefined;
+                var result = cd ? cd.get('uri') : undefined;
+                return result;
             },
 
             hasFiles: function() {
@@ -2701,7 +2768,7 @@ var frontend = (function() {
             var currContent = this.get('contentDescriptionSource').get('contentDescription');
             if (oldContent == currContent) {
                 this.set('files', files);
-                this.set('_cd', currContent);
+                this.set('cd', currContent);
             }
         },
     });
@@ -2893,8 +2960,6 @@ var frontend = (function() {
         var entitySearchModel = new EntitySearchModel();
 
         var contentSearchModel = new ContentSearchModel();
-
-        var entityRelatedContentModel = new ContentSearchModel();
 
         var mapSearchModel = new MapSearchModel();
 
@@ -3097,10 +3162,8 @@ var frontend = (function() {
             articles: articles,
         });
 
-        var contentpaneView = new ContentPaneView({
-            router: router,
-            related: entityRelatedContentModel,
-            model: entitySearchModel,
+        var entitycontentpaneView = new EntityContentPaneView({
+            entitySearchModel: entitySearchModel,
             entities: entities,
             photographs: photographs,
             linedrawings: linedrawings,
@@ -3165,7 +3228,7 @@ var frontend = (function() {
             document.title = "Digital Archive of Queensland Architecture";
 
             $("#column123,#column12,#column23").hide();
-            contentpaneView.detach();
+            entitycontentpaneView.close();
             imageContentView.close();
             pdfContentView.close();
             transcriptView.detach();
@@ -3191,7 +3254,7 @@ var frontend = (function() {
             pdfContentView.close();
             transcriptView.detach();
             mapSearchView.close();
-            contentpaneView.attach("#column12");
+            $("#column12").empty().append(entitycontentpaneView.render().$el);
             $("#column3").empty().append(contentView.render().$el);
             $("#column12,#column3").show();
         }, entitySearchModel);
@@ -3204,7 +3267,7 @@ var frontend = (function() {
             mapButtonView.close();
             fulltextView.detach();
             entityView.detach();
-            contentpaneView.detach();
+            entitycontentpaneView.close();
             transcriptView.detach();
             mapSearchView.close();
             $("#column1").empty().append(contentView.render().$el);
@@ -3221,7 +3284,7 @@ var frontend = (function() {
             mapButtonView.close();
             fulltextView.detach();
             entityView.detach();
-            contentpaneView.detach();
+            entitycontentpaneView.close();
             transcriptView.detach();
             mapSearchView.close();
             imageContentView.close();
@@ -3238,7 +3301,7 @@ var frontend = (function() {
             mapButtonView.close();
             fulltextView.detach();
             entityView.detach();
-            contentpaneView.detach();
+            entitycontentpaneView.close();
             contentView.close();
             imageContentView.close();
             pdfContentView.close();
@@ -3255,7 +3318,7 @@ var frontend = (function() {
             mapButtonView.close();
             fulltextView.detach();
             entityView.detach();
-            contentpaneView.detach();
+            entitycontentpaneView.close();
             transcriptView.detach();
             imageContentView.close();
             pdfContentView.close();
