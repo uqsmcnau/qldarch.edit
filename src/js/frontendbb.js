@@ -2870,32 +2870,38 @@ var frontend = (function() {
         },
     });
 
-    var LoginModel = Backbone.Model.extend({
-        url: JSON_ROOT + "login",
-        defaults: {
-            user: undefined,
-        },
-    });
-
     var LoginUserView = Backbone.Marionette.ItemView.extend({
-        className: "loginattempt"
+        className: "loginattempt",
         template: "#loginTemplate",
 
+        ui: {
+            username: ".username",
+            password: ".password",
+        },
+
         triggers: {
-            "click .loginbutton": "attempt:login",
-            "click .cancelbutton": "cancel:login",
+            "click .loginbutton": "login:attempt",
+            "click .cancelbutton": "login:cancel",
         },
 
-        initialize: function(options) {
-            this.model = _.checkarg(options.loginModel).throwNoArg("options.loginModel");
-        }
-
-        onAttemptLogin: function() {
+        onLoginAttempt: function() {
             console.log("Attempting login");
-        },
-
-        onCancelLogin: function() {
-            console.log("Cancelling login");
+            var username = this.ui.username.val();
+            var password = this.ui.password.val();
+            console.log(username + "/" + password);
+            $.post(JSON_ROOT + "login", { username: username, password: password }, "json").
+                done(function(data, textStatus, jqXHR) {
+                    console.log("login success");
+                    console.log(data);
+                    console.log(textStatus);
+                    console.log(jqXHR);
+                }).
+                fail(function(data, textStatus, jqXHR) {
+                    console.log("login failure");
+                    console.log(data);
+                    console.log(textStatus);
+                    console.log(jqXHR);
+                });
         },
 
         onRender: function() {
@@ -2915,6 +2921,45 @@ var frontend = (function() {
     });
 
     var UserView = Backbone.Marionette.ItemView.extend({
+        className: "userdetails",
+        userTemplate: "#userTemplate",
+        anonTemplate: "#anonTemplate",
+
+        template: function(serialized) {
+            var template = serialized.auth ? serialized.userTemplate : serialized.anonTemplate;
+            return _.template($(template).html(), serialized);
+        },
+
+        serializeData: function() {
+            return {
+                userTemplate: this.userTemplate,
+                anonTemplate: this.anonTemplate,
+                username: this.model.get('user'),
+            };
+        },
+
+        triggers: {
+            'click .login': "user:login",
+            'click .create': "user:create",
+            'click .logout': "user:logout",
+        },
+
+        onRender: function() {
+            this.bindUIElements();
+            this.delegateEvents();
+        },
+
+        onUserLogin: function() {
+            console.log("UserView::user:login");
+        },
+
+        onUserCreate: function() {
+            console.log("UserView::user:create");
+        },
+
+        onUserLogout: function() {
+            console.log("UserView::user:logout");
+        },
     });
 
     function frontendOnReady() {
@@ -3029,6 +3074,8 @@ var frontend = (function() {
 
         var allcontent = new UnionCollection([interviews, photographs, linedrawings]);
     
+        var usermodel = new UserModel({});
+
         /*
         allcontent.on("reset", function(collection) {
             console.log("\tRESET:ALLCONTENT: " + collection.length);
@@ -3187,7 +3234,10 @@ var frontend = (function() {
         });
 
         var userView = new UserView({
+            model: usermodel,
         });
+
+        var loginUserView = new LoginUserView();
 
         router.on('route:frontpage', function(search) {
             if (search) {
@@ -3300,6 +3350,18 @@ var frontend = (function() {
         }, contentSearchModel);
 
         Backbone.history.start();
+
+        $("#userinfo").empty().append(userView.render().$el);
+        $("#overlay").empty().append(loginUserView.render().$el);
+        userView.on("user:login", function() {
+            console.log("detected user:login");
+            $("#overlay").fadeIn();
+        });
+        loginUserView.on("login:cancel", function() {
+            console.log("canceled login");
+            $("#overlay").fadeOut();
+        });
+
 
         _.defer(function() {
             properties.fetch({ reset: true });

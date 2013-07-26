@@ -34,7 +34,7 @@
         <div class="container top">
             <div id="logo" class="span-16"><a href="http://qldarch.net/"><h1 class="logo">Digital Archive of Queensland Architecture</h1></a></div>
             <div id="userinfo" class="span-8 last">Login...</div>
-            <div id="overlay" class="overlay"></div>
+            <div id="overlay" class="push-16 span-8 last" style="display:none"></div>
             <div id="logomenu" class="span-24">
                 <a href="http://qldarch.net/?page_id=5">ABOUT</a>
                 <a href="http://qldarch.net/?page_id=8">COLLABORATORS</a>
@@ -229,12 +229,18 @@
             </div>
         </script>
         <script type="text/template" id="loginTemplate">
-            <div class="span-8 last">
-                <label>Username: <input type="text" name="username"/></label>
-                <label>Password: <input type="password" name="password"/></label>
-                <button class="loginbutton" type="button">Log in</button>
-                <button class="cancelbutton" type="button">Cancel</button>
-            </div>
+            <label>Username: <input type="text" class="username"/></label><br/>
+            <label>Password: <input type="password" class="password"/></label><br/>
+            <button class="loginbutton" type="button">Log in</button>
+            <button class="cancelbutton" type="button">Cancel</button>
+        </script>
+        <script type="text/template" id="anonTemplate">
+            <span class="login button slim">Login</span>
+            <span class="create button slim">Create account</span>
+        </script>
+        <script type="text/template" id="userTemplate">
+            <span class="username button slim"><%= username %></span>
+            <span class="logout button slim">Logout</span>
         </script>
         <script type="text/javascript">
             $(function() {
