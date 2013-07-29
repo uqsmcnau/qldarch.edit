@@ -44,9 +44,6 @@ body * {
 }
 
 #overlay {
-    border: 1px solid lightgrey;
-    background: white;
-    padding-top: 10px;
     position: absolute;
     top: 53px;
     left: 821px;
@@ -56,7 +53,14 @@ body * {
     margin: 0;
 }
 
+.userauth {
+    margin-bottom: 10px;
+}
+
 .loginattempt {
+    border: 1px solid lightgrey;
+    background: white;
+    padding-top: 10px;
     padding-bottom: 10px;
     padding-left: 40px;
     padding-right: 40px;

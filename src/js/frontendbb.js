@@ -2885,26 +2885,27 @@ var frontend = (function() {
         },
 
         onLoginAttempt: function() {
-            console.log("Attempting login");
             var username = this.ui.username.val();
             var password = this.ui.password.val();
-            console.log(username + "/" + password);
+            this.$("button").prop('disabled', true);
+            var view = this;
             $.post(JSON_ROOT + "login", { username: username, password: password }, "json").
                 done(function(data, textStatus, jqXHR) {
-                    console.log("login success");
-                    console.log(data);
-                    console.log(textStatus);
-                    console.log(jqXHR);
+                    view.triggerMethod("login:success", data);
                 }).
-                fail(function(data, textStatus, jqXHR) {
-                    console.log("login failure");
-                    console.log(data);
-                    console.log(textStatus);
-                    console.log(jqXHR);
+                fail(function(jqXHR, textStatus, errorThrown) {
+                    var data = JSON.parse(jqXHR.responseText);
+                    view.triggerMethod("login:failure", (data || { user: "", auth: false })); 
+                }).
+                always(function() {
+                    view.$("button").prop('disabled', false);
                 });
         },
 
         onRender: function() {
+            this.ui.username.val("");
+            this.ui.password.val("");
+            this.$("button").prop('disabled', false);
             this.delegateEvents();
         },
 
@@ -2918,15 +2919,46 @@ var frontend = (function() {
             user: "",
             auth: false,
         },
+
+        sync: function(method, model) {
+            if (method === "read") {
+                var model = this;
+                $.getJSON(JSON_ROOT + "login/status").
+                    done(function(data, textStatus, jqXHR) {
+                        model.set(model.parse(data));
+                    }).
+                    fail(function(jqXHR, textStatus, errorThrown) {
+                        var data = JSON.parse(jqXHR.responseText);
+                        model.set(model.parse(data || { user: "", auth: false })); 
+                    });
+            } else {
+                console.log("Error: cannot sync UserModel except to read");
+            }
+        },
+
+        logout: function() {
+            var model = this;
+            $.post(JSON_ROOT + "logout").
+                done(function(data, textStatus, jqXHR) {
+                    model.set(model.parse(data));
+                }).
+                fail(function(jqXHR, textStatus, errorThrown) {
+                    var data = JSON.parse(jqXHR.responseText);
+                    model.set(model.parse(data || { user: "", auth: false })); 
+                });
+        },
     });
 
     var UserView = Backbone.Marionette.ItemView.extend({
         className: "userdetails",
         userTemplate: "#userTemplate",
         anonTemplate: "#anonTemplate",
+        infoTemplate: "#infopanelTemplate",
+        FLASH_DELAY: 3000,
 
         template: function(serialized) {
             var template = serialized.auth ? serialized.userTemplate : serialized.anonTemplate;
+            console.log("selecting template: " + template);
             return _.template($(template).html(), serialized);
         },
 
@@ -2935,30 +2967,89 @@ var frontend = (function() {
                 userTemplate: this.userTemplate,
                 anonTemplate: this.anonTemplate,
                 username: this.model.get('user'),
+                auth: this.model.get('auth'),
             };
         },
 
         triggers: {
             'click .login': "user:login",
             'click .create': "user:create",
+            'click .username': "user:details",
             'click .logout': "user:logout",
         },
 
         onRender: function() {
             this.bindUIElements();
             this.delegateEvents();
+            this.listenTo(this.model, "change", this.render);
         },
 
         onUserLogin: function() {
-            console.log("UserView::user:login");
+            this.showLogin();
         },
 
         onUserCreate: function() {
-            console.log("UserView::user:create");
+            this.flashInfo(
+                "Online account creation suspended please contact QldArch to request an account");
+        },
+
+        onUserDetails: function() {
+            this.flashInfo("User details currently not available");
         },
 
         onUserLogout: function() {
-            console.log("UserView::user:logout");
+            this.model.logout();
+        },
+
+        onLoginCancel: function() {
+            this.hideLogin();
+        },
+
+        onLoginSuccess: function(authdetails) {
+            this.hideLogin();
+            this.model.set(authdetails);
+        },
+
+        onLoginFailure: function(authdetails) {
+            this.hideLogin();
+            this.flashInfo("Login attempt failed");
+            this.model.set(authdetails);
+        },
+
+        showLogin: function() {
+            if (_.isUndefined(this.loginView)) {
+                this.loginView = new LoginUserView();
+            } else {
+                this.hideLogin();
+            }
+
+            this.listenTo(this.loginView, "login:success", this.onLoginSuccess);
+            this.listenTo(this.loginView, "login:failure", this.onLoginFailure);
+            this.listenTo(this.loginView, "login:cancel", this.onLoginCancel);
+
+            $("#overlay").empty().html(this.loginView.render().$el);
+        },
+
+        hideLogin: function() {
+            if (this.loginView.isClosed) {
+                return;
+            } else {
+                this.loginView.close();
+                this.stopListening(this.loginView);
+            }
+        },
+
+        flashInfo: function(message) {
+            var info = $(_.template($(this.infoTemplate).html())({
+                message: message,
+            }).trim());
+
+            this.$el.append(info);
+            _.delay(function() {
+                info.fadeOut(function() {
+                    $(this).remove();
+                });
+            }, this.FLASH_DELAY);
         },
     });
 
@@ -3233,11 +3324,10 @@ var frontend = (function() {
             model: mapSearchModel,
         });
 
+
         var userView = new UserView({
             model: usermodel,
         });
-
-        var loginUserView = new LoginUserView();
 
         router.on('route:frontpage', function(search) {
             if (search) {
@@ -3352,18 +3442,9 @@ var frontend = (function() {
         Backbone.history.start();
 
         $("#userinfo").empty().append(userView.render().$el);
-        $("#overlay").empty().append(loginUserView.render().$el);
-        userView.on("user:login", function() {
-            console.log("detected user:login");
-            $("#overlay").fadeIn();
-        });
-        loginUserView.on("login:cancel", function() {
-            console.log("canceled login");
-            $("#overlay").fadeOut();
-        });
-
 
         _.defer(function() {
+            usermodel.fetch();
             properties.fetch({ reset: true });
             displayedEntities.fetch({ reset: true });
             entities.fetch({ reset: true });
