@@ -141,21 +141,33 @@
             <div class="info"><%= message %></div>
         </script>
         <script type="text/template" id="interviewTemplate">
-            <div class="span-18">
-                <h2 class="columntitle">Unknown Interview</h2>
-                <h3>Conducted on unknown date</h3>
+            <div class="header span24">
+                <div class="summary span-18"></div>
+                <div class="adjunct span-6 last"></div>
             </div>
-            <div class="returnbutton span-6 last">Front page...</div>
-            <div class="interviewplayer span-24"></div>
+            <div class="primary span-8"></div>
+            <div class="secondary span-16 last"></div>
         </script>
-        <!-- target .content -->
+        <script type="text/template" id="interviewsummaryTemplate">
+            <h2 class="columntitle">Unknown Interview</h2>
+            <h3>Conducted on unknown date</h3>
+        </script>
+        <script type="text/template" id="returnbuttonTemplate">
+            <div class="returnbutton span-6 last">Front page...</div>
+        </script>
         <script type="text/template" id="transcriptTemplate">
-            <div class="audiodiv span-8" data-uri="<%= uri %>">
+            <div class="audiodiv span-8">
                 <audio id="<%= audiocontrolid %>" class="span-8" controls="controls">
                     <source src="<%= audiosrc %>" type="audio/ogg">
                 </audio>
                 <div class="transcript" class="transcript span-8"></div>
             </div>
+        </script>
+        <script type="text/template" id="utteranceView">
+            <div class="speaker"><%= speaker %></div>
+            <div class="speech"><%= transcript %></div>
+        </script>
+        <script type="text/template" id="transcripttabsView">
             <div class="span-16 last">
                 <div class="contentpanetabs span-16">
                     <span type="Current" class="button tab">Search Current Transcript</span>

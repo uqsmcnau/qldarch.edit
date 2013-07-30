@@ -80,6 +80,7 @@ var frontend = (function() {
     var QA_BUILDING_TYPOLOGY_P = "http://qldarch.net/ns/rdf/2012-06/terms#buildingTypology";
 
     var DCT_TITLE = "http://purl.org/dc/terms/title";
+    var DCT_CREATED = "http://purl.org/dc/terms/created";
     var DCT_FORMAT = "http://purl.org/dc/terms/format";
 
     var GEO_LAT = "http://www.w3.org/2003/01/geo/wgs84_pos#lat";
@@ -1679,21 +1680,234 @@ var frontend = (function() {
         },
     });
 
-    var TranscriptView = ToplevelView.extend({
-        className: "interviewpane",
-        template: "#interviewTemplate",
+    var ImageContentView = Backbone.Marionette.Layout.extend({
+
+        onModelChanged: function() {
+            if (!this.isClosed && this.model.get("contentDescription")) {
+                this.render();
+            }
+        },
+        
+        onRender: function() {
+            if (!this.model.get('contentDescription')) {
+                console.log("ImageContentView::onRender, contentDescription not ready, deferring");
+                _.delay(_.bind(this.onRender, this), 2000);
+                return;
+            }
+            var pdv = new ImageDisplayView({
+                contentDescriptionSource: this.model.get("contentDescriptionSource"),
+                files: this.files,
+            });
+            this.listenTo(pdv, "display:toggle", this._onMetadataToggle);
+            this.content.show(pdv);
+
+            this.metadata.show(new ContentDetailView({
+                contentDescriptionSource: this.model,
+                properties: this.properties,
+                entities: this.entities,
+            }));
+        },
+
+        _onMetadataToggle: function() {
+            this.$(".imagemetadata").fadeToggle();
+        },
+    });
+
+    // FIXME: Note the similarity between title and date; this is replicated elsewhere.
+    //  REFACTOR into a submodel of ViewModel that takes a list of properties as well
+    //  as computed_attributes
+    var TranscriptSummaryModel = Backbone.ViewModel({
+        computed_attributes: {
+            title: function() {
+                var cd = this.get('contentDescriptionSource').get('contentDescription');
+                if (cd) {
+                    var title = cd.get1(DCT_TITLE);
+                    return title ? title : "No title available for " + cd.id;
+                } else {
+                    return "No content specified";
+                }
+            },
+            date: function() {
+                var cd = this.get('contentDescriptionSource').get('contentDescription');
+                if (cd) {
+                    var date = cd.get1(DCT_CREATED);
+                    return date ? title : "No date available for " + cd.id;
+                } else {
+                    return "No content specified";
+                }
+            },
+        },
+    });
+
+    var TranscriptUtteranceCollection = Backbone.Collection.extend({
+        parse: function(transcript) {
+            var exchanges = [];
+            for (var i = 0; i < transcript.exchanges.length; i++) {
+                var curr = transcript.exchanges[i];
+                var next = transcript.exchanges[i+1];
+
+                var start = Math.max(0.5, Popcorn.util.toSeconds(curr.time)) - 0.5;
+                var end = next ? Popcorn.util.toSeconds(next.time) - 0.5 : popcorn.duration();
+
+                exchanges.push({
+                    speaker: curr.speaker,
+                    transcript: curr.transcript,
+                    time: curr.time,
+                    start: start,
+                    end: end,
+                });
+            }
+
+            return exchanges;
+        },
+
+        computeModelArray: function() {
+            var cd = this.get('contentDescriptionSource').get('contentDescription');
+            if (cd) {
+                var src = cd.get1(QA_TRANSCRIPT_LOCATION, true, true);
+                var result = src ? _.sortBy(this.parse(src), "start") : [] + cd.id;
+                return result;
+            } else {
+                return [];
+            }
+        },
+    });
+
+    var UtteranceView = Backbone.Marionette.ItemView.extend({
+        className: "utterance",
+        template: "#utteranceView",
+
+
+    });
+
+    var TranscriptSummaryView = Backbone.Marionette.ItemView.extend({
+        className: "transcriptheader",
+        template: "#interviewsummaryTemplate",
+
 
         initialize: function(options) {
-            options || (options = {});
-            ToplevelView.prototype.initialize.call(this, options);
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
 
+            this.model = new TranscriptSummaryModel({
+                source_models: {
+                    contentDescriptionSource: this.contentDescriptionSource,
+                },
+            });
+        },
+    });
+
+    var ReturnButtonView = Backbone.Marionette.ItemView.extend({
+        className: "return",
+        template: "#returnbuttonTemplate",
+
+        triggers: {
+            "click .returnbutton": "return:click",
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        onReturnClick: function() {
+            this.router.navigate("", { trigger: true, replace: false });
+        },
+    });
+
+    var TrackingPlayerModel = Backbone.ModelView.extend({
+        initialize: function(options) {
+            console.log("TPM::init");
+            this.set("audiocontrolid", _.uniqueId("TrackingPlayer_"));
+        },
+        computed_attributes: {
+            audiosrc: function() {
+                var cd = this.get('contentDescriptionSource').get('contentDescription');
+                if (cd) {
+                    var src = cd.get1(QA_EXTERNAL_LOCATION, true, true);
+                    return src ? src : "/Unavailable/" + cd.id;
+                } else {
+                    return "/NoContentDescription"
+                }
+            },
+        },
+    });
+
+    var TrackingPlayerView = Backbone.Marionette.CompositeView.extend({
+        className: "trackingplayer",
+        template: "#transcriptTemplate",
+
+        serializeData: function() {
+            return {
+                audiocontrolid: this.model.get('audiocontrolid'),
+                audiosrc: this.model.get('audiosrc'),
+            };
+        },
+
+        initialize: function(options) {
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
+
+            this.model = new TrackingPlayerModel({
+                source_models: {
+                    contentDescriptionSource: this.contentDescriptionSource,
+                },
+            });
+
+            this.collection = new TranscriptUtteranceCollection({
+            });
+        },
+    });
+
+    var TranscriptView = Backbone.Marionette.Layout.extend({
+        className: "interviewpane",
+        template: "#interviewTemplate",
+        regions {
+            ".header .summary": summary,
+            ".header .adjunct": adjunct,
+            ".primary": primary,
+            ".secondary": secondary,
+        },
+
+        serializeData: function() {
+            return {};
+        }
+
+        initialize: function(options) {
+            this.contentSearchModel = _.checkarg(options.contentSearchModel)
+                .throwNoArg("options.contentSearchModel");
+            this.content = _.checkarg(options.content).throwNoArg("options.content");
+            this.fulltext = _.checkarg(options.fulltext).throwNoArg("options.fulltext");
+            this.transcripts = _.checkarg(options.transcripts).throwNoArg("options.transcripts");
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
+
+            this.contentDescriptionSource = new ContentDescriptionModel({
+                types: _.keys(this.content),
+                source_models: _.extend({
+                    contentSearchModel: this.contentSearchModel,
+                }, this.content),
+            });
+        },
+
+        onRender: function() {
+            this.bindUIElements();
+            this.delegateEvents();
+
+            this.summary.show(new TranscriptSummaryView({
+                contentDescriptionSource: this.contentDescriptionSource,
+            }));
+
+            this.adjunct.show(new ReturnButtonView({}));
+        },
+    });
+
+
+        initialize: function(options) {
             this.transcriptTemplate = _.template($("#transcriptTemplate").html());
             this.infoTemplate = _.template($("#infopanelTemplate").html());
             this.spinnerTemplate = _.template($("#spinnerTemplate").html());
             this.transcriptResultTemplate = _.template($("#transcriptresultTemplate").html());
+
             this.content = options.content;
-            this.fulltext = options.fulltext;
-            this.transcripts = options.transcripts;
             this.contentDescription = undefined;
             this.transcript = undefined;
 
@@ -1717,16 +1931,6 @@ var frontend = (function() {
         },
 
         _update: function() {
-            if (this.attached) {
-                if (this.contentDescription) {
-                    if (this.$(".audiodiv").length != 0 &&
-                            this.contentDescription.id === this.$(".audiodiv").data("uri")) {
-                        return;
-                    }
-
-                    document.title = this.contentDescription.get1(DCT_TITLE, logmultiple);
-
-                    var audiocontrolid = _.uniqueId("audiocontrol");
                     this.$(".interviewplayer div.info").remove();
                     this.$(".columntitle").text(this.contentDescription.get1(DCT_TITLE));
                     this.$(".interviewplayer").html(this.transcriptTemplate({
@@ -1743,6 +1947,10 @@ var frontend = (function() {
                     var transcriptURL = this.contentDescription.get(QA_TRANSCRIPT_LOCATION, true, true);
                     if (transcriptURL) {
                         var that = this;
+                        var matched = /http:\/\/[^\/]*(\/.*)/.exec(transcriptURL);
+                        if (matched.length == 2) {
+                            transcriptURL = matched[1];
+                        }
                         $.getJSON(transcriptURL).success(function(transcript) {
                             that.transcript = transcript;
                             that.linkAndPlayInterview(transcript, audiocontrolid);
@@ -1762,33 +1970,6 @@ var frontend = (function() {
                         message: "Interview not found (" + this.model.get('selection') + ")",
                     }));
                 }
-            }
-        },
-
-        // FIXME: This is slightly ridiculous. I should introduce the ViewModel concept of
-        // derivied for views and then this can be a direct model application.
-        _updateContentDescription: function() {
-            var type = this.model.get('type');
-            var contentId = this.model.get('selection');
-            var searchresult = (type === QA_TRANSCRIPT_TYPE) ?
-                this.fulltext.get(contentId) : undefined;
-            var interviewId = searchresult ? searchresult.get('interview') : contentId;
-            this.offset = searchresult ? searchresult.id.match(/[^#]*#(.*)/)[1] : undefined;
-
-            if (interviewId && type && this.content[type]) {
-                var newContent = this.content[type].get(interviewId);
-                if (newContent) {
-                    if (newContent !== this.contentDescription) {
-                        this.contentDescription = newContent;
-                        this._update();
-                    }
-                } else {
-                    this.contentDescription = undefined;
-                    this._update();
-                }
-            } else {
-                this.contentDescription = undefined;
-                this._update();
             }
         },
 
@@ -1875,10 +2056,6 @@ var frontend = (function() {
                         });
                 }, this);
             }
-        },
-
-        toFrontpage: function() {
-            this.router.navigate("", { trigger: true, replace: false });
         },
     });
 
@@ -3378,6 +3555,7 @@ var frontend = (function() {
             },
             fulltext: fulltextTranscriptModel,
             transcripts: transcripts,
+            files, files,
         });
 
         var pdfContentView = new PdfContentView({
