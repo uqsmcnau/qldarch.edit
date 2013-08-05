@@ -1939,6 +1939,10 @@ var frontend = (function() {
             return {};
         },
 
+        initialize: function(options) {
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
+        },
+
         onReturnClick: function() {
             this.router.navigate("", { trigger: true, replace: false });
         },
@@ -2037,6 +2041,7 @@ var frontend = (function() {
         initialize: function(options) {
             this.contentSearchModel = _.checkarg(options.contentSearchModel)
                 .throwNoArg("options.contentSearchModel");
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
             this.content = _.checkarg(options.content).throwNoArg("options.content");
             this.fulltext = _.checkarg(options.fulltext).throwNoArg("options.fulltext");
             this.transcripts = _.checkarg(options.transcripts).throwNoArg("options.transcripts");
@@ -2058,7 +2063,9 @@ var frontend = (function() {
                 contentDescriptionSource: this.contentDescriptionSource,
             }));
 
-            this.adjunct.show(new ReturnButtonView({}));
+            this.adjunct.show(new ReturnButtonView({
+                router: this.router,
+            }));
 
             this.primary.show(new TrackingPlayerView({
                 contentDescriptionSource: this.contentDescriptionSource,
