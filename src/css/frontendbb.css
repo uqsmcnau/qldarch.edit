@@ -202,7 +202,8 @@ div.contententry:hover {
     border-right: 1px solid lightgrey;
     border-bottom: 1px solid lightgrey;
     height: 600px;
-    overflow:hidden;
+    overflow-x:hidden;
+    overflow-y:scroll;
 }
 
 audio {
