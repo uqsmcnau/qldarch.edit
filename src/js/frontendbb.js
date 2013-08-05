@@ -1716,7 +1716,7 @@ var frontend = (function() {
     // FIXME: Note the similarity between title and date; this is replicated elsewhere.
     //  REFACTOR into a submodel of ViewModel that takes a list of properties as well
     //  as computed_attributes
-    var TranscriptSummaryModel = Backbone.ViewModel({
+    var TranscriptSummaryModel = Backbone.ViewModel.extend({
         computed_attributes: {
             title: function() {
                 var cd = this.get('contentDescriptionSource').get('contentDescription');
@@ -1731,7 +1731,7 @@ var frontend = (function() {
                 var cd = this.get('contentDescriptionSource').get('contentDescription');
                 if (cd) {
                     var date = cd.get1(DCT_CREATED);
-                    return date ? title : "No date available for " + cd.id;
+                    return date ? date : "No date available for " + cd.id;
                 } else {
                     return "No content specified";
                 }
@@ -1739,15 +1739,20 @@ var frontend = (function() {
         },
     });
 
-    var TranscriptUtteranceCollection = Backbone.Collection.extend({
+    var TranscriptUtteranceCollection = Backbone.ViewCollection.extend({
         parse: function(transcript) {
             var exchanges = [];
+
+            if (!transcript || !transcript.exchanges) {
+                return exchanges;
+            }
+
             for (var i = 0; i < transcript.exchanges.length; i++) {
                 var curr = transcript.exchanges[i];
                 var next = transcript.exchanges[i+1];
 
                 var start = Math.max(0.5, Popcorn.util.toSeconds(curr.time)) - 0.5;
-                var end = next ? Popcorn.util.toSeconds(next.time) - 0.5 : popcorn.duration();
+                var end = next ? Popcorn.util.toSeconds(next.time) - 0.5 : NaN;
 
                 exchanges.push({
                     speaker: curr.speaker,
@@ -1762,10 +1767,9 @@ var frontend = (function() {
         },
 
         computeModelArray: function() {
-            var cd = this.get('contentDescriptionSource').get('contentDescription');
-            if (cd) {
-                var src = cd.get1(QA_TRANSCRIPT_LOCATION, true, true);
-                var result = src ? _.sortBy(this.parse(src), "start") : [] + cd.id;
+            var transcript = this.sources.transcriptSource.get('transcript');
+            if (transcript) {
+                var result = _.sortBy(this.parse(transcript), "start");
                 return result;
             } else {
                 return [];
@@ -1773,10 +1777,130 @@ var frontend = (function() {
         },
     });
 
+    var TranscriptModel = Backbone.ViewModel.extend({
+        computed_attributes: {
+            hasTranscript: function() {
+                var cd = this.get('contentDescriptionSource').get('contentDescription');
+                if (!cd) {
+                    this.set('transcript', { title: "Content Description Unavailable" });
+                    return false;
+                } else {
+                    var src = cd.get1(QA_TRANSCRIPT_LOCATION, true, true);
+                    var matched = /http:\/\/[^\/]*(\/.*)/.exec(src);
+                    if (matched.length == 2) {
+                        src = matched[1];
+                    }
+
+                    this.set('transcript', { title: "Transcript loading from " + src });
+                    $.getJSON(src)
+                        .done(_.bind(this.transcriptUpdater, this, cd))
+                        .fail(_.bind(this.errorUpdater, this, cd, src));
+                    return true;
+                }
+            },
+        },
+
+        transcriptUpdater: function(oldContent, data, textStatus, jqXHR) {
+            var currContent = this.get('contentDescriptionSource').get('contentDescription');
+            if (oldContent == currContent) {
+                this.set('transcript', data);
+            }
+        },
+
+        errorUpdater: function(oldCD, src, jXHR, textStatus, errorThrown) {
+            var currContent = this.get('contentDescriptionSource').get('contentDescription');
+            if (oldContent == currContent) {
+                this.set('transcript', {
+                    title: "Failed to load transcript from " + src + " with error: " + textStatus,
+                });
+            }
+        },
+    });
+
+
     var UtteranceView = Backbone.Marionette.ItemView.extend({
         className: "utterance",
-        template: "#utteranceView",
+        template: "#utteranceTemplate",
 
+        serializeData: function() {
+            return {
+                speaker: this.model.get('speaker'),
+                transcript: this.model.get('transcript'),
+            };
+        },
+
+        events: {
+            "click": "_select",
+        },
+
+        initialize: function(options) {
+            this.popcornModel = _.checkarg(options.popcornModel)
+                .throwNoArg("options.popcornModel");
+            this.popcornInterval = undefined;
+            this.current = false;
+
+            this.listenTo(this.popcornModel, "change", this.setPopcornInterval);
+        },
+
+        onRender: function() {
+            if (this.current) {
+                this.$el.css("opacity", "1.0");
+            } else {
+                this.$el.css("opacity", "0.5");
+            }
+
+            if (!this.popcornInterval) {
+                this.setPopcornInterval();
+            }
+        },
+
+        setPopcornInterval: function() {
+            var popcorn = this.popcornModel.get('popcorn');
+            if (!popcorn) return;
+
+            this.popcornInterval = {
+                start: this.model.get('start'),
+                end: this.model.get('end') || popcorn.duration(),
+                onStart: _.bind(this.showSubtitle, this),
+                onEnd: _.bind(this.hideSubtitle, this),
+            };
+            var r = popcorn.code(this.popcornInterval);
+        },
+
+        showSubtitle: function() {
+            this.current = true;
+
+            var container = this.$el.parents(".transcript");
+            container.stop();
+            this.$el.animate({
+                "opacity": "1.0",
+            });
+            container.scrollTo(this.$el, "fast", {
+                offset: { top: -10 },
+            });
+        },
+
+        hideSubtitle: function() {
+            this.current = false;
+            var container = this.$el.parents(".transcript");
+            this.$el.animate({
+                "opacity": "0.5",
+            });
+        },
+
+        _select: function() {
+            var popcorn = this.popcornModel.get('popcorn');
+            if (!popcorn) {
+                console.log("No popcorn object available");
+            } else {
+                var start = this.model.get('start');
+                if (start) {
+                    popcorn.currentTime(start);
+                } else {
+                    console.log("No start time available for utterance");
+                }
+            }
+        },
 
     });
 
@@ -1784,6 +1908,12 @@ var frontend = (function() {
         className: "transcriptheader",
         template: "#interviewsummaryTemplate",
 
+        serializeData: function() {
+            return {
+                title: this.model.get('title'),
+                date: this.model.get('date'),
+            };
+        },
 
         initialize: function(options) {
             this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
@@ -1814,19 +1944,19 @@ var frontend = (function() {
         },
     });
 
-    var TrackingPlayerModel = Backbone.ModelView.extend({
+    var TrackingPlayerModel = Backbone.ViewModel.extend({
         initialize: function(options) {
-            console.log("TPM::init");
             this.set("audiocontrolid", _.uniqueId("TrackingPlayer_"));
         },
+
         computed_attributes: {
             audiosrc: function() {
                 var cd = this.get('contentDescriptionSource').get('contentDescription');
-                if (cd) {
+                if (!cd) {
+                    return "/NoContentDescription";
+                } else {
                     var src = cd.get1(QA_EXTERNAL_LOCATION, true, true);
                     return src ? src : "/Unavailable/" + cd.id;
-                } else {
-                    return "/NoContentDescription"
                 }
             },
         },
@@ -1836,16 +1966,27 @@ var frontend = (function() {
         className: "trackingplayer",
         template: "#transcriptTemplate",
 
-        serializeData: function() {
+        itemViewContainer: ".transcript",
+
+        itemView: UtteranceView,
+        itemViewOptions: function() {
             return {
-                audiocontrolid: this.model.get('audiocontrolid'),
-                audiosrc: this.model.get('audiosrc'),
+                popcornModel: this.popcornModel,
             };
+        },
+
+        serializeData: function() {
+            var results = this.model.pick('audiocontrolid', 'audiosrc');
+            return results;
         },
 
         initialize: function(options) {
             this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
                 .throwNoArg("options.contentDescriptionSource");
+
+            this.popcornModel = new Backbone.Model({
+                popcorn: undefined,
+            });
 
             this.model = new TrackingPlayerModel({
                 source_models: {
@@ -1853,24 +1994,45 @@ var frontend = (function() {
                 },
             });
 
-            this.collection = new TranscriptUtteranceCollection({
+            this.transcriptModel = new TranscriptModel({
+                source_models: {
+                    contentDescriptionSource: this.contentDescriptionSource,
+                },
             });
+
+            this.collection = new TranscriptUtteranceCollection({
+                sources: {
+                    transcriptSource: this.transcriptModel,
+                },
+            });
+        },
+
+        onDomRefresh: function() {
+            var popcorn = Popcorn("#" + this.model.get('audiocontrolid'));
+            this.popcornModel.set('popcorn', popcorn);
+
+            _.defer(function() { popcorn.play(); });
+
+            if (this.offset) {
+                var start = Math.max(0.5, Popcorn.util.toSeconds(this.offset)) - 0.5;
+                _.delay(function() { popcorn.currentTime(start); }, 2000);
+            }
         },
     });
 
     var TranscriptView = Backbone.Marionette.Layout.extend({
         className: "interviewpane",
         template: "#interviewTemplate",
-        regions {
-            ".header .summary": summary,
-            ".header .adjunct": adjunct,
-            ".primary": primary,
-            ".secondary": secondary,
+        regions: {
+            summary: ".header .summary",
+            adjunct: ".header .adjunct",
+            primary: ".primary",
+            secondary: ".secondary",
         },
 
         serializeData: function() {
             return {};
-        }
+        },
 
         initialize: function(options) {
             this.contentSearchModel = _.checkarg(options.contentSearchModel)
@@ -1897,167 +2059,44 @@ var frontend = (function() {
             }));
 
             this.adjunct.show(new ReturnButtonView({}));
+
+            this.primary.show(new TrackingPlayerView({
+                contentDescriptionSource: this.contentDescriptionSource,
+            }));
         },
     });
 
 
-        initialize: function(options) {
-            this.transcriptTemplate = _.template($("#transcriptTemplate").html());
-            this.infoTemplate = _.template($("#infopanelTemplate").html());
-            this.spinnerTemplate = _.template($("#spinnerTemplate").html());
-            this.transcriptResultTemplate = _.template($("#transcriptresultTemplate").html());
-
-            this.content = options.content;
-            this.contentDescription = undefined;
-            this.transcript = undefined;
-
-            this.model.on("change", this._updateContentDescription);
-            _.each(_.values(this.content), function(collection) {
-                collection.on("reset", this._updateContentDescription, this)
-            }, this);
-        },
-
-        events: {
-            "keyup input.searchbox"   : "searchTranscript",
-            "click .returnbutton" : "toFrontpage"
-        },
-
-        render: function() {
-            ToplevelView.prototype.render.call(this);
-
-            this.$el.html(this.template());
-            this._update();
-            return this;
-        },
-
-        _update: function() {
-                    this.$(".interviewplayer div.info").remove();
-                    this.$(".columntitle").text(this.contentDescription.get1(DCT_TITLE));
-                    this.$(".interviewplayer").html(this.transcriptTemplate({
-                        uri: this.contentDescription.id,
-                        audiocontrolid: audiocontrolid,
-                        audiosrc: this.contentDescription.get1(QA_EXTERNAL_LOCATION, true, true),
-                    }));
-                    this.$(".transcript").html(this.spinnerTemplate());
-// FIXME: This won't work until I have .json files submitted to Omeka.
-//                    var transcriptId = this.contentDescription.get1(QA_HAS_TRANSCRIPT, true, true);
-//                    var transcript = this.transcripts.get(transcriptId);
-//                    var transcriptURL = '/omeka/archive/files/' +
-//                        transcript.get(QA_SYSTEM_LOCATION);
-                    var transcriptURL = this.contentDescription.get(QA_TRANSCRIPT_LOCATION, true, true);
-                    if (transcriptURL) {
-                        var that = this;
-                        var matched = /http:\/\/[^\/]*(\/.*)/.exec(transcriptURL);
-                        if (matched.length == 2) {
-                            transcriptURL = matched[1];
-                        }
-                        $.getJSON(transcriptURL).success(function(transcript) {
-                            that.transcript = transcript;
-                            that.linkAndPlayInterview(transcript, audiocontrolid);
-                        }).error(function() {
-                            that.$(".transcript").html(that.infoTemplate({
-                                message: "Error fetching transcript (" + transcriptURL + ")",
-                            }));
-                        });
-                    } else {
-                        this.$(".transcript").html(this.infoTemplate({
-                            message: "No known transcript for this interview",
-                        }));
-                    }
-                } else {
-                    this.$(".columntitle").text("Unknown Interview");
-                    this.$(".interviewplayer").html(this.infoTemplate({
-                        message: "Interview not found (" + this.model.get('selection') + ")",
-                    }));
-                }
-            }
-        },
-
-        linkAndPlayInterview: function(transcript, audiocontrolid) {
-            var transcriptdiv = this.$(".transcript");
-            transcriptdiv.empty();
-
-            function subtitleUpdater(jqElement, offset, show) {
-                var toppos = jqElement.position().top - offset;
-                return function(options) {
-                    if (show) {
-                        jqElement.animate({"opacity": "1.0"});
-                        transcriptdiv.animate({"scrollTop": toppos - 50}, function() {
-                            jqElement.animate({"opacity": "1.0"});
-                        });
-                    } else {
-                        transcriptdiv.stop();
-                        jqElement.animate({"opacity": "0.5"});
-                    }
-                };
-            }
-
-            // FIXME: This needs to be extracted into a template.
-            var popcorn = Popcorn("#" + audiocontrolid);
-            for (var i = 0; i < transcript.exchanges.length; i++) {
-                var curr = transcript.exchanges[i];
-                var next = transcript.exchanges[i+1];
-
-                var start = Math.max(0.5, Popcorn.util.toSeconds(curr.time)) - 0.5;
-                var end = next ? Popcorn.util.toSeconds(next.time) - 0.5 : popcorn.duration();
-
-                var speakerdiv = $('<div class="speaker" />').text(curr.speaker);
-                var speechdiv = $('<div class="speech" />').text(curr.transcript);
-
-                var subtitlediv = $('<div class="subtitle" data-time="' + curr.time + '" style="display:block;opacity:0.5"/>');
-                subtitlediv.data("start", start).data("end", end);
-                subtitlediv.append(speakerdiv).append(speechdiv);
-                subtitlediv.click(function() {
-                    popcorn.currentTime($(this).data("start"));
-                });
-
-                transcriptdiv.append(subtitlediv);
-
-                popcorn.code({
-                    start: start,
-                    end: end,
-                    onStart: subtitleUpdater(subtitlediv, transcriptdiv.position().top, true),
-                    onEnd: subtitleUpdater(subtitlediv, transcriptdiv.position().top, false)
-                });
-            }
-
-            popcorn.play();
-
-            if (this.offset) {
-                var start = Math.max(0.5, Popcorn.util.toSeconds(this.offset)) - 0.5;
-                _.delay(function() { popcorn.currentTime(start); }, 2000);
-            }
-        },
-
-        searchTranscript: function(event) {
-            var val = this.$("input").val();
-            var results = [];
-            if (!this.transcript) {
-                this.$(".resultlist").html(this.infoTemplate({
-                    message: "No transcript loaded",
-                }));
-            } else {
-                if (event.keyCode == 13 || val.length > 3) {
-                    this.transcript.exchanges.forEach(function(exchange) {
-                        if (exchange.transcript.indexOf(val) != -1) {
-                            results.push(exchange);
-                        }
-                    });
-                }
-                this.$(".resultlist").empty();
-                _.each(results, function(result) {
-                    var obj = $(this.transcriptResultTemplate({
-                        speaker: result.speaker,
-                        time: result.time,
-                        transcript: _.escape(result.transcript),
-                    }).replace(/^\s*/, ''));
-                    obj.appendTo(this.$(".resultlist")).click(function() {
-                            $('.subtitle[data-time="' + result.time + '"]').click();
-                        });
-                }, this);
-            }
-        },
-    });
+// Old code to search transcript.
+//      searchTranscript: function(event) {
+//          var val = this.$("input").val();
+//          var results = [];
+//          if (!this.transcript) {
+//              this.$(".resultlist").html(this.infoTemplate({
+//                  message: "No transcript loaded",
+//              }));
+//          } else {
+//              if (event.keyCode == 13 || val.length > 3) {
+//                  this.transcript.exchanges.forEach(function(exchange) {
+//                      if (exchange.transcript.indexOf(val) != -1) {
+//                          results.push(exchange);
+//                      }
+//                  });
+//              }
+//              this.$(".resultlist").empty();
+//              _.each(results, function(result) {
+//                  var obj = $(this.transcriptResultTemplate({
+//                      speaker: result.speaker,
+//                      time: result.time,
+//                      transcript: _.escape(result.transcript),
+//                  }).replace(/^\s*/, ''));
+//                  obj.appendTo(this.$(".resultlist")).click(function() {
+//                          $('.subtitle[data-time="' + result.time + '"]').click();
+//                      });
+//              }, this);
+//          }
+//      },
+//  });
 
     var FulltextResult = Backbone.Model.extend({
         initialize: function() { },
@@ -2830,7 +2869,7 @@ var frontend = (function() {
 
     var ContentPropertyViewCollection = Backbone.ViewCollection.extend({
         computeModelArray: function() {
-            var cd = this.sources['contentDescriptionSource'].get('contentDescription');
+            var cd = this.sources.contentDescriptionSource.get('contentDescription');
             var properties = this.sources['properties'];
             var entities = this.sources['entities'];
 
@@ -3218,7 +3257,6 @@ var frontend = (function() {
 
         template: function(serialized) {
             var template = serialized.auth ? serialized.userTemplate : serialized.anonTemplate;
-            console.log("selecting template: " + template);
             return _.template($(template).html(), serialized);
         },
 
@@ -3548,14 +3586,14 @@ var frontend = (function() {
 
         var transcriptView = new TranscriptView({
             router: router,
-            model: contentSearchModel,
+            contentSearchModel: contentSearchModel,
             content: {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Interview": interviews,
                 "http://qldarch.net/ns/rdf/2012-06/terms#Transcript": interviews,
             },
             fulltext: fulltextTranscriptModel,
             transcripts: transcripts,
-            files, files,
+            files: files,
         });
 
         var pdfContentView = new PdfContentView({
@@ -3599,7 +3637,7 @@ var frontend = (function() {
             entitycontentpaneView.close();
             imageContentView.close();
             pdfContentView.close();
-            transcriptView.detach();
+            transcriptView.close();
             mapSearchView.close();
             $("#column1").empty().append(searchView.render().$el);
             $("#column1").append(mapButtonView.render().$el);
@@ -3620,7 +3658,7 @@ var frontend = (function() {
             entityView.detach();
             imageContentView.close();
             pdfContentView.close();
-            transcriptView.detach();
+            transcriptView.close();
             mapSearchView.close();
             $("#column12").empty().append(entitycontentpaneView.render().$el);
             $("#column3").empty().append(contentView.render().$el);
@@ -3636,7 +3674,7 @@ var frontend = (function() {
             fulltextView.detach();
             entityView.detach();
             entitycontentpaneView.close();
-            transcriptView.detach();
+            transcriptView.close();
             mapSearchView.close();
             $("#column1").empty().append(contentView.render().$el);
             $("#column23").empty().append(imageContentView.render().$el);
@@ -3653,7 +3691,7 @@ var frontend = (function() {
             fulltextView.detach();
             entityView.detach();
             entitycontentpaneView.close();
-            transcriptView.detach();
+            transcriptView.close();
             mapSearchView.close();
             imageContentView.close();
             $("#column1").empty().append(contentView.render().$el);
@@ -3674,7 +3712,7 @@ var frontend = (function() {
             imageContentView.close();
             pdfContentView.close();
             mapSearchView.close();
-            transcriptView.append("#column123");
+            $("#column123").empty().append(transcriptView.render().$el);
             $("#column123").show();
         }, contentSearchModel);
 
@@ -3687,7 +3725,7 @@ var frontend = (function() {
             fulltextView.detach();
             entityView.detach();
             entitycontentpaneView.close();
-            transcriptView.detach();
+            transcriptView.close();
             imageContentView.close();
             pdfContentView.close();
             $("#column12").empty().append(mapSearchView.render().$el);

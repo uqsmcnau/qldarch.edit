@@ -149,8 +149,8 @@
             <div class="secondary span-16 last"></div>
         </script>
         <script type="text/template" id="interviewsummaryTemplate">
-            <h2 class="columntitle">Unknown Interview</h2>
-            <h3>Conducted on unknown date</h3>
+            <h2 class="columntitle"><%= title %></h2>
+            <h3>Conducted on <%= date %></h3>
         </script>
         <script type="text/template" id="returnbuttonTemplate">
             <div class="returnbutton span-6 last">Front page...</div>
@@ -160,10 +160,10 @@
                 <audio id="<%= audiocontrolid %>" class="span-8" controls="controls">
                     <source src="<%= audiosrc %>" type="audio/ogg">
                 </audio>
-                <div class="transcript" class="transcript span-8"></div>
+                <div class="transcript span-8"></div>
             </div>
         </script>
-        <script type="text/template" id="utteranceView">
+        <script type="text/template" id="utteranceTemplate">
             <div class="speaker"><%= speaker %></div>
             <div class="speech"><%= transcript %></div>
         </script>

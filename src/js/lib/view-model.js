@@ -52,16 +52,17 @@ Backbone.ViewCollection = (function(Backbone, _, undefined) {
     var Model = Backbone.Model;
     var Collection = Backbone.Collection;
 
-    var ViewCollection = function(options) {
-        Collection.apply(this, [[], options]);
-        this.sources = options.sources;
-        this.trackSort = !!options.trackSort;
-        this.name = (options.name || "Unnamed ViewCollection");
-        this.options = options;
-        this.initializeViewCollection();
-    };
+    var ViewCollection = Collection.extend({
+        constructor: function(options) {
+            Collection.apply(this, [[], options]);
 
-    _.extend(ViewCollection.prototype, Collection.prototype, {
+            this.sources = options.sources;
+            this.trackSort = !!options.trackSort;
+            this.name = (options.name || "Unnamed ViewCollection");
+            this.options = options;
+            this.initializeViewCollection();
+        },
+
         initializeViewCollection: function() {
             this.setComputedAttributes();
             this.bindToChangesInSources();
@@ -85,8 +86,6 @@ Backbone.ViewCollection = (function(Backbone, _, undefined) {
             }, this);
         }
     });
-
-    ViewCollection.extend = Collection.extend;
 
     return ViewCollection;
 })(Backbone, _);
