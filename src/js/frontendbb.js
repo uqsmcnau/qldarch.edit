@@ -1603,13 +1603,8 @@ var frontend = (function() {
         },
         
         onRender: function() {
-            if (!this.model.get('contentDescription')) {
-                console.log("ImageContentView::onRender, contentDescription not ready, deferring");
-                _.delay(_.bind(this.onRender, this), 2000);
-                return;
-            }
             var pdv = new ImageDisplayView({
-                contentDescriptionSource: this.model.get("contentDescriptionSource"),
+                contentDescriptionSource: this.model,
                 files: this.files,
             });
             this.listenTo(pdv, "display:toggle", this._onMetadataToggle);
@@ -1677,39 +1672,6 @@ var frontend = (function() {
                 this.$(".info").fadeOut();
                 this.$(".image").fadeIn();
             }
-        },
-    });
-
-    var ImageContentView = Backbone.Marionette.Layout.extend({
-
-        onModelChanged: function() {
-            if (!this.isClosed && this.model.get("contentDescription")) {
-                this.render();
-            }
-        },
-        
-        onRender: function() {
-            if (!this.model.get('contentDescription')) {
-                console.log("ImageContentView::onRender, contentDescription not ready, deferring");
-                _.delay(_.bind(this.onRender, this), 2000);
-                return;
-            }
-            var pdv = new ImageDisplayView({
-                contentDescriptionSource: this.model.get("contentDescriptionSource"),
-                files: this.files,
-            });
-            this.listenTo(pdv, "display:toggle", this._onMetadataToggle);
-            this.content.show(pdv);
-
-            this.metadata.show(new ContentDetailView({
-                contentDescriptionSource: this.model,
-                properties: this.properties,
-                entities: this.entities,
-            }));
-        },
-
-        _onMetadataToggle: function() {
-            this.$(".imagemetadata").fadeToggle();
         },
     });
 
