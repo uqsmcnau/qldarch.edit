@@ -337,6 +337,9 @@ var frontend = (function() {
         },
 
         onRender: function() {
+            this.bindUIElements();
+            this.delegateEvents();
+
             this.proper.each(function(entity) {
                 this.$("select").append(this.optionTemplate({
                     label: entity.get1(QA_LABEL),
@@ -599,7 +602,7 @@ var frontend = (function() {
             });
             this.predicatedImages.set(this.model.get('type').id, this.collection);
 
-            this.forgetroute = true;
+            this.forgetroute = false;
             this.listenTo(this.router, 'route:viewimage',
                     function () { this.forgetroute = true });
             this.listenTo(this.router, 'route:viewentity',
@@ -1580,16 +1583,16 @@ var frontend = (function() {
         initialize: function(options) {
             this.contentSearchModel = _.checkarg(options.contentSearchModel)
                 .throwNoArg("options.contentSearchModel");
-            this.content = _.checkarg(options.content).throwNoArg("options.content");
+            this.digitalContent = _.checkarg(options.content).throwNoArg("options.content");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.files = _.checkarg(options.files).throwNoArg("options.files");
 
             this.model = new ContentDescriptionModel({
-                types: _.keys(this.content),
+                types: _.keys(this.digitalContent),
                 source_models: _.extend({
                     contentSearchModel: this.contentSearchModel,
-                }, this.content),
+                }, this.digitalContent),
             });
             // FIXME: Replace with a listenTo when this is no longer a toplevel view.
             this.model.on("change:contentId", _.bind(this.onModelChanged, this));
@@ -1602,13 +1605,8 @@ var frontend = (function() {
         },
         
         onRender: function() {
-            if (!this.model.get('contentDescription')) {
-                console.log("ImageContentView::onRender, contentDescription not ready, deferring");
-                _.delay(_.bind(this.onRender, this), 2000);
-                return;
-            }
             var pdv = new ImageDisplayView({
-                contentDescriptionSource: this.model.get("contentDescriptionSource"),
+                contentDescriptionSource: this.model,
                 files: this.files,
             });
             this.listenTo(pdv, "display:toggle", this._onMetadataToggle);
