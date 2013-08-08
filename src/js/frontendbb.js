@@ -392,6 +392,11 @@ var frontend = (function() {
             "click"   : "_click"
         },
         
+        onRender: function() {
+            this.bindUIElements();
+            this.delegateEvents();
+        },
+
         _click: function _click() {
             this.router.navigate("mapsearch", { trigger: true, replace: false });
         },
