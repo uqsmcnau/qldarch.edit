@@ -13,6 +13,7 @@ Backbone.ViewModel = (function(Backbone, _, undefined){
     var ViewModel = Model.extend({
         constructor: function(attributes, options) {
             Model.apply(this, [attributes, options]);
+            this.options = options;
             this.initializeViewModel();
         },
         initializeViewModel: function(){
