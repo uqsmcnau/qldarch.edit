@@ -520,7 +520,7 @@ var frontend = (function() {
         return isInView;
     };
 
-    var PredicatedImages = Backbone.ViewCollection.extend({
+    var PredicatedContent = Backbone.ViewCollection.extend({
         computeModelArray: function() {
             var entityids = this.sources.entitySearch.get('entityids');
             var predicate = _.yes;
@@ -595,7 +595,7 @@ var frontend = (function() {
             this.displayedImages = _.checkarg(options.displayedImages)
                 .throwNoArg("options.displayedImages");
 
-            this.collection = new PredicatedImages({
+            this.collection = new PredicatedContent({
                 name: "ContentListViewCollection::" + this.model.get('type').id,
                 tracksort: false,
                 sources: {
@@ -1099,6 +1099,7 @@ var frontend = (function() {
 
             this.model = new ContentDisplayViewModel({
                 mimetype: "image/jpeg",
+                defaultURL: options.defaultURL,
                 source_models: {
                     contentDescriptionSource: this.contentDescriptionSource,
                     fileModel: new AsyncFileModel({
@@ -1118,6 +1119,7 @@ var frontend = (function() {
 
         onRender: function() {
             this.listenTo(this.model, "change:url", this.urlChanged);
+            this.urlChanged();
         },
 
         urlChanged: function() {
@@ -1146,6 +1148,7 @@ var frontend = (function() {
             return {
                 files: this.files,
                 imageSelection: this.imageSelection,
+                defaultURL: SPINNER_GIF,
             };
         },
 
@@ -1234,7 +1237,7 @@ var frontend = (function() {
             });
             var initialIndex = oldest.get('initialIndex');
             var oldIndex = oldest.get('index');
-            var newIndex = oldIndex + this.collection.length + 10;
+            var newIndex = oldIndex + this.collection.length;
             var currentUpdate = ++this.lastUpdate;
 
 
@@ -1656,6 +1659,7 @@ var frontend = (function() {
 
             this.model = new ContentDisplayViewModel({
                 mimetype: "image/jpeg",
+                defaultURL: SPINNER_GIF,
                 source_models: {
                     contentDescriptionSource: this.contentDescriptionSource,
                     fileModel: new AsyncFileModel({
@@ -2418,6 +2422,23 @@ var frontend = (function() {
         },
     });
 
+    var MapSearchEntitiesCollection = SubCollection.extend({
+        initialize: function(models, options) {
+            _.bindAll(this, "predicate");
+
+            this.entitySearch = options.entitySearch;
+            this.entitiesOnMap = options.entitiesOnMap;
+
+            this.listenTo(options.entitySearch, "change", this._reload);
+            this.listenTo(options.entitiesOnMap, "add", this._reload);
+            this.listenTo(options.entitiesOnMap, "remove", this._reload);
+            this.listenTo(options.entitiesOnMap, "reset", this._reload);
+        },
+        _reload: function() {
+            this.setPredicate(this.predicate);
+        },
+    });
+
     var MapSearchView = Backbone.Marionette.Layout.extend({
         className: "mapsearch",
         template: "#mapsearchTemplate",
@@ -2430,10 +2451,6 @@ var frontend = (function() {
         },
 
         initialize: function(options) {
-            _.bindAll(this, "_imageSelectionLoop", "_setImageList");
-
-            _.checkarg(options).throwNoArg("options");
-
             this.router = _.checkarg(options.router).throwNoArg("options.router");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.files = _.checkarg(options.files).throwNoArg("options.files");
@@ -2457,22 +2474,7 @@ var frontend = (function() {
                 predicate: _.no,
             });
 
-            this.entitiesInList = new (SubCollection.extend({
-                initialize: function(models, options) {
-                    _.bindAll(this, "predicate");
-
-                    this.entitySearch = options.entitySearch;
-                    this.entitiesOnMap = options.entitiesOnMap;
-
-                    this.listenTo(options.entitySearch, "change", this._reload);
-                    this.listenTo(options.entitiesOnMap, "add", this._reload);
-                    this.listenTo(options.entitiesOnMap, "remove", this._reload);
-                    this.listenTo(options.entitiesOnMap, "reset", this._reload);
-                },
-                _reload: function() {
-                    this.setPredicate(this.predicate);
-                },
-            }))(this.geoentities, {
+            this.entitiesInList = new MapSearchEntitiesCollection(this.geoentities, {
                 name: "entitiesInList",
                 tracsort: true,
                 entitySearch: this.entitySearch,
@@ -2485,29 +2487,28 @@ var frontend = (function() {
                         return _.contains(entityids, entity.id);
                     }
                 },
-            })
-
-            this.displayedImage = new Backbone.Model({
-                imageId: undefined,
             });
 
-            this.listenTo(this.displayedImage, "change", function(model) {
-                var oldImageId = model.previous("imageId");
-                var newImageId = model.get("imageId");
-                if (oldImageId) this.displayedImages.undisplayed(oldImageId);
-                if (newImageId) this.displayedImages.displayed(newImageId);
-            });
-
-            this.listenTo(this.predicatedImages, "change", this._setImageList);
-            this._setImageList();
+            this.displayed = undefined;
 
             this.imageSelection = new ImageSelection({});
-
-            this._imageSelectionLoop(3000);
         },
 
         onClose: function() {
-            this.displayedImage.set('imageId', undefined);
+            if (this.displayed) {
+                this.displayedImages.undisplayed(this.displayed);
+            }
+            this.displayed = undefined;
+        },
+
+        _onPreviewImageDisplay: function(contentId) {
+            if (this.displayed) {
+                this.displayedImages.undisplayed(this.displayed);
+            }
+            this.displayed = contentId;
+            if (contentId) {
+                this.displayedImages.displayed(contentId);
+            }
         },
 
         onRender: function onRender() {
@@ -2538,8 +2539,13 @@ var frontend = (function() {
             this.imgpreview.show(new NotifyingImageView({
                 files: this.files,
                 imageSelection: this.imageSelection,
-                displayedImage: this.displayedImage,
             }));
+
+            this.listenTo(this.imgpreview.currentView, "display", this._onPreviewImageDisplay);
+            this.listenTo(this.predicatedImages, "change", this._setImageList);
+            this.listenTo(rotatingImageTimer, "tick", this._updateImageSelection);
+            this._setImageList();
+            this._updateImageSelection();
         },
 
         isGeoLocated: function isGeoLocated(entity) {
@@ -2551,34 +2557,31 @@ var frontend = (function() {
             this.imageList = list ? list : [];
         },
 
-        _imageSelectionLoop: function _imageSelectionLoop(delay) {
+        _updateImageSelection: function _updateImageSelection() {
             var entityids = this.entitySearch.get("entityids");
             if (entityids &&
                (entityids.length == 1) &&
-               (this.imageList.length > 0) &&
-               (this.$el.filter(":visible").length > 0)) {
-                    var index = this.imageSelection.get("index");
-                    if (index < 0 || (index + 1) >= this.imageList.length) {
+               (this.imageList.length > 0)) {
+                    var oldIndex = this.imageSelection.get("index");
+                    var newIndex = oldIndex + 1;
+
+                    if (newIndex < this.imageList.length) {
+                        this.imageSelection.set({
+                            image: this.imageList.at(newIndex),
+                            index: newIndex,
+                        });
+                    } else {
                         this.imageSelection.set({
                             image: this.imageList.at(0),
                             index: 0,
                         });
-                    } else {
-                        this.imageSelection.set({
-                            image: this.imageList.at(index + 1),
-                            index: index + 1,
-                        });
                     }
-            } else {
-                if (this.imageSelection.get("image")) {
-                    this.imageSelection.set({
-                        image: undefined,
-                        index: -1,
-                    });
-                }
+            } else if (this.imageSelection.get("index") >= 0) {
+                this.imageSelection.set({
+                    image: undefined,
+                    index: -1,
+                });
             }
-
-            _.delay(this._imageSelectionLoop, delay, delay);
         },
     });
 
@@ -2791,7 +2794,7 @@ var frontend = (function() {
                 var fileModel = this.get('fileModel');
 
                 if (!fileModel.get('hasFiles')) {
-                    return SPINNER_GIF;
+                    return this.get('defaultURL');
                 }
                 var files = fileModel.get('files');
                 var file = files ? selectFileByMimeType(files, this.get('mimetype')) : undefined;
@@ -2966,6 +2969,8 @@ var frontend = (function() {
 
         var mapSearchModel = new MapSearchModel();
 
+        // FIXME: This is used as a stateful mediator; this should eventually
+        //   be converted to an event aggregator with events carrying the state.
         var predicatedImages = new PredicatedImagesMap();
 
         var displayedImages = new DisplayedImages();
