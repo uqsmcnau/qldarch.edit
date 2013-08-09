@@ -383,9 +383,13 @@ var frontend = (function() {
 
         initialize: function(options) {
             this.router = _.checkarg(options.router).throwNoArg("options.router");
-            this.model = new Backbone.Model();
         },
         
+        onRender: function() {
+            this.bindUIElements();
+            this.delegateEvents();
+        },
+
         events: {
             "click"   : "_click"
         },
