@@ -146,6 +146,7 @@
                 <div class="adjunct span-6 last"></div>
             </div>
             <div class="primary span-8"></div>
+            <div class="tabs span-16 last"></div>
             <div class="secondary span-16 last"></div>
         </script>
         <script type="text/template" id="interviewsummaryTemplate">
@@ -156,31 +157,30 @@
             <div class="returnbutton span-6 last">Front page...</div>
         </script>
         <script type="text/template" id="transcriptTemplate">
-            <div class="audiodiv span-8">
+            <div class="audiodiv">
                 <audio id="<%= audiocontrolid %>" class="span-8" controls="controls">
                     <source src="<%= audiosrc %>" type="audio/ogg">
                 </audio>
-                <div class="transcript span-8"></div>
+                <div class="transcript"></div>
             </div>
         </script>
         <script type="text/template" id="utteranceTemplate">
             <div class="speaker"><%= speaker %></div>
             <div class="speech"><%= transcript %></div>
         </script>
-        <script type="text/template" id="transcripttabsView">
-            <div class="span-16 last">
-                <div class="contentpanetabs span-16">
-                    <span type="Current" class="button tab">Search Current Transcript</span>
-                </div>
-                <div class="content span-16">
-                    <div class="searchtranscriptpane span-16 last" style="margin-top:-10px">
-                        <div class="span-16 last">
-                            <input class="searchbox span-8" type="text" value="" placeHolder="Search Current Transcript"/>
-                        </div>
-                        <div class="searchresults span-16 last">
-                            <div class="entitylisttitle">Utterances</div>
-                            <div class="resultlist"/>
-                        </div>
+        <script type="text/template" id="transcripttabsTemplate">
+            <span type="Search" class="button tab">Search Current Transcript</span>
+            <span type="Annotate" class="button tab">Annotate</span>
+        </script>
+        <script type="text/template" id="transcriptcontentTemplate">
+            <div class="content span-16 last">
+                <div class="searchtranscriptpane span-16 last" style="margin-top:-10px">
+                    <div class="span-16 last">
+                        <input class="searchbox span-8" type="text" value="" placeHolder="Search Current Transcript"/>
+                    </div>
+                    <div class="searchresults span-16 last">
+                        <div class="entitylisttitle">Utterances</div>
+                        <div class="resultlist"/>
                     </div>
                 </div>
             </div>

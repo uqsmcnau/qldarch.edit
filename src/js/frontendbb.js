@@ -1345,7 +1345,7 @@ var frontend = (function() {
         template: "#contentpanetabsTemplate",
 
         triggers: {
-            "click " : "display:toggle",
+            "click" : "display:toggle",
         },
 
         serializeData: function() {
@@ -1421,6 +1421,7 @@ var frontend = (function() {
         },
 
         onRender: function() {
+            // FIXME: Call this.bindUIElements() and this.delegateEvents() here.
             this.listenTo(this.model, "change:state", this.setTab);
             this.summaryView = new EntitySummaryView({
                     entitySearchModel: this.entitySearchModel,
@@ -1994,6 +1995,45 @@ var frontend = (function() {
         },
     });
 
+    var UnimplementedTranscriptTabView = Backbone.Marionette.ItemView.extend({
+        className: "unimplemented",
+        template: "#infopanelTemplate",
+
+        serializeData: function() {
+            return {
+                message: this.state + " Tab unimplemented",
+            };
+        },
+
+        initialize: function(options) {
+            this.state = _.checkarg(options.state).throwNoArg("options.state");
+        },
+    });
+
+    // FIXME: Unify with EntityContentPaneTabs as there are only two lines difference
+    var TranscriptTabsView = Backbone.Marionette.ItemView.extend({
+        className: "transcripttabs",
+        template: "#transcripttabsTemplate",
+
+        serializeData: function() {
+            return {};
+        },
+
+        events: {
+            "click span"   : "_selecttab"
+        },
+
+        _selecttab: function(event) {
+            var newState = $(event.target).attr("type");
+            console.log("Clicked " + newState);
+            this.triggerMethod("select:tab", newState);
+        },
+
+        onRender: function() {
+            console.log("Rendering transcript tabs");
+        }
+    });
+
     var TranscriptView = Backbone.Marionette.Layout.extend({
         className: "interviewpane",
         template: "#interviewTemplate",
@@ -2001,11 +2041,25 @@ var frontend = (function() {
             summary: ".header .summary",
             adjunct: ".header .adjunct",
             primary: ".primary",
+            tabs: ".tabs",
             secondary: ".secondary",
         },
 
         serializeData: function() {
             return {};
+        },
+
+        states: {
+            Search: function(view) {
+                return new UnimplementedTranscriptTabView({
+                    state: "Search",
+                });
+            },
+            Annotate: function(view) {
+                return new UnimplementedTranscriptTabView({
+                    state: "Annotation",
+                });
+            },
         },
 
         initialize: function(options) {
@@ -2040,6 +2094,16 @@ var frontend = (function() {
             this.primary.show(new TrackingPlayerView({
                 contentDescriptionSource: this.contentDescriptionSource,
             }));
+
+            this.tabview = new TranscriptTabsView({});
+            this.listenTo(this.tabview, "select:tab", this.onSelectTab);
+            this.tabs.show(this.tabview);
+        },
+
+        onSelectTab: function(newState) {
+            if (this.states[newState]) {
+                this.secondary.show(this.states[newState](this));
+            }
         },
     });
 
