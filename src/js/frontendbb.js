@@ -2034,6 +2034,49 @@ var frontend = (function() {
         }
     });
 
+    var AnnotationView = Backbone.Marionette.ItemView.extend({
+        className: "annotationpane",
+        template: "#annotationTemplate",
+
+        ui: {
+            pauseBtn : ".pause",
+        },
+
+        triggers: {
+            "click .pause" : "do:pause",
+            "click .addentity" : "add:entity",
+            "click .addrefersto" : "add:refersTo",
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        initialize: function(options) {
+            this.paused = false;
+        },
+
+        onRender: function() {
+            this.paused = this.ui.pauseBtn.prop('checked');
+        },
+
+        onDoPause: function() {
+            this.paused = !this.paused;
+            // No idea why the _.defer is necessary, but checkbox doesn't display check otherwise.
+            _.defer(_.bind(function() {
+                this.ui.pauseBtn[0].checked = this.paused;
+            }, this));
+        },
+
+        onAddEntity: function() {
+            console.log("add:entity invoked");
+        },
+
+        onAddRefersTo: function() {
+            console.log("add:refersTo invoked");
+        },
+    });
+
     var TranscriptView = Backbone.Marionette.Layout.extend({
         className: "interviewpane",
         template: "#interviewTemplate",
@@ -2056,9 +2099,7 @@ var frontend = (function() {
                 });
             },
             Annotate: function(view) {
-                return new UnimplementedTranscriptTabView({
-                    state: "Annotation",
-                });
+                return new AnnotationView({ });
             },
         },
 
