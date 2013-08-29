@@ -22,7 +22,7 @@
 
         geta: function(name) {
             var result = Model.prototype.get.call(this, name);
-            return _.isArray(result) ? result : [ result ];
+            return _.isArray(result) ? result : ( _.isUndefined(result) ? [] : [ result ]);
         },
 
         geta_: function(name) {
@@ -162,8 +162,8 @@
     }
 
     _.extend(CachedRDFGraph.prototype, RDFGraph.prototype, {
-        getp: function(fileURIs, callback, context) {
-            var uris = _.flatten(fileURIs);
+        getp: function(resourceURIs, callback, context) {
+            var uris = _.flatten(resourceURIs);
             var models = _.reduce(uris, function(memo, uri) {
                 var model = this.get(uri);
                 if (!_.isUndefined(model)) {
@@ -180,15 +180,15 @@
                 var url = this.constructURL(models.uncached);
                 var that = this;
                 $.get(url)
-                    .done(function filesCallbackSuccess(data) {
-                        _.each(_.values(data), function fileCallback(file) {
-                            var rdf = new RDFDescription(file);
+                    .done(function resourceCallbackSuccess(data) {
+                        _.each(_.values(data), function resourceCallback(resource) {
+                            var rdf = new RDFDescription(resource);
                             this.add(rdf);
                             models.cached.push(rdf);
                         }, that);
                         callback.call(context, models.cached);
                     })
-                    .fail(function filesCallbackError(jqXHR) {
+                    .fail(function resourceCallbackError(jqXHR) {
                         console.log("ERROR fetching models: " + jqXHR.responseText);
                         callback.call(context, models.cached);
                     });
