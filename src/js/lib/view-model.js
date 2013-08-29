@@ -56,10 +56,11 @@ Backbone.ViewCollection = (function(Backbone, _, undefined) {
         constructor: function(options) {
             Collection.apply(this, [[], options]);
 
+            this.options = options;
             this.sources = options.sources;
             this.trackSort = !!options.trackSort;
             this.name = (options.name || "Unnamed ViewCollection");
-            this.options = options;
+            this.debounce = options.debounce;
             this.initializeViewCollection();
         },
 
@@ -74,14 +75,18 @@ Backbone.ViewCollection = (function(Backbone, _, undefined) {
         },
 
         bindToChangesInSources: function(){
+            var setAttr = _.isUndefined(this.debounce) ?
+                this.setComputedAttributes :
+                _.debounce(this.setComputedAttributes, this.debounce, true);
+
             _.each(this.sources, function(collection, key) {
-                this.listenTo(collection, "add", this.setComputedAttributes, this);
-                this.listenTo(collection, "remove", this.setComputedAttributes, this);
-                this.listenTo(collection, "reset", this.setComputedAttributes, this);
-                this.listenTo(collection, "change", this.setComputedAttributes, this);
-                this.listenTo(collection, "destroy", this.setComputedAttributes, this);
+                this.listenTo(collection, "add", setAttr, this);
+                this.listenTo(collection, "remove", setAttr, this);
+                this.listenTo(collection, "reset", setAttr, this);
+                this.listenTo(collection, "change", setAttr, this);
+                this.listenTo(collection, "destroy", setAttr, this);
                 if (this.trackSort) {
-                    this.listenTo(collection, "sort", this.setComputedAttributes, this);
+                    this.listenTo(collection, "sort", setAttr, this);
                 }
             }, this);
         }
