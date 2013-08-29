@@ -338,6 +338,9 @@ var frontend = (function() {
         },
 
         onRender: function() {
+            this.bindUIElements();
+            this.delegateEvents();
+
             this.proper.each(function(entity) {
                 this.$("select").append(this.optionTemplate({
                     label: entity.get1(QA_LABEL),
@@ -601,10 +604,11 @@ var frontend = (function() {
                     entitySearch: this.entitySearch,
                     type: this.model.get('type'),
                 },
+                debounce: 3000,
             });
             this.predicatedImages.set(this.model.get('type').id, this.collection);
 
-            this.forgetroute = true;
+            this.forgetroute = false;
             this.listenTo(this.router, 'route:viewimage',
                     function () { this.forgetroute = true });
             this.listenTo(this.router, 'route:viewentity',
@@ -1585,16 +1589,16 @@ var frontend = (function() {
         initialize: function(options) {
             this.contentSearchModel = _.checkarg(options.contentSearchModel)
                 .throwNoArg("options.contentSearchModel");
-            this.content = _.checkarg(options.content).throwNoArg("options.content");
+            this.digitalContent = _.checkarg(options.digitalContent).throwNoArg("options.digitalContent");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.files = _.checkarg(options.files).throwNoArg("options.files");
 
             this.model = new ContentDescriptionModel({
-                types: _.keys(this.content),
+                types: _.keys(this.digitalContent),
                 source_models: _.extend({
                     contentSearchModel: this.contentSearchModel,
-                }, this.content),
+                }, this.digitalContent),
             });
             // FIXME: Replace with a listenTo when this is no longer a toplevel view.
             this.model.on("change:contentId", _.bind(this.onModelChanged, this));
@@ -2008,16 +2012,16 @@ var frontend = (function() {
             this.contentSearchModel = _.checkarg(options.contentSearchModel)
                 .throwNoArg("options.contentSearchModel");
             this.router = _.checkarg(options.router).throwNoArg("options.router");
-            this.content = _.checkarg(options.content).throwNoArg("options.content");
+            this.digitalContent = _.checkarg(options.digitalContent).throwNoArg("options.digitalContent");
             this.fulltext = _.checkarg(options.fulltext).throwNoArg("options.fulltext");
             this.transcripts = _.checkarg(options.transcripts).throwNoArg("options.transcripts");
             this.files = _.checkarg(options.files).throwNoArg("options.files");
 
             this.contentDescriptionSource = new ContentDescriptionModel({
-                types: _.keys(this.content),
+                types: _.keys(this.digitalContent),
                 source_models: _.extend({
                     contentSearchModel: this.contentSearchModel,
-                }, this.content),
+                }, this.digitalContent),
             });
         },
 
@@ -3109,16 +3113,16 @@ var frontend = (function() {
 
             this.contentSearchModel = _.checkarg(options.contentSearchModel)
                 .throwNoArg("options.contentSearchModel");
-            this.content = _.checkarg(options.content).throwNoArg("options.content");
+            this.digitalContent = _.checkarg(options.digitalContent).throwNoArg("options.digitalContent");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.files = _.checkarg(options.files).throwNoArg("options.files");
 
             this.model = new ContentDescriptionModel({
-                types: _.keys(this.content),
+                types: _.keys(this.digitalContent),
                 source_models: _.extend({
                     contentSearchModel: this.contentSearchModel,
-                }, this.content),
+                }, this.digitalContent),
             });
         },
 
@@ -3549,7 +3553,7 @@ var frontend = (function() {
             router: router,
             contentSearchModel: contentSearchModel,
             properties: properties,
-            content: {
+            digitalContent: {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Photograph": photographs,
                 "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing": linedrawings,
             },
@@ -3560,7 +3564,7 @@ var frontend = (function() {
         var transcriptView = new TranscriptView({
             router: router,
             contentSearchModel: contentSearchModel,
-            content: {
+            digitalContent: {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Interview": interviews,
                 "http://qldarch.net/ns/rdf/2012-06/terms#Transcript": interviews,
             },
@@ -3573,7 +3577,7 @@ var frontend = (function() {
             router: router,
             contentSearchModel: contentSearchModel,
             properties: properties,
-            content: {
+            digitalContent: {
                 "http://qldarch.net/ns/rdf/2012-06/terms#Article": articles,
             },
             entities: entities,
