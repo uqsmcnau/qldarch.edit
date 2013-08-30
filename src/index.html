@@ -264,26 +264,83 @@
                 <span class="logout button slim">Logout</span>
             </div>
         </script>
-        <script type="text/template" id="annotationTemplate">
-            <h3>Annotate current utterance</h3>
-            <div>
-                <input type="checkbox" class="pause">Pause</input>
+        <script type="text/template" id="annotateTemplate">
+            <div class="header span-16 last">
+                <h3 style="margin-top:10px">Annotate Current Utterance</h3>
             </div>
-            <div>
-                <span>The current speaker is referring to the </span>
-                <select name="entitytype">
-                    <option value="Architect">Architect</option>
-                    <option value="Structure">Structure</option>
-                    <option value="Firm">Firm</option>
-                </select>
-                <select name="entity">
-                    <option value="Birrell">James Birrell</option>
-                    <option value="Bligh">Graham Bligh</option>
-                    <option value="Mills">Helen Mills</option>
-                    <option value="Riddell">Rob Riddell</option>
-                </select>
-                <button class="addentity">+</button>
-                <button class="addrefersto">Add Annotation</button>
+            <div class="controls span-16 last">
+                <span class="returnbutton pause span-6" style="margin-left:10px">Pause</span>
+            </div>
+            <div class="simple span-16 last">
+            </div>
+            <div class="full span-16 last">
+            </div>
+        </script>
+        <script type="text/template" id="annotationTemplate">
+            <h3 style="margin-top:10px">Annotate current utterance</h3>
+            <div class="span-16 last">
+                <span class="returnbutton pause span-6 clear" style="margin-left:10px">Pause</span>
+            </div>
+            <div class="span-16 last" style="margin-top:10px;>
+                <div class="referral">
+                    <span>The current speaker is referring to the </span>
+                    <select name="entitytype">
+                        <option value="Architect">Architect</option>
+                        <option value="Structure">Structure</option>
+                        <option value="Firm">Firm</option>
+                    </select>
+                    <select name="entity">
+                        <option value="Birrell">James Birrell</option>
+                        <option value="Bligh">Graham Bligh</option>
+                        <option value="Mills">Helen Mills</option>
+                        <option value="Riddell">Rob Riddell</option>
+                    </select>
+                    <button class="addentity">+</button>
+                    <button class="addrefersto">Add Simple Annotation</button>
+                </div>
+                <div class="referral">
+                    <span>The interview mentions that the </span>
+                    <select name="entitytype" style="margin-left:6px">
+                        <option value="Architect">Architect</option>
+                        <option value="Structure">Structure</option>
+                        <option value="Firm">Firm</option>
+                    </select>
+                    <select name="entity">
+                        <option value="Birrell">James Birrell</option>
+                        <option value="Bligh">Graham Bligh</option>
+                        <option value="Mills">Helen Mills</option>
+                        <option value="Riddell">Rob Riddell</option>
+                    </select>
+                    <button class="addentity">+</button><br/>
+                    <span style="padding-left:153px"> was </span>
+                    <select name="relationship">
+                        <option value="EmployedBy">Employed By</option>
+                        <option value="PartnerAt">Partner At</option>
+                        <option value="TaughtBy">Taught By</option>
+                        <option value="DesignedBy">Designed By</option>
+                    </select>
+                    <br/>
+                    <span style="padding-left:153px"> the </span>
+                    <select name="entitytype" style="margin-left:6px">
+                        <option value="Architect">Architect</option>
+                        <option value="Structure">Structure</option>
+                        <option value="Firm">Firm</option>
+                    </select>
+                    <select name="entity">
+                        <option value="Birrell">James Birrell</option>
+                        <option value="Bligh">Graham Bligh</option>
+                        <option value="Mills">Helen Mills</option>
+                        <option value="Riddell">Rob Riddell</option>
+                    </select>
+                    <button class="addentity">+</button><br/>
+                    <span style="padding-left:153px">
+                        <span>from: </span>
+                        <input type="text" class="username"/>
+                        <span>to: </span>
+                        <input type="text" class="password"/>
+                    </span>
+                    <button class="addrefersto">Add Full Annotation</button>
+                </div>
             </div>
         </script>
         <script type="text/template" id="annotationoptionTemplate">

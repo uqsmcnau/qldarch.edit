@@ -1993,6 +1993,21 @@ var frontend = (function() {
                 _.delay(function() { popcorn.currentTime(start); }, 2000);
             }
         },
+
+        doPause: function() {
+            var popcorn = this.popcornModel.get('popcorn');
+            if (popcorn) {
+                popcorn.pause();
+            }
+        },
+
+        doPlay: function() {
+            var popcorn = this.popcornModel.get('popcorn');
+            if (popcorn) {
+                popcorn.play();
+            }
+        },
+
     });
 
     var UnimplementedTranscriptTabView = Backbone.Marionette.ItemView.extend({
@@ -2027,11 +2042,57 @@ var frontend = (function() {
             var newState = $(event.target).attr("type");
             console.log("Clicked " + newState);
             this.triggerMethod("select:tab", newState);
+            this.$(".tab.selected").removeClass("selected");
+            $(event.target).addClass("selected");
         },
 
         onRender: function() {
             console.log("Rendering transcript tabs");
-        }
+        },
+    });
+
+    var AnnotateView = Backbone.Marionette.Layout.extend({
+        className: "annotationpane",
+        template: "#annotationTemplate",
+
+        regions: {
+            simple: ".simple",
+            full: ".full",
+        },
+
+        ui: {
+            pauseBtn : ".pause",
+        },
+
+        triggers: {
+            "click .pause" : "do:pause",
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        initialize: function(options) {
+            this.paused = false;
+        },
+
+        onRender: function() {
+            // FIXME: This should be a shared model between the player and the controls.
+            this.paused = this.ui.pauseBtn.hasClass('selected');
+        },
+
+        onDoPause: function() {
+            this.paused = !this.paused;
+            console.log("onDoPause: " + this.paused);
+            if (this.paused) {
+                this.ui.pauseBtn.addClass("selected");
+                this.ui.pauseBtn.text("Play");
+            } else {
+                this.ui.pauseBtn.removeClass("selected");
+                this.ui.pauseBtn.text("Pause");
+            }
+            this.triggerMethod("pause:set", this.paused);
+        },
     });
 
     var AnnotationView = Backbone.Marionette.ItemView.extend({
@@ -2057,15 +2118,21 @@ var frontend = (function() {
         },
 
         onRender: function() {
-            this.paused = this.ui.pauseBtn.prop('checked');
+            // FIXME: This should be a shared model between the player and the controls.
+            this.paused = this.ui.pauseBtn.hasClass('selected');
         },
 
         onDoPause: function() {
             this.paused = !this.paused;
-            // No idea why the _.defer is necessary, but checkbox doesn't display check otherwise.
-            _.defer(_.bind(function() {
-                this.ui.pauseBtn[0].checked = this.paused;
-            }, this));
+            console.log("onDoPause: " + this.paused);
+            if (this.paused) {
+                this.ui.pauseBtn.addClass("selected");
+                this.ui.pauseBtn.text("Play");
+            } else {
+                this.ui.pauseBtn.removeClass("selected");
+                this.ui.pauseBtn.text("Pause");
+            }
+            this.triggerMethod("pause:set", this.paused);
         },
 
         onAddEntity: function() {
@@ -2099,7 +2166,9 @@ var frontend = (function() {
                 });
             },
             Annotate: function(view) {
-                return new AnnotationView({ });
+                var av = new AnnotationView({ });
+                view.listenTo(av, "pause:set", view.pauseSet);
+                return av;
             },
         },
 
@@ -2132,9 +2201,10 @@ var frontend = (function() {
                 router: this.router,
             }));
 
-            this.primary.show(new TrackingPlayerView({
+            this.playerView = new TrackingPlayerView({
                 contentDescriptionSource: this.contentDescriptionSource,
-            }));
+            });
+            this.primary.show(this.playerView);
 
             this.tabview = new TranscriptTabsView({});
             this.listenTo(this.tabview, "select:tab", this.onSelectTab);
@@ -2144,6 +2214,16 @@ var frontend = (function() {
         onSelectTab: function(newState) {
             if (this.states[newState]) {
                 this.secondary.show(this.states[newState](this));
+            }
+        },
+
+        pauseSet: function(pause) {
+            if (this.playerView) {
+                if (pause) {
+                    this.playerView.doPause();
+                } else  {
+                    this.playerView.doPlay();
+                }
             }
         },
     });
