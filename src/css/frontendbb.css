@@ -151,8 +151,7 @@ h2.columntitle:not(:first-of-type) {
     margin-right: 10px;
 }
 
-div.entityentry.selected,
-div.contententry.selected {
+span.selected {
     background: #555555;
     color: #e5e5e5;
 }
@@ -314,6 +313,10 @@ span.button.tab.selected {
 div.contentpanetabs {
     overflow:hidden;
     margin-bottom: 20px;
+}
+
+div.tabs {
+    margin-bottom: 10px;
 }
 
 .contentpane div.content * {

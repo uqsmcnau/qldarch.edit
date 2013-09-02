@@ -1452,7 +1452,7 @@ var frontend = (function() {
         template: "#contentpanetabsTemplate",
 
         triggers: {
-            "click " : "display:toggle",
+            "click" : "display:toggle",
         },
 
         serializeData: function() {
@@ -1528,6 +1528,7 @@ var frontend = (function() {
         },
 
         onRender: function() {
+            // FIXME: Call this.bindUIElements() and this.delegateEvents() here.
             this.listenTo(this.model, "change:state", this.setTab);
             this.summaryView = new EntitySummaryView({
                     entitySearchModel: this.entitySearchModel,
@@ -2414,6 +2415,169 @@ var frontend = (function() {
                 _.delay(function() { popcorn.currentTime(start); }, 2000);
             }
         },
+
+        doPause: function() {
+            var popcorn = this.popcornModel.get('popcorn');
+            if (popcorn) {
+                popcorn.pause();
+            }
+        },
+
+        doPlay: function() {
+            var popcorn = this.popcornModel.get('popcorn');
+            if (popcorn) {
+                popcorn.play();
+            }
+        },
+
+    });
+
+    var UnimplementedTranscriptTabView = Backbone.Marionette.ItemView.extend({
+        className: "unimplemented",
+        template: "#infopanelTemplate",
+
+        serializeData: function() {
+            return {
+                message: this.state + " Tab unimplemented",
+            };
+        },
+
+        initialize: function(options) {
+            this.state = _.checkarg(options.state).throwNoArg("options.state");
+        },
+    });
+
+    // FIXME: Unify with EntityContentPaneTabs as there are only two lines difference
+    var TranscriptTabsView = Backbone.Marionette.ItemView.extend({
+        className: "transcripttabs",
+        template: "#transcripttabsTemplate",
+
+        serializeData: function() {
+            return {};
+        },
+
+        events: {
+            "click span"   : "_selecttab"
+        },
+
+        _selecttab: function(event) {
+            var newState = $(event.target).attr("type");
+            console.log("Clicked " + newState);
+            this.triggerMethod("select:tab", newState);
+            this.$(".tab.selected").removeClass("selected");
+            $(event.target).addClass("selected");
+        },
+
+        onRender: function() {
+            console.log("Rendering transcript tabs");
+        },
+    });
+
+    var SimpleAnnotationView = Backbone.Marionette.ItemView.extend({
+        className: "simpleannotationpane",
+        template: "#simpleannotationTemplate",
+
+        triggers: {
+            "click .addentity" : "add:entity",
+            "click .addrefersto" : "add:refersTo",
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        initialize: function(options) {
+            this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
+        },
+
+        onAddEntity: function() {
+            console.log("simple add:entity invoked");
+        },
+
+        onAddRefersTo: function() {
+            console.log("simple add:refersTo invoked");
+        },
+    });
+
+    var FullAnnotationView = Backbone.Marionette.ItemView.extend({
+        className: "fullannotationpane",
+        template: "#fullannotationTemplate",
+
+        triggers: {
+            "click .addentity" : "add:entity",
+            "click .addrefersto" : "add:refersTo",
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        initialize: function(options) {
+        },
+        
+        onRender: function() {
+            console.log("FullAnnotation rendered");
+        },
+
+        onAddEntity: function() {
+            console.log("full add:entity invoked");
+        },
+
+        onAddRefersTo: function() {
+            console.log("full add:refersTo invoked");
+        },
+    });
+
+    var AnnotateView = Backbone.Marionette.Layout.extend({
+        className: "annotationpane",
+        template: "#annotateTemplate",
+
+        regions: {
+            simple: ".simple",
+            full: ".full",
+        },
+
+        ui: {
+            pauseBtn : ".pause",
+        },
+
+        triggers: {
+            "click .pause" : "do:pause",
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        initialize: function(options) {
+            this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
+            this.paused = false;
+        },
+
+        onRender: function() {
+            // FIXME: This should be a shared model between the player and the controls.
+            this.paused = this.ui.pauseBtn.hasClass('selected');
+
+            this.simple.show(new SimpleAnnotationView({
+                proper: this.proper,
+            }));
+            this.full.show(new FullAnnotationView({
+                proper: this.proper,
+            }));
+        },
+
+        onDoPause: function() {
+            this.paused = !this.paused;
+            console.log("onDoPause: " + this.paused);
+            if (this.paused) {
+                this.ui.pauseBtn.addClass("selected");
+                this.ui.pauseBtn.text("Play");
+            } else {
+                this.ui.pauseBtn.removeClass("selected");
+                this.ui.pauseBtn.text("Pause");
+            }
+            this.triggerMethod("pause:set", this.paused);
+        },
     });
 
     var TranscriptPaneModel = Backbone.ViewModel.extend({
@@ -2429,9 +2593,8 @@ var frontend = (function() {
             summary: ".header .summary",
             adjunct: ".header .adjunct",
             primary: ".primary",
+            tabs: ".tabs",
             secondary: ".secondary",
-            tabs: ".contentpanetabs",
-            content: ".content",
         },
         
         states: {
@@ -2450,6 +2613,13 @@ var frontend = (function() {
                 	
             	});
             },
+            Annotate: function(view) {
+                var av = new AnnotateView({
+                    proper: view.proper,
+                });
+                view.listenTo(av, "pause:set", view.pauseSet);
+                return av;
+            },
         },
         
         serializeData: function() {
@@ -2464,7 +2634,8 @@ var frontend = (function() {
             this.fulltext = _.checkarg(options.fulltext).throwNoArg("options.fulltext");
             this.transcripts = _.checkarg(options.transcripts).throwNoArg("options.transcripts");
             this.files = _.checkarg(options.files).throwNoArg("options.files");
-            
+            this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
+
             this.contentDescriptionSource = new ContentDescriptionModel({
                 types: _.keys(this.digitalContent),
                 source_models: _.extend({
@@ -2486,7 +2657,7 @@ var frontend = (function() {
             this.adjunct.show(new ReturnButtonView({
                 router: this.router,
             }));
-            
+
             this.primary.show(new TrackingPlayerView({
                 contentDescriptionSource: this.contentDescriptionSource,
             }));
@@ -2498,6 +2669,16 @@ var frontend = (function() {
             this.setTab(this.model, 'Search');
         },
         
+        pauseSet: function(pause) {
+            if (this.playerView) {
+                if (pause) {
+                    this.playerView.doPause();
+                } else  {
+                    this.playerView.doPlay();
+                }
+            }
+        },
+
         onSelectTab: function(newState) {        	
             if (this.states[newState]) {               
             	this.model.set('state', newState);
@@ -2505,41 +2686,9 @@ var frontend = (function() {
         },
 
         setTab: function(model, value) {
-            this.content.show(this.states[value](this));
+            this.secondary.show(this.states[value](this));
         },
     });
-
-
-// Old code to search transcript.
-//      searchTranscript: function(event) {
-//          var val = this.$("input").val();
-//          var results = [];
-//          if (!this.transcript) {
-//              this.$(".resultlist").html(this.infoTemplate({
-//                  message: "No transcript loaded",
-//              }));
-//          } else {
-//              if (event.keyCode == 13 || val.length > 3) {
-//                  this.transcript.exchanges.forEach(function(exchange) {
-//                      if (exchange.transcript.indexOf(val) != -1) {
-//                          results.push(exchange);
-//                      }
-//                  });
-//              }
-//              this.$(".resultlist").empty();
-//              _.each(results, function(result) {
-//                  var obj = $(this.transcriptResultTemplate({
-//                      speaker: result.speaker,
-//                      time: result.time,
-//                      transcript: _.escape(result.transcript),
-//                  }).replace(/^\s*/, ''));
-//                  obj.appendTo(this.$(".resultlist")).click(function() {
-//                          $('.subtitle[data-time="' + result.time + '"]').click();
-//                      });
-//              }, this);
-//          }
-//      },
-//  });
 
     var FulltextResult = Backbone.Model.extend({
         initialize: function() { },
@@ -4037,6 +4186,7 @@ var frontend = (function() {
             fulltext: fulltextTranscriptModel,
             transcripts: transcripts,
             files: files,
+            proper: proper,
         });
 
         var pdfContentView = new PdfContentView({
