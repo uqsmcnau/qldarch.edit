@@ -3204,7 +3204,12 @@ var frontend = (function() {
                         model.set(model.parse(data));
                     }).
                     fail(function(jqXHR, textStatus, errorThrown) {
-                        var data = JSON.parse(jqXHR.responseText);
+                        var data = undefined;
+                        if (jqXHR.status == 404) {
+                            console.log("Login service unavailable");
+                        } else {
+                            data = JSON.parse(jqXHR.responseText);
+                        }
                         model.set(model.parse(data || { user: "", auth: false })); 
                     });
             } else {
