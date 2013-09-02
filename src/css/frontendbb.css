@@ -202,8 +202,14 @@ div.contententry:hover {
     border-right: 1px solid lightgrey;
     border-bottom: 1px solid lightgrey;
     height: 600px;
+    width: 300px;
     overflow-x:hidden;
     overflow-y:scroll;
+}
+
+.resultlist {
+	height: 550px;
+    overflow: auto;
 }
 
 audio {
@@ -590,4 +596,23 @@ div.mapcontainer>div {
     margin-left: 100px;
     margin-top: 50px;
     margin-bottom: 50px;
+}
+
+.graphview {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.bar {
+  fill: steelblue;
+}
+
+.x.axis path {
+  display: none;
 }
