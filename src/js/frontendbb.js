@@ -504,6 +504,113 @@ var frontend = (function() {
         },
     });
 
+    var ResourceItemView = Backbone.Marionette.ItemView.extend({
+        className: "contententry",
+        template: "#listitemviewTemplate",
+
+        serializeData: function() {
+            return {
+                label: this._labeltext(this.model.get1(DCT_TITLE, logmultiple), 40),
+            };
+        },
+
+        initialize: function(options) {
+            _.bindAll(this);
+
+            options = _.checkarg(options).withDefault({})
+
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.selection = _.checkarg(options.selection).throwNoArg("options.selection");
+            this.type = _.checkarg(options.type).throwNoArg("options.type");
+            this.typeview = _.checkarg(options.typeview).throwNoArg("options.typeview");
+            this.displayedImages = _.checkarg(options.displayedImages)
+                .throwNoArg("options.displayedImages");
+
+            this.listenTo(this.selection, "change", this._updateSelected);
+            this.listenTo(this.displayedImages, "add", this._updateDisplayed);
+            this.listenTo(this.displayedImages, "remove", this._updateDisplayed);
+            this.listenTo(this.displayedImages, "reset", this._updateDisplayed);
+        },
+        
+        events: {
+            "click"   : "_select"
+        },
+
+        onRender: function() {
+            this._updateSelected();
+            this._updateDisplayed();
+        },
+
+        _updateSelected: function _updateSelected() {
+            if (this.selection.get("selection") === this.model.id) {
+                this.$el.addClass("selected");
+                var container = this.$el.parents(".contentlist");
+                if (!isScrolledIntoView(container, this.$el)) {
+                    container.scrollTo(this.$el);
+                }
+            } else {
+                this.$el.removeClass("selected");
+            }
+        },
+
+        _updateDisplayed: function _updateDisplayed() {
+            if (this.displayedImages.isDisplayed(this.model.id)) {
+                this.$el.addClass("displayed");
+                if (this.$el.siblings(".selected").length == 0) {
+                    var container = this.$el.parents(".contentlist");
+                    if (!isScrolledIntoView(container, this.$el)) {
+                        container.scrollTo(this.$el);
+                    }
+                }
+            } else {
+                this.$el.removeClass("displayed");
+            }
+        },
+
+        _labeltext: function(label, maxlength) {
+            if (_.isUndefined(label)) {
+                return "Label unavailable";
+            }
+            var half = (maxlength / 2) - 2;
+            if (label.length < maxlength) return label;
+            var rawcut = Math.floor(label.length/2);
+            var lower = Math.min(half, rawcut);
+            var upper = Math.max(Math.floor(label.length/2), label.length - half);
+            var front = label.substr(0, lower).replace(/\W*$/,'');
+            var back = label.substr(upper).replace(/^\W*/, '');
+            // \u22EF is the midline-ellipsis; \u2026 is the baseline-ellipsis.
+            var result = front + '\u2026' + back;
+            return result;
+        },
+
+        _select: function() {
+            var newSelection = (this.selection.get('selection') !== this.model.id) ?
+                this.model.id : undefined;
+
+            this.selection.set({
+                'selection': newSelection,
+                'type': newSelection ? this.type.id : undefined,
+            });
+            
+            console.log("Yoman");
+            console.log(newSelection);
+            console.log(newSelection ? this.type.id : undefined);
+            console.log(this.router.contentViews[this.type.id] + "/" + this.selection.serialize());
+            
+            /*if (newSelection) {
+                if (this.router.contentViews[this.type.id] &&
+                        (this.router.currentRoute.route !==
+                             this.router.contentViews[this.type.id])) {
+                    this.router.navigate(this.router.contentViews[this.type.id] + "/" +
+                            this.selection.serialize(),
+                            { trigger: true, replace: this.typeview.forgetroute });
+                }
+            } else {
+                this.router.navigate("", { trigger: true, replace: false });
+            }*/
+        },
+    });
+    
     var isScrolledIntoView = function isScrolledIntoView(container, target) {
         if (!$(container).offset() || !$(target).offset()) {
             // Abort this and assume it is in view.
@@ -638,7 +745,7 @@ var frontend = (function() {
         }),
 
     });
-
+    
     var DigitalContentView = Backbone.Marionette.CompositeView.extend({
         template: "#contentTemplate",
         itemViewContainer: ".contentdiv",
@@ -703,7 +810,7 @@ var frontend = (function() {
             });
         },
     });
-
+    
     var EntityContentView = ToplevelView.extend({
         template: "#contentTemplate",
 
@@ -748,7 +855,7 @@ var frontend = (function() {
             });
         },
     });
-
+    
     var EntityTypeView = Backbone.View.extend({
         className: 'typeview',
         initialize: function(options) {
@@ -1269,7 +1376,7 @@ var frontend = (function() {
             },
         },
     });
-
+ 
     var EntityRelatedContentView = Backbone.Marionette.CollectionView.extend({
         className : "relatedcontentpane",
 
@@ -1683,6 +1790,297 @@ var frontend = (function() {
         },
     });
 
+    var TranscriptGraphView = Backbone.Marionette.CompositeView.extend({
+        className: "transcriptgraph",
+        template: "#transcriptgraphTemplate",
+        
+        initialize: function(options) {    
+        	
+        },
+        
+        onShow: function() {
+        	this.parseText($(".transcript").text());
+            var words = this.tags.slice(0, Math.min(this.tags.length, 50))
+            
+        	var margin = {top: 20, right: 20, bottom: 60, left: 40},
+	            width = 500 - margin.left - margin.right,
+	            height = 500 - margin.top - margin.bottom;
+		
+	        var x = d3.scale.ordinal()
+	            .rangeRoundBands([0, width], .1);
+	
+	        var y = d3.scale.linear()
+	            .range([height, 0]);
+	
+	        var xAxis = d3.svg.axis()
+	            .scale(x)
+	            .orient("bottom");
+	
+	        var yAxis = d3.svg.axis()
+	            .scale(y)
+	            .orient("left");
+	
+	        var svg = d3.select(".graphview").append("svg")
+	            .attr("width", width + margin.left + margin.right)
+	            .attr("height", height + margin.top + margin.bottom)
+	          .append("g")
+	            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+		        
+	        x.domain(words.map(function(d) { return d.key; }));
+	        y.domain([0, d3.max(words, function(d) { return d.value; })]);
+
+	        svg.append("g")
+              	.attr("class", "x axis")
+              	.attr("transform", "translate(0," + height + ")")
+              	.call(xAxis)
+              		.selectAll("text")  
+	                .style("text-anchor", "end")
+	                .attr("dx", "-1.0em")
+	                .attr("dy", "-.7em")
+	                .attr("transform", function(d) {
+	                    return "rotate(-90)" 
+	                });
+
+	        svg.append("g")
+              	.attr("class", "y axis")
+              	.call(yAxis)
+               .append("text");
+           /*     .attr("transform", "rotate(-90)")
+                .attr("y", 6)
+                .attr("dy", ".71em")
+                .style("text-anchor", "end")
+                .text("Appearnce Count");*/
+
+	        svg.selectAll(".bar")
+              	.data(words)
+              .enter().append("rect")
+              	.attr("class", "bar")
+              	.attr("x", function(d) { return x(d.key); })
+	              .attr("width", x.rangeBand())
+	              .attr("y", function(d) { return y(d.value); })
+	              .attr("height", function(d) { return height - y(d.value); });
+	
+	        function type(d) {
+	          d.value = +d.value;
+	          return d;
+	        }
+        },
+
+        onClose: function() {
+        	
+        },
+        
+        parseText : function (text) {
+        	var speakers = [];
+        	$(".speaker").each(function( index ) {
+        		var speaker = $(this).text().toLowerCase();
+        		if (speakers.indexOf(speaker) == -1) {
+        			speakers.push(speaker);
+        		}
+        	});
+        	
+            var wordSeparators = /[\s\u3031-\u3035\u309b\u309c\u30a0\u30fc\uff70]+/g;
+            var punctuation = /[!"&()*+,-\.\/:;<=>?\[\\\]^`\{|\}~]+/g;
+            var stopWords = /^(jm|dm|aw|jg|dv|bw|yeah|yes|nw|oh|okay|well|quite|let|just|still|bit|lot|got|get|ive|im|id|i|me|my|myself|we|us|our|ours|ourselves|you|your|yours|yourself|yourselves|he|him|his|himself|she|her|hers|herself|it|its|itself|they|them|their|theirs|themselves|what|which|who|whom|whose|this|that|these|those|am|is|are|was|were|be|been|being|have|has|had|having|do|does|did|doing|will|would|should|can|could|ought|i'm|you're|he's|she's|it's|we're|they're|i've|you've|we've|they've|i'd|you'd|he'd|she'd|we'd|they'd|i'll|you'll|he'll|she'll|we'll|they'll|isn't|aren't|wasn't|weren't|hasn't|haven't|hadn't|doesn't|don't|didn't|won't|wouldn't|shan't|shouldn't|can't|cannot|couldn't|mustn't|let's|that's|who's|what's|here's|there's|when's|where's|why's|how's|a|an|the|and|but|if|or|because|as|until|while|of|at|by|for|with|about|against|between|into|through|during|before|after|above|below|to|from|up|upon|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|say|says|said|shall)$/;
+        	            	
+            var tags = {};
+        	var cases = {};
+        	text.split(wordSeparators).forEach(function(word) {
+        		word = word.replace(punctuation, "");
+        		word = word.replace(" ", "");
+        		if (stopWords.test(word.toLowerCase())) return;
+        		if (speakers.indexOf(word.toLowerCase()) != -1) return;
+        		if (word == "") return;
+        		word = word.substr(0, 40);
+        		cases[word.toLowerCase()] = word;
+        		tags[word = word.toLowerCase()] = (tags[word] || 0) + 1;
+        	});
+        	tags = d3.entries(tags).sort(function(a, b) { return b.value - a.value; });
+        	tags.forEach(function(d) { d.key = cases[d.key]; });
+        	this.tags = tags;
+        },
+    });
+    
+    var TranscriptCloudView = Backbone.Marionette.CompositeView.extend({
+        className: "transcriptcloud",
+        template: "#transcriptcloudTemplate",
+        
+        initialize: function(options) {    
+            this.fill = d3.scale.category20(),
+            this.tags, 
+            this.maxWords = 150,
+            this.maxLength = 40,
+            this.width = 600,
+            this.height = 590
+        },
+        
+        onShow: function() {
+        	this.parseText($(".transcript").text());
+            var words = this.tags.slice(0, Math.min(this.tags.length, this.maxWords))
+  
+            d3.layout.cloud().size([600, 590])
+                .words(words.map(function(d) {
+                  return {text: d.key, size: 10 + d.value};
+                }))
+                .padding(5)
+                .rotate(function() { 
+                	return ~~(Math.random() * 2) * 90; 
+                })
+                .font("Impact")
+                .fontSize(function(d) { 
+                	return d.size; 
+                })
+                .on("end", this.draw)
+                .start();
+            if ($('.wordcloud > svg').length == 0){
+                this.draw();
+            }
+        },
+
+        onClose: function() {
+        	
+        },
+        
+        parseText : function (text) {
+        	var speakers = [];
+        	$(".speaker").each(function( index ) {
+        		var speaker = $(this).text().toLowerCase();
+        		if (speakers.indexOf(speaker) == -1) {
+        			speakers.push(speaker);
+        		}
+        	});
+        	
+            var wordSeparators = /[\s\u3031-\u3035\u309b\u309c\u30a0\u30fc\uff70]+/g;
+            var punctuation = /[!"&()*+,-\.\/:;<=>?\[\\\]^`\{|\}~]+/g;
+            var stopWords = /^(jm|dm|aw|jg|dv|bw|yeah|yes|nw|oh|okay|well|quite|let|just|still|bit|lot|got|get|ive|im|id|i|me|my|myself|we|us|our|ours|ourselves|you|your|yours|yourself|yourselves|he|him|his|himself|she|her|hers|herself|it|its|itself|they|them|their|theirs|themselves|what|which|who|whom|whose|this|that|these|those|am|is|are|was|were|be|been|being|have|has|had|having|do|does|did|doing|will|would|should|can|could|ought|i'm|you're|he's|she's|it's|we're|they're|i've|you've|we've|they've|i'd|you'd|he'd|she'd|we'd|they'd|i'll|you'll|he'll|she'll|we'll|they'll|isn't|aren't|wasn't|weren't|hasn't|haven't|hadn't|doesn't|don't|didn't|won't|wouldn't|shan't|shouldn't|can't|cannot|couldn't|mustn't|let's|that's|who's|what's|here's|there's|when's|where's|why's|how's|a|an|the|and|but|if|or|because|as|until|while|of|at|by|for|with|about|against|between|into|through|during|before|after|above|below|to|from|up|upon|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|say|says|said|shall)$/;
+        	            	
+            var tags = {};
+        	var cases = {};
+        	text.split(wordSeparators).forEach(function(word) {
+        		word = word.replace(punctuation, "");
+        		word = word.replace(" ", "");
+        		if (stopWords.test(word.toLowerCase())) return;
+        		if (speakers.indexOf(word.toLowerCase()) != -1) return;
+        		if (word == "") return;
+        		word = word.substr(0, 40);
+        		cases[word.toLowerCase()] = word;
+        		tags[word = word.toLowerCase()] = (tags[word] || 0) + 1;
+        	});
+        	tags = d3.entries(tags).sort(function(a, b) { return b.value - a.value; });
+        	tags.forEach(function(d) { d.key = cases[d.key]; });
+        	this.tags = tags;
+        },
+        
+        draw : function (words) {
+        	var fill = d3.scale.category20b();
+        	$('.wordcloud').empty();
+        	d3.select("#wordcloud").append("svg")
+            		.attr("width", 600)
+            		.attr("height", 590)
+            	.append("g")
+            		.attr("transform", "translate(300,295)")
+            	.selectAll("text")
+            		.data(words)
+            	.enter().append("text")
+            		.style("font-size", function(d) { 
+            			return d.size + "px"; 
+            		})
+            		.style("font-family", "Impact")
+            		.style("fill", function(d, i) { 
+            			return fill(d.text.toLowerCase());
+            		})
+            		.attr("text-anchor", "middle")
+            		.attr("transform", function(d) {
+            			return "translate(" + [d.x, d.y] + ")rotate(" + d.rotate + ")";
+            		})
+            		.text(function(d) { return d.text; });
+    	},
+    });
+    
+    var TranscriptSearchView = Backbone.Marionette.CompositeView.extend({
+        className: "transcriptsearch",
+        template: "#transcriptsearchTemplate",
+        
+        events: {
+            "keyup input.searchbox"   : "searchTranscript"
+        },
+
+        initialize: function(options) {        	
+        	this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+            	.throwNoArg("options.contentDescriptionSource");
+        	
+        	this.transcriptModel = new TranscriptModel({
+                source_models: {
+                    contentDescriptionSource: this.contentDescriptionSource,
+                },
+            })
+        },
+
+        onRender: function() {
+        	
+        },
+
+        onClose: function() {
+        	
+        },
+        
+        searchTranscript: function(event) {
+        	var transcript = this.transcriptModel.get("transcript");
+        	var val = this.$("input").val();
+            var results = [];
+            if (!transcript) {
+                this.$(".resultlist").html(this.infoTemplate({
+                    message: "No transcript loaded",
+                }));
+            } else {
+                if (event.keyCode == 13 || val.length > 3) {
+                    transcript.exchanges.forEach(function(exchange) {
+                        if (exchange.transcript.indexOf(val) != -1) {
+                            results.push(exchange);
+                        }
+                    });
+                }
+                this.$(".resultlist").empty();
+                _.each(results, function(result) {
+                	var obj = new TranscriptResultView({
+                        speaker: result.speaker,
+                        time: result.time,
+                        transcript: _.escape(result.transcript)
+                	}).render().el;
+                    $(obj).appendTo(this.$(".resultlist")).click(function() {
+                        $('.speech[data-time="' + result.time + '"]').click();
+                    });
+                }, this);
+            }
+        },
+    });
+    
+    var TranscriptResultView = Backbone.Marionette.ItemView.extend({
+        className: "transcriptref",
+        template: "#transcriptresultTemplate",
+
+        serializeData: function() {
+            return {
+                speaker: this.speaker,
+                time: this.time,
+                transcript: this.transcript,
+            };
+        },
+
+        initialize: function(options) {
+            this.speaker = _.checkarg(options.speaker)
+                .throwNoArg("options.speaker");
+            this.time = _.checkarg(options.time)
+            	.throwNoArg("options.time");
+            this.transcript = _.checkarg(options.transcript)
+            	.throwNoArg("options.transcript");
+        },
+
+        onRender: function() {
+        },
+
+    });
+    
     // FIXME: Note the similarity between title and date; this is replicated elsewhere.
     //  REFACTOR into a submodel of ViewModel that takes a list of properties as well
     //  as computed_attributes
@@ -1796,6 +2194,7 @@ var frontend = (function() {
             return {
                 speaker: this.model.get('speaker'),
                 transcript: this.model.get('transcript'),
+            	time: this.model.get('time')
             };
         },
 
@@ -1874,17 +2273,40 @@ var frontend = (function() {
 
     });
 
+    var TranscriptPaneTabs = Backbone.Marionette.ItemView.extend({
+        className: "transcripttabs",
+        template: "#transcripttabsTemplate",
+
+        triggers: {
+            "click " : "display:toggle",
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        events: {
+            "click span"   : "_selecttab"
+        },
+
+        _selecttab: function(event) {
+            var newState = $(event.target).attr("type");
+            this.triggerMethod("select:tab", newState);
+        },
+    });
+    
     var TranscriptSummaryView = Backbone.Marionette.ItemView.extend({
         className: "transcriptheader",
         template: "#interviewsummaryTemplate",
 
+        
         serializeData: function() {
             return {
                 title: this.model.get('title'),
                 date: this.model.get('date'),
             };
         },
-
+        
         initialize: function(options) {
             this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
                 .throwNoArg("options.contentDescriptionSource");
@@ -1994,6 +2416,12 @@ var frontend = (function() {
         },
     });
 
+    var TranscriptPaneModel = Backbone.ViewModel.extend({
+        defaults: {
+            state: "Search",
+        }
+    });
+    
     var TranscriptView = Backbone.Marionette.Layout.extend({
         className: "interviewpane",
         template: "#interviewTemplate",
@@ -2002,8 +2430,28 @@ var frontend = (function() {
             adjunct: ".header .adjunct",
             primary: ".primary",
             secondary: ".secondary",
+            tabs: ".contentpanetabs",
+            content: ".content",
         },
-
+        
+        states: {
+            Search: function(view) {
+                return new TranscriptSearchView({
+                	contentDescriptionSource: view.contentDescriptionSource
+                });
+            },
+            Cloud: function(view) {
+            	return new TranscriptCloudView({
+                	
+            	});
+            },
+            Graph: function(view) {
+            	return new TranscriptGraphView({
+                	
+            	});
+            },
+        },
+        
         serializeData: function() {
             return {};
         },
@@ -2016,13 +2464,15 @@ var frontend = (function() {
             this.fulltext = _.checkarg(options.fulltext).throwNoArg("options.fulltext");
             this.transcripts = _.checkarg(options.transcripts).throwNoArg("options.transcripts");
             this.files = _.checkarg(options.files).throwNoArg("options.files");
-
+            
             this.contentDescriptionSource = new ContentDescriptionModel({
                 types: _.keys(this.digitalContent),
                 source_models: _.extend({
                     contentSearchModel: this.contentSearchModel,
                 }, this.digitalContent),
             });
+            
+            this.model = new TranscriptPaneModel({});
         },
 
         onRender: function() {
@@ -2036,10 +2486,26 @@ var frontend = (function() {
             this.adjunct.show(new ReturnButtonView({
                 router: this.router,
             }));
-
+            
             this.primary.show(new TrackingPlayerView({
                 contentDescriptionSource: this.contentDescriptionSource,
             }));
+            
+            this.listenTo(this.model, "change:state", this.setTab);
+            this.tabview = new TranscriptPaneTabs({});
+            this.listenTo(this.tabview, "select:tab", this.onSelectTab);
+            this.tabs.show(this.tabview);
+            this.setTab(this.model, 'Search');
+        },
+        
+        onSelectTab: function(newState) {        	
+            if (this.states[newState]) {               
+            	this.model.set('state', newState);
+            }
+        },
+
+        setTab: function(model, value) {
+            this.content.show(this.states[value](this));
         },
     });
 
