@@ -28,7 +28,6 @@
         <script type="text/javascript" src="js/rdfbone.js"></script>
         <script type="text/javascript" src="js/pdf-view.js"></script>
         <script type="text/javascript" src="js/frontendbb.js"></script>
-
     </head>
     <body>
         <div class="container top">
@@ -146,6 +145,7 @@
                 <div class="adjunct span-6 last"></div>
             </div>
             <div class="primary span-8"></div>
+            <div class="tabs span-16 last"></div>
             <div class="secondary span-16 last"></div>
         </script>
         <script type="text/template" id="interviewsummaryTemplate">
@@ -156,50 +156,69 @@
             <div class="returnbutton span-6 last">Front page...</div>
         </script>
         <script type="text/template" id="transcriptTemplate">
-            <div class="audiodiv span-8">
+            <div class="audiodiv">
                 <audio id="<%= audiocontrolid %>" class="span-8" controls="controls">
                     <source src="<%= audiosrc %>" type="audio/ogg">
                 </audio>
-                <div class="transcript span-8"></div>
+                <div class="transcript"></div>
+            </div>
+        </script>
+        <script type="text/template" id="transcripttabsTemplate">
+            <span type="Search" class="button tab">Search Transcript</span>
+            <span type="Cloud" class="button tab">Word Cloud</span>
+            <span type="Graph" class="button tab">Word Frequency</span>
+            <span type="Annotate" class="button tab">Annotate Transcript</span>
+        </script>
+        <script type="text/template" id="transcriptcloudTemplate">
+            <div class="content span-16">
+                <div id="wordcloud" class="wordcloud"></div>
+            </div>
+        </script>
+        <script type="text/template" id="transcriptgraphTemplate">
+            <div class="content span-16">
+                <div id="graphview" class="graphview"></div>
+            </div>
+        </script>
+        <script type="text/template" id="transcriptsearchTemplate">
+            <div class="content span-16">
+                <div class="searchtranscriptpane span-16 last" style="margin-top:-10px">
+                    <div class="span-16 last">
+                        <input class="searchbox span-8" type="text" value="" placeHolder="Search Current Transcript"/>
+                    </div>
+                    <div class="searchresults span-16 last">
+                        <div class="entitylisttitle">Utterances</div>
+                        <div class="resultlist"/>
+                    </div>
+                </div>
+            </div>
+        </script>
+        <script type="text/template" id="transcripttabsTemplate">
+            <span type="Search" class="button tab">Search Current Transcript</span>
+            <span type="Annotate" class="button tab">Annotate</span>
+        </script>
+        <script type="text/template" id="transcriptcontentTemplate">
+            <div class="content span-16 last">
+                <div class="searchtranscriptpane span-16 last" style="margin-top:-10px">
+                    <div class="span-16 last">
+                        <input class="searchbox span-8" type="text" value="" placeHolder="Search Current Transcript"/>
+                    </div>
+                    <div class="searchresults span-16 last">
+                        <div class="entitylisttitle">Utterances</div>
+                        <div class="resultlist"/>
+                    </div>
+                </div>
             </div>
         </script>
         <script type="text/template" id="utteranceTemplate">
             <div class="speaker"><%= speaker %></div>
-            <div class="speech"><%= transcript %></div>
-        </script>
-        <script type="text/template" id="transcripttabsView">
-            <div class="span-16 last">
-                <div class="contentpanetabs span-16">
-                    <span type="Current" class="button tab">Search Current Transcript</span>
-                </div>
-                <div class="content span-16">
-                    <div class="searchtranscriptpane span-16 last" style="margin-top:-10px">
-                        <div class="span-16 last">
-                            <input class="searchbox span-8" type="text" value="" placeHolder="Search Current Transcript"/>
-                        </div>
-                        <div class="searchresults span-16 last">
-                            <div class="entitylisttitle">Utterances</div>
-                            <div class="resultlist"/>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <div class="speech" data-time="<%= time %>"><%= transcript %></div>
         </script>
         <script type="text/template" id="spinnerTemplate">
             <img class="spinner" src="img/spinner.gif" title="Spinner GIF" />
         </script>
         <script type="text/template" id="transcriptresultTemplate">
-            <div class="transcriptref">
-                <span class="transcriptlabel"><%= speaker %> @ <%= time %></span>
-                <span class="transcripttext"><%= transcript %></span>
-            </div>
-        </script>
-        <script type="text/template" id="alltranscriptsresultTemplate">
-            <div class="transcriptref">
-                <span class="transcriptlabel"><%= interview %></span>
-                <span class="transcriptlabel"><%= speaker %> @ <%= time %></span>
-                <span class="transcripttext"><%= transcript %></span>
-            </div>
+            <span class="transcriptlabel"><%= speaker %> @ <%= time %></span>
+            <span class="transcripttext"><%= transcript %></span>
         </script>
         <script type="text/template" id="mapuiTemplate">
             <div class="map" id="<%= id %>"></div>
@@ -263,6 +282,85 @@
                 Logged in as <span class="username button slim"><%= username %></span>
                 <span class="logout button slim">Logout</span>
             </div>
+        </script>
+        <script type="text/template" id="annotateTemplate">
+            <div class="header span-16 last">
+                <h3 style="margin-top:10px">Annotate Current Utterance</h3>
+            </div>
+            <div class="info span-16 last">Please Note: This feature is not yet operational.</div>
+            <div class="controls span-16 last">
+                <span class="returnbutton pause span-6" style="margin-left:10px">Pause</span>
+            </div>
+            <div class="simple span-16 last">
+            </div>
+            <div class="full span-16 last">
+            </div>
+        </script>
+        <script type="text/template" id="simpleannotationTemplate">
+            <div class="referral">
+                <span>The current speaker is referring to the </span>
+                <select name="entitytype">
+                    <option value="Architect">Architect</option>
+                    <option value="Structure">Structure</option>
+                    <option value="Firm">Firm</option>
+                </select>
+                <select name="entity">
+                    <option value="Birrell">James Birrell</option>
+                    <option value="Bligh">Graham Bligh</option>
+                    <option value="Mills">Helen Mills</option>
+                    <option value="Riddell">Rob Riddell</option>
+                </select>
+                <button class="addentity">+</button>
+                <button class="addrefersto">Add Simple Annotation</button>
+            </div>
+        </script>
+        <script type="text/template" id="fullannotationTemplate">
+            <div class="referral">
+                <span>The interview mentions that the </span>
+                <select name="entitytype" style="margin-left:6px">
+                    <option value="Architect">Architect</option>
+                    <option value="Structure">Structure</option>
+                    <option value="Firm">Firm</option>
+                </select>
+                <select name="entity">
+                    <option value="Birrell">James Birrell</option>
+                    <option value="Bligh">Graham Bligh</option>
+                    <option value="Mills">Helen Mills</option>
+                    <option value="Riddell">Rob Riddell</option>
+                </select>
+                <button class="addentity">+</button><br/>
+                <span style="padding-left:153px"> was </span>
+                <select name="relationship">
+                    <option value="EmployedBy">Employed By</option>
+                    <option value="PartnerAt">Partner At</option>
+                    <option value="TaughtBy">Taught By</option>
+                    <option value="DesignedBy">Designed By</option>
+                </select>
+                <br/>
+                <span style="padding-left:153px"> the </span>
+                <select name="entitytype" style="margin-left:6px">
+                    <option value="Architect">Architect</option>
+                    <option value="Structure">Structure</option>
+                    <option value="Firm">Firm</option>
+                </select>
+                <select name="entity">
+                    <option value="Birrell">James Birrell</option>
+                    <option value="Bligh">Graham Bligh</option>
+                    <option value="Mills">Helen Mills</option>
+                    <option value="Riddell">Rob Riddell</option>
+                </select>
+                <button class="addentity">+</button><br/>
+                <span style="padding-left:153px">
+                    <span>from: </span>
+                    <input type="text" class="username"/>
+                    <span>to: </span>
+                    <input type="text" class="password"/>
+                </span>
+                <button class="addrefersto">Add Full Annotation</button>
+            </div>
+        </script>
+        <script type="text/template" id="annotationoptionTemplate">
+            <option value="<%= value %>"><%= label %></option>
         </script>
         <script type="text/javascript">
             $(function() {
