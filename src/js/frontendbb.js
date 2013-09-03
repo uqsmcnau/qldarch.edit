@@ -86,6 +86,11 @@ var frontend = (function() {
     var GEO_LAT = "http://www.w3.org/2003/01/geo/wgs84_pos#lat";
     var GEO_LONG = "http://www.w3.org/2003/01/geo/wgs84_pos#long";
 
+    var WORD_SEPARATORS = /[\s\u3031-\u3035\u309b\u309c\u30a0\u30fc\uff70]+/g;
+    var PUNCTUATION = /[!"&()*+,-\.\/:;<=>?\[\\\]^`\{|\}~–’]+/g;
+    // NOTE: ' is stripped out by PUNCTUATION before comparison against STOP_WORDS
+    var STOP_WORDS = /^(jm|dm|aw|jg|dv|bw|yeah|yes|nw|oh|okay|well|quite|let|just|still|bit|lot|got|get|ive|im|id|i|me|my|myself|we|us|our|ours|ourselves|you|your|yours|yourself|yourselves|he|him|his|himself|she|her|hers|herself|it|its|itself|they|them|their|theirs|themselves|what|which|who|whom|whose|this|that|these|those|am|is|are|was|were|be|been|being|have|has|had|having|do|does|did|doing|will|would|should|can|could|ought|im|youre|hes|shes|its|were|theyre|ive|youve|weve|theyve|id|youd|hed|shed|wed|theyd|ill|youll|hell|shell|well|theyll|isnt|arent|wasnt|werent|hasnt|havent|hadnt|doesnt|dont|didnt|wont|wouldnt|shant|shouldnt|cant|cannot|couldnt|mustnt|lets|thats|whos|whats|heres|theres|whens|wheres|whys|hows|a|an|the|and|but|if|or|because|as|until|while|of|at|by|for|with|about|against|between|into|through|during|before|after|above|below|to|from|up|upon|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|say|says|said|shall|think|i|know|thanks|one)$/;
+
     var SPINNER_GIF = "img/spinner.gif";
     var MAX_PRECEDENCE = 1000000;
     var successDelay = 2000;
@@ -1791,6 +1796,7 @@ var frontend = (function() {
         },
     });
 
+
     var TranscriptGraphView = Backbone.Marionette.CompositeView.extend({
         className: "transcriptgraph",
         template: "#transcriptgraphTemplate",
@@ -1801,7 +1807,9 @@ var frontend = (function() {
         
         onShow: function() {
         	this.parseText($(".transcript").text());
-            var words = this.tags.slice(0, Math.min(this.tags.length, 50))
+            var words = this.tags.slice(0, Math.min(this.tags.length, 50));
+            console.log("Histogram onShow");
+            console.log(words);
             
         	var margin = {top: 20, right: 20, bottom: 60, left: 40},
 	            width = 500 - margin.left - margin.right,
@@ -1879,17 +1887,13 @@ var frontend = (function() {
         			speakers.push(speaker);
         		}
         	});
-        	
-            var wordSeparators = /[\s\u3031-\u3035\u309b\u309c\u30a0\u30fc\uff70]+/g;
-            var punctuation = /[!"&()*+,-\.\/:;<=>?\[\\\]^`\{|\}~]+/g;
-            var stopWords = /^(jm|dm|aw|jg|dv|bw|yeah|yes|nw|oh|okay|well|quite|let|just|still|bit|lot|got|get|ive|im|id|i|me|my|myself|we|us|our|ours|ourselves|you|your|yours|yourself|yourselves|he|him|his|himself|she|her|hers|herself|it|its|itself|they|them|their|theirs|themselves|what|which|who|whom|whose|this|that|these|those|am|is|are|was|were|be|been|being|have|has|had|having|do|does|did|doing|will|would|should|can|could|ought|i'm|you're|he's|she's|it's|we're|they're|i've|you've|we've|they've|i'd|you'd|he'd|she'd|we'd|they'd|i'll|you'll|he'll|she'll|we'll|they'll|isn't|aren't|wasn't|weren't|hasn't|haven't|hadn't|doesn't|don't|didn't|won't|wouldn't|shan't|shouldn't|can't|cannot|couldn't|mustn't|let's|that's|who's|what's|here's|there's|when's|where's|why's|how's|a|an|the|and|but|if|or|because|as|until|while|of|at|by|for|with|about|against|between|into|through|during|before|after|above|below|to|from|up|upon|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|say|says|said|shall)$/;
         	            	
             var tags = {};
         	var cases = {};
-        	text.split(wordSeparators).forEach(function(word) {
-        		word = word.replace(punctuation, "");
+        	text.split(WORD_SEPARATORS).forEach(function(word) {
+        		word = word.replace(PUNCTUATION, "");
         		word = word.replace(" ", "");
-        		if (stopWords.test(word.toLowerCase())) return;
+        		if (STOP_WORDS.test(word.toLowerCase())) return;
         		if (speakers.indexOf(word.toLowerCase()) != -1) return;
         		if (word == "") return;
         		word = word.substr(0, 40);
@@ -1951,16 +1955,12 @@ var frontend = (function() {
         		}
         	});
         	
-            var wordSeparators = /[\s\u3031-\u3035\u309b\u309c\u30a0\u30fc\uff70]+/g;
-            var punctuation = /[!"&()*+,-\.\/:;<=>?\[\\\]^`\{|\}~]+/g;
-            var stopWords = /^(jm|dm|aw|jg|dv|bw|yeah|yes|nw|oh|okay|well|quite|let|just|still|bit|lot|got|get|ive|im|id|i|me|my|myself|we|us|our|ours|ourselves|you|your|yours|yourself|yourselves|he|him|his|himself|she|her|hers|herself|it|its|itself|they|them|their|theirs|themselves|what|which|who|whom|whose|this|that|these|those|am|is|are|was|were|be|been|being|have|has|had|having|do|does|did|doing|will|would|should|can|could|ought|i'm|you're|he's|she's|it's|we're|they're|i've|you've|we've|they've|i'd|you'd|he'd|she'd|we'd|they'd|i'll|you'll|he'll|she'll|we'll|they'll|isn't|aren't|wasn't|weren't|hasn't|haven't|hadn't|doesn't|don't|didn't|won't|wouldn't|shan't|shouldn't|can't|cannot|couldn't|mustn't|let's|that's|who's|what's|here's|there's|when's|where's|why's|how's|a|an|the|and|but|if|or|because|as|until|while|of|at|by|for|with|about|against|between|into|through|during|before|after|above|below|to|from|up|upon|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|say|says|said|shall)$/;
-        	            	
             var tags = {};
         	var cases = {};
-        	text.split(wordSeparators).forEach(function(word) {
-        		word = word.replace(punctuation, "");
+        	text.split(WORD_SEPARATORS).forEach(function(word) {
+        		word = word.replace(PUNCTUATION, "");
         		word = word.replace(" ", "");
-        		if (stopWords.test(word.toLowerCase())) return;
+        		if (STOP_WORDS.test(word.toLowerCase())) return;
         		if (speakers.indexOf(word.toLowerCase()) != -1) return;
         		if (word == "") return;
         		word = word.substr(0, 40);
