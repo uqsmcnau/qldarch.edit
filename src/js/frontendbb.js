@@ -48,6 +48,7 @@ var frontend = (function() {
     var JSON_ROOT = "/ws/rest/";
     var QA_DISPLAY = "http://qldarch.net/ns/rdf/2012-06/terms#display";
     var QA_LABEL = "http://qldarch.net/ns/rdf/2012-06/terms#label";
+    var QA_SINGULAR = "http://qldarch.net/ns/rdf/2012-06/terms#singular";
     var QA_EDITABLE = "http://qldarch.net/ns/rdf/2012-06/terms#editable";
     var QA_SYSTEM_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#systemLocation";
     var QA_EXTERNAL_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#externalLocation";
@@ -2473,12 +2474,135 @@ var frontend = (function() {
         },
     });
 
-    var SimpleAnnotationView = Backbone.Marionette.ItemView.extend({
-        className: "simpleannotationpane",
-        template: "#simpleannotationTemplate",
+    var EntitySelectionModel = Backbone.Model.extend({
+        defaults: {
+            enabled: false,
+            selection: undefined,
+        },
+    });
+
+    var EntitySelectionView = Backbone.Marionette.ItemView.extend({
+        tagName: "span",
+        className: "entityselection",
+        template: "#entityselectionTemplate",
+
+        ui: {
+            typeselect: "select[name='entitytype']",
+            entityselect: "select[name='entity']",
+            addentity: "button",
+        },
 
         triggers: {
             "click .addentity" : "add:entity",
+            "change select[name='entitytype']" : "select:type",
+            "change select[name='entity']" : "select:entity",
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        initialize: function(options) {
+            this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.optionTemplate = _.checkarg(_.template($("#optionTemplate").html()))
+                .throwNoArg("optionTemplate");
+
+            this.model = new EntitySelectionModel();
+
+            this.editableNouns = new SubCollection(this.proper, {
+                name: "Editable entity types",
+                tracksort: false,
+                predicate: function(model) {
+                        return _(model.geta(QA_EDITABLE)).contains(true);
+                    },
+                comparator: QA_DISPLAY_PRECEDENCE,
+            });
+
+            this.entityLists = this.editableNouns.reduce(function(memo, type) {
+                memo[type.id] = new SubCollection(this.entities, {
+                    name: "EntityList: " + type.id,
+                    tracksort: false,
+                    predicate: function(model) {
+                            return _(model.geta(RDF_TYPE)).contains(type.id);
+                        },
+                    comparator: QA_LABEL,
+                });
+
+                return memo;
+            }, {}, this);
+        },
+
+        onRender: function() {
+            this.displayTypeOptions();
+            this.displayEntityOptions();
+            this.displayAddEntityEnabled();
+            this.listenTo(this.model, "change:enabled", this.displayAddEntityEnabled);
+            this.listenTo(this.editableNouns, "all", this.displayTypeOptions);
+        },
+
+        onSelectType: function() {
+            this.displayEntityOptions();
+        },
+
+        displayTypeOptions: function() {
+            this.ui.typeselect.empty();
+            this.editableNouns.each(function(p) {
+                var label = p.get1(QA_SINGULAR) || p.get1(QA_LABEL) || "No label provided";
+                this.ui.typeselect.append(this.optionTemplate({
+                    value: p.id,
+                    label: label,
+                }));
+            }, this);
+        },
+
+        displayEntityOptions: function() {
+            this.ui.entityselect.empty();
+            var selection = this.ui.typeselect.val();
+            if (this.entityLists[selection]) {
+                this.entityLists[selection].each(function(p) {
+                    var label = p.get1(QA_SINGULAR) || p.get1(QA_LABEL) || "No label provided";
+                    this.ui.entityselect.append(this.optionTemplate({
+                        value: p.id,
+                        label: label,
+                    }));
+                }, this);
+                this.onSelectEntity();
+            } else {
+                console.log("Error: Cannot find entities matching: " + selection);
+            }
+        },
+
+        displayAddEntityEnabled: function() {
+            this.ui.addentity.prop('disabled', !this.model.get('enabled'));
+        },
+
+        onAddEntity: function() {
+            console.log("simple add:entity invoked");
+        },
+
+        onSelectEntity: function() {
+            var selection = this.ui.entityselect.val();
+            this.model.set('selection', selection);
+            // Not sure this is the right way to do this, maybe use a shared model?
+            //    OTOH, there is no output from this view except the current selection.
+            this.triggerMethod("selection:changed", selection);
+        },
+
+        getCurrentSelection: function() {
+            return this.model.get('selection');
+        }
+    });
+
+    var SimpleAnnotationView = Backbone.Marionette.Layout.extend({
+        className: "simpleannotationpane",
+        template: "#simpleannotationTemplate",
+
+        regions: {
+            entityselection: ".entityselection",
+        },
+
+        triggers: {
             "click .addrefersto" : "add:refersTo",
         },
 
@@ -2488,23 +2612,32 @@ var frontend = (function() {
 
         initialize: function(options) {
             this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
         },
 
-        onAddEntity: function() {
-            console.log("simple add:entity invoked");
+        onRender: function() {
+            this.entityView = new EntitySelectionView({
+                proper: this.proper,
+                entities: this.entities,
+            });
+            this.entityselection.show(this.entityView);
         },
 
         onAddRefersTo: function() {
-            console.log("simple add:refersTo invoked");
+            console.log("simple add:refersTo invoked with selection: " + this.entityView.getCurrentSelection());
         },
     });
 
-    var FullAnnotationView = Backbone.Marionette.ItemView.extend({
+    var FullAnnotationView = Backbone.Marionette.Layout.extend({
         className: "fullannotationpane",
         template: "#fullannotationTemplate",
 
+        regions: {
+            subject: ".subjectselection",
+            object: ".objectselection",
+        },
+
         triggers: {
-            "click .addentity" : "add:entity",
             "click .addrefersto" : "add:refersTo",
         },
 
@@ -2513,18 +2646,26 @@ var frontend = (function() {
         },
 
         initialize: function(options) {
+            this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
         },
         
         onRender: function() {
-            console.log("FullAnnotation rendered");
-        },
+            this.subjectView = new EntitySelectionView({
+                proper: this.proper,
+                entities: this.entities,
+            });
+            this.subject.show(this.subjectView);
 
-        onAddEntity: function() {
-            console.log("full add:entity invoked");
+            this.objectView = new EntitySelectionView({
+                proper: this.proper,
+                entities: this.entities,
+            });
+            this.object.show(this.objectView);
         },
 
         onAddRefersTo: function() {
-            console.log("full add:refersTo invoked");
+            console.log("full add:refersTo invoked: " + this.subjectView.getCurrentSelection() + " -> " + this.objectView.getCurrentSelection());
         },
     });
 
@@ -2551,6 +2692,7 @@ var frontend = (function() {
 
         initialize: function(options) {
             this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.paused = false;
         },
 
@@ -2560,9 +2702,11 @@ var frontend = (function() {
 
             this.simple.show(new SimpleAnnotationView({
                 proper: this.proper,
+                entities: this.entities,
             }));
             this.full.show(new FullAnnotationView({
                 proper: this.proper,
+                entities: this.entities,
             }));
         },
 
@@ -2616,6 +2760,7 @@ var frontend = (function() {
             Annotate: function(view) {
                 var av = new AnnotateView({
                     proper: view.proper,
+                    entities: view.entities,
                 });
                 view.listenTo(av, "pause:set", view.pauseSet);
                 return av;
@@ -2635,6 +2780,7 @@ var frontend = (function() {
             this.transcripts = _.checkarg(options.transcripts).throwNoArg("options.transcripts");
             this.files = _.checkarg(options.files).throwNoArg("options.files");
             this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
 
             this.contentDescriptionSource = new ContentDescriptionModel({
                 types: _.keys(this.digitalContent),
@@ -4192,6 +4338,7 @@ var frontend = (function() {
             transcripts: transcripts,
             files: files,
             proper: proper,
+            entities: entities,
         });
 
         var pdfContentView = new PdfContentView({
