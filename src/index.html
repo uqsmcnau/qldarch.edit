@@ -299,36 +299,15 @@
         <script type="text/template" id="simpleannotationTemplate">
             <div class="referral">
                 <span>The current speaker is referring to the </span>
-                <select name="entitytype">
-                    <option value="Architect">Architect</option>
-                    <option value="Structure">Structure</option>
-                    <option value="Firm">Firm</option>
-                </select>
-                <select name="entity">
-                    <option value="Birrell">James Birrell</option>
-                    <option value="Bligh">Graham Bligh</option>
-                    <option value="Mills">Helen Mills</option>
-                    <option value="Riddell">Rob Riddell</option>
-                </select>
-                <button class="addentity">+</button>
+                <span class="entityselection">Entity Selection</span>
                 <button class="addrefersto">Add Simple Annotation</button>
             </div>
         </script>
         <script type="text/template" id="fullannotationTemplate">
             <div class="referral">
                 <span>The interview mentions that the </span>
-                <select name="entitytype" style="margin-left:6px">
-                    <option value="Architect">Architect</option>
-                    <option value="Structure">Structure</option>
-                    <option value="Firm">Firm</option>
-                </select>
-                <select name="entity">
-                    <option value="Birrell">James Birrell</option>
-                    <option value="Bligh">Graham Bligh</option>
-                    <option value="Mills">Helen Mills</option>
-                    <option value="Riddell">Rob Riddell</option>
-                </select>
-                <button class="addentity">+</button><br/>
+                <span class="subjectselection">Subject Entity Selection</span>
+                <br/>
                 <span style="padding-left:153px"> was </span>
                 <select name="relationship">
                     <option value="EmployedBy">Employed By</option>
@@ -338,29 +317,33 @@
                 </select>
                 <br/>
                 <span style="padding-left:153px"> the </span>
-                <select name="entitytype" style="margin-left:6px">
-                    <option value="Architect">Architect</option>
-                    <option value="Structure">Structure</option>
-                    <option value="Firm">Firm</option>
-                </select>
-                <select name="entity">
-                    <option value="Birrell">James Birrell</option>
-                    <option value="Bligh">Graham Bligh</option>
-                    <option value="Mills">Helen Mills</option>
-                    <option value="Riddell">Rob Riddell</option>
-                </select>
-                <button class="addentity">+</button><br/>
+                <span class="objectselection">Object Entity Selection</span>
+                <br/>
                 <span style="padding-left:153px">
                     <span>from: </span>
-                    <input type="text" class="username"/>
+                    <input type="text" class="fromdate date"/>
                     <span>to: </span>
-                    <input type="text" class="password"/>
+                    <input type="text" class="todate date"/>
                 </span>
                 <button class="addrefersto">Add Full Annotation</button>
             </div>
         </script>
-        <script type="text/template" id="annotationoptionTemplate">
+        <script type="text/template" id="optionTemplate">
             <option value="<%= value %>"><%= label %></option>
+        </script>
+        <script type="text/template" id="entityselectionTemplate">
+            <select name="entitytype">
+                <option value="Architect">Architect</option>
+                <option value="Structure">Structure</option>
+                <option value="Firm">Firm</option>
+            </select>
+            <select name="entity">
+                <option value="Birrell">James Birrell</option>
+                <option value="Bligh">Graham Bligh</option>
+                <option value="Mills">Helen Mills</option>
+                <option value="Riddell">Rob Riddell</option>
+            </select>
+            <button class="addentity" disabled>+</button>
         </script>
         <script type="text/javascript">
             $(function() {
