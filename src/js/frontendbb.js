@@ -2249,6 +2249,8 @@ var frontend = (function() {
             container.scrollTo(this.$el, "fast", {
                 offset: { top: -10 },
             });
+
+            this.triggerMethod("utterance:active", this.model);
         },
 
         hideSubtitle: function() {
@@ -2429,6 +2431,10 @@ var frontend = (function() {
             if (popcorn) {
                 popcorn.play();
             }
+        },
+
+        onItemViewUtteranceActive: function(childView, model) {
+            this.triggerMethod("utterance:active", model);
         },
 
     });
@@ -2804,9 +2810,12 @@ var frontend = (function() {
                 router: this.router,
             }));
 
-            this.primary.show(new TrackingPlayerView({
+            this.trackingView = new TrackingPlayerView({
                 contentDescriptionSource: this.contentDescriptionSource,
-            }));
+            });
+            this.primary.show(this.trackingView);
+
+            this.listenTo(this.trackingView, "utterance:active", this.triggerUtteranceActive);
             
             this.listenTo(this.model, "change:state", this.setTab);
             this.tabview = new TranscriptPaneTabs({});
@@ -2833,6 +2842,12 @@ var frontend = (function() {
 
         setTab: function(model, value) {
             this.secondary.show(this.states[value](this));
+        },
+
+        triggerUtteranceActive: function(model) {
+            console.log("Utterance active");
+            console.log(model);
+            this.triggerMethod("utterance:active", model);
         },
     });
 
