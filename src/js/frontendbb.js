@@ -62,14 +62,20 @@ var frontend = (function() {
     var QA_BASIC_MIME_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#basicMimeType";
     var QA_DEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#definiteMapIcon";
     var QA_INDEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#indefiniteMapIcon";
-
+    var QA_REFERS_TO = "http://qldarch.net/ns/rdf/2012-06/terms#refersTo";
+    var QA_REGION_START = "http://qldarch.net/ns/rdf/2012-06/terms#regionStart";
+    var QA_REGION_END = "http://qldarch.net/ns/rdf/2012-06/terms#regionEnd";
 
     var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
     var OWL_OBJECT_PROPERTY = "http://www.w3.org/2002/07/owl#ObjectProperty";
     var RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+    var RDF_SUBJECT = "http://www.w3.org/1999/02/22-rdf-syntax-ns#subject";
+    var RDF_PREDICATE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate";
+    var RDF_OBJECT = "http://www.w3.org/1999/02/22-rdf-syntax-ns#object";
     var RDFS_SUBCLASS_OF = "http://www.w3.org/2000/01/rdf-schema#subClassOf";
     var RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
 
+    var QA_REFERENCE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Reference";
     var QA_INTERVIEW_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Interview";
     var QA_TRANSCRIPT_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Transcript";
     var QA_ARTICLE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Article";
@@ -2121,13 +2127,14 @@ var frontend = (function() {
                 var curr = transcript.exchanges[i];
                 var next = transcript.exchanges[i+1];
 
-                var start = Math.max(0.5, Popcorn.util.toSeconds(curr.time)) - 0.5;
-                var end = next ? Popcorn.util.toSeconds(next.time) - 0.5 : NaN;
+                var start = Popcorn.util.toSeconds(curr.time);
+                var end = next ? Popcorn.util.toSeconds(next.time) : NaN;
 
                 exchanges.push({
                     speaker: curr.speaker,
                     transcript: curr.transcript,
                     time: curr.time,
+                    next: next ? next.time : NaN,
                     start: start,
                     end: end,
                 });
@@ -2229,12 +2236,17 @@ var frontend = (function() {
             var popcorn = this.popcornModel.get('popcorn');
             if (!popcorn) return;
 
+            console.log(this.model);
+            var start = Math.max(0.5, this.model.get('start')) - 0.5;
+            var end = this.model.get('end') ? this.model.get('end') - 0.5 : popcorn.duration();
+
             this.popcornInterval = {
-                start: this.model.get('start'),
-                end: this.model.get('end') || popcorn.duration(),
+                start: start,
+                end: end,
                 onStart: _.bind(this.showSubtitle, this),
                 onEnd: _.bind(this.hideSubtitle, this),
             };
+            console.log(this.popcornInterval);
             var r = popcorn.code(this.popcornInterval);
         },
 
@@ -2274,7 +2286,6 @@ var frontend = (function() {
                 }
             }
         },
-
     });
 
     var TranscriptPaneTabs = Backbone.Marionette.ItemView.extend({
@@ -2433,10 +2444,16 @@ var frontend = (function() {
             }
         },
 
-        onItemViewUtteranceActive: function(childView, model) {
+        onItemviewUtteranceActive: function(childView, model) {
             this.triggerMethod("utterance:active", model);
         },
 
+        getDuration: function() {
+            var popcorn = this.popcornModel.get('popcorn');
+            if (popcorn) {
+                return popcorn.duration();
+            }
+        },
     });
 
     var UnimplementedTranscriptTabView = Backbone.Marionette.ItemView.extend({
@@ -2626,11 +2643,21 @@ var frontend = (function() {
                 proper: this.proper,
                 entities: this.entities,
             });
+            this.listenTo(this.entityView, "selection:changed", this.setSelection);
             this.entityselection.show(this.entityView);
         },
 
+        setSelection: function(selection) {
+            this.selectionURI = selection;
+        },
+
         onAddRefersTo: function() {
-            console.log("simple add:refersTo invoked with selection: " + this.entityView.getCurrentSelection());
+            if (this.selectionURI) {
+                var entity = this.entities.get(this.selectionURI);
+                this.triggerMethod("simple:add", entity);
+            } else {
+                console.log("No entity selected");
+            }
         },
     });
 
@@ -2706,10 +2733,13 @@ var frontend = (function() {
             // FIXME: This should be a shared model between the player and the controls.
             this.paused = this.ui.pauseBtn.hasClass('selected');
 
-            this.simple.show(new SimpleAnnotationView({
+            this.simpleAnnotationView = new SimpleAnnotationView({
                 proper: this.proper,
                 entities: this.entities,
-            }));
+            });
+            this.listenTo(this.simpleAnnotationView, "simple:add", this.onChildSimpleAdd);
+            this.simple.show(this.simpleAnnotationView);
+
             this.full.show(new FullAnnotationView({
                 proper: this.proper,
                 entities: this.entities,
@@ -2718,7 +2748,6 @@ var frontend = (function() {
 
         onDoPause: function() {
             this.paused = !this.paused;
-            console.log("onDoPause: " + this.paused);
             if (this.paused) {
                 this.ui.pauseBtn.addClass("selected");
                 this.ui.pauseBtn.text("Play");
@@ -2728,6 +2757,11 @@ var frontend = (function() {
             }
             this.triggerMethod("pause:set", this.paused);
         },
+
+        onChildSimpleAdd: function(entity) {
+            console.log(entity);
+            this.triggerMethod("simple:add", entity);
+        }
     });
 
     var TranscriptPaneModel = Backbone.ViewModel.extend({
@@ -2769,6 +2803,7 @@ var frontend = (function() {
                     entities: view.entities,
                 });
                 view.listenTo(av, "pause:set", view.pauseSet);
+                view.listenTo(av, "simple:add", view.onSimpleAdd);
                 return av;
             },
         },
@@ -2825,11 +2860,11 @@ var frontend = (function() {
         },
         
         pauseSet: function(pause) {
-            if (this.playerView) {
+            if (this.trackingView) {
                 if (pause) {
-                    this.playerView.doPause();
+                    this.trackingView.doPause();
                 } else  {
-                    this.playerView.doPlay();
+                    this.trackingView.doPlay();
                 }
             }
         },
@@ -2848,6 +2883,47 @@ var frontend = (function() {
             console.log("Utterance active");
             console.log(model);
             this.triggerMethod("utterance:active", model);
+            this.currentUtterance = model;
+            model.on("change", function() {
+                console.log("model changed");
+                console.trace();
+            });
+        },
+
+        onSimpleAdd: function(entity) {
+            console.log("SimpleAdd");
+            console.log(this.contentDescriptionSource.get('contentDescription'));
+            console.log(this.currentUtterance);
+            var rdf = {};
+            rdf[RDF_TYPE] = QA_REFERENCE_TYPE,
+            rdf[RDF_SUBJECT] = this.contentDescriptionSource.get('contentDescription').id,
+            rdf[RDF_PREDICATE] = QA_REFERS_TO,
+            rdf[RDF_OBJECT] = entity.id,
+            rdf[QA_REGION_START] = this.currentUtterance.get('start');
+            rdf[QA_REGION_END] = this.currentUtterance.get('end') ?
+                this.currentUtterance.get('end') : this.trackingView.getDuration();
+            console.log(rdf);
+            $.ajax({
+                type: 'POST',
+                url: JSON_ROOT + 'references',
+                data: JSON.stringify(rdf),
+                dataType: 'json',
+            }).done(function(data, textStatus, jqXHR) {
+                console.log("success");
+                console.log(rdf);
+                console.log(data);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
+            }).fail(function(jqXHR, textStatus, errorThrown) {
+                console.log("failure");
+                console.log(rdf);
+                console.log(errorThrown);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
+            });
+
         },
     });
 
