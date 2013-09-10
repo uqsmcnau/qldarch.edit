@@ -528,7 +528,6 @@ lore.ore.ui.graphicalEditor = Ext.extend(Ext.Panel,{
                 // this is a new resource: create corresponding model object 
                 var figProps = new lore.ore.model.ResourceProperties();
                 for (p in theProps){
-                	console.log(p);
                     var pidsplit = p.split(":");
                     var pfx = pidsplit[0];
                     pidsplit = pidsplit[1].split("_");

@@ -334,7 +334,7 @@ lore.ore.ui.SlidePanel = Ext.extend(Ext.Panel,{
             this.previewEl = previewEl;
             this.add({
                 region: "center",
-                autoScroll: true, 
+                //autoScroll: true, 
                 contentEl: previewEl}); 
             this.add({
                 useSplitTips: true,
