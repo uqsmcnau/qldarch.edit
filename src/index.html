@@ -72,8 +72,22 @@
                 <input class="span-6" type="text" value="" placeHolder="Search Content, People and Things"/>
             </div>
         </script>
+        <script type="text/template" id="resourcedivTemplate">
+            <h2 class="columntitle">Resource Search</h2>
+            <div id="searchdiv" class="clear">
+                <label for="searchtype">Search Type</label>
+                <select name="searchtype">
+                    <option value="fulltext">Fulltext and Metadata</option>
+                    <option value="all">Just Metadata</option>
+                </select>
+                <input class="span-6" type="text" value="" placeHolder="Search Content, People and Things"/>
+            </div>
+        </script>
         <script type="text/template" id="mapsearchbuttonTemplate">
             <div class="returnbutton span-6 last clear">Map Search...</div>
+        </script>
+        <script type="text/template" id="compoundbuttonTemplate">
+            <div class="returnbutton span-6 last clear">Compound Search...</div>
         </script>
         <script type="text/template" id="searchtypeoptionTemplate">
             <option value="<%= value %>"><%= label %></option>
@@ -236,6 +250,13 @@
                 <div class="contentlisttitle">Image Preview</div>
                 <div class="multiimagepreview"></div>
             </div>
+        </script>
+        <script type="text/template" id="compoundTemplate">
+            <h2 class="columntitle">Compound Object</h2>
+            <iframe id="compoundcontainer" 
+                style="height: 600px; width: 630px;" 
+                class="compoundcontainer" 
+                src="/explore/compoundui/compound.html"></iframe>
         </script>
         <script type="text/template" id="relatedcontentTemplate">
             <div class="relatedcontentbox">

@@ -206,6 +206,41 @@ var frontend = (function() {
         },
     });
 
+    var CompoundModel = Backbone.Model.extend({
+        defaults : {
+            'lat' : "",
+            'long' : "",
+            'zoom' : "",
+            'selection' : "",
+        },
+
+        initialize : function(options) {
+        },
+
+        serialize : function() {
+            return encodeURIComponent(encodeURIComponent(this.get('lat')) + "/"
+                    + encodeURIComponent(this.get('long')) + "/"
+                    + encodeURIComponent(this.get('zoom')) + "/"
+                    + encodeURIComponent(this.get('selection')));
+        },
+
+        deserialize : function(string) {
+            string = string || "";
+            var components = string.split("/");
+            if (components.length != 4) {
+                return this.defaults;
+            } else {
+                var r = {
+                    'lat' : decodeURIComponent(components[0]),
+                    'long' : decodeURIComponent(components[1]),
+                    'zoom' : decodeURIComponent(components[2]),
+                    'selection' : decodeURIComponent(components[3]),
+                };
+                return r;
+            }
+        },
+    });
+
     var DisplayedImages = Backbone.Collection.extend({
         initialize: function initialize(options) {
             _.bindAll(this);
@@ -402,6 +437,33 @@ var frontend = (function() {
         },
     });
 
+    var CompoundButtonView = Backbone.Marionette.ItemView.extend({
+        className : "compoundbutton",
+        template : "#compoundbuttonTemplate",
+
+        initialize : function(options) {
+            this.router = _.checkarg(options.router).throwNoArg(
+                    "options.router");
+            this.model = new Backbone.Model();
+        },
+
+        onRender : function() {
+            this.bindUIElements();
+            this.delegateEvents();
+        },
+
+        events : {
+            "click" : "_click"
+        },
+
+        _click : function _click() {
+            this.router.navigate("compound", {
+                trigger : true,
+                replace : false
+            });
+        },
+    });
+
     var ContentItemView = Backbone.Marionette.ItemView.extend({
         className: "contententry",
         template: "#listitemviewTemplate",
@@ -526,10 +588,64 @@ var frontend = (function() {
             this.displayedImages = _.checkarg(options.displayedImages)
                 .throwNoArg("options.displayedImages");
 
+            this.contentSearchModel = _.checkarg(options.contentSearchModel)
+                .throwNoArg("options.contentSearchModel");
+            this.digitalContent = _.checkarg(options.digitalContent)
+                .throwNoArg("options.digitalContent");
+            this.properties = _.checkarg(options.properties)
+                .throwNoArg("options.properties");
+            this.entities = _.checkarg(options.entities)
+                .throwNoArg("options.entities");
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
+
             this.listenTo(this.selection, "change", this._updateSelected);
             this.listenTo(this.displayedImages, "add", this._updateDisplayed);
             this.listenTo(this.displayedImages, "remove", this._updateDisplayed);
             this.listenTo(this.displayedImages, "reset", this._updateDisplayed);
+
+            this.contentDescriptionModel = new ContentDescriptionModel({
+                types : _.keys(this.digitalContent),
+                source_models : _.extend({
+                    contentSearchModel : this.contentSearchModel,
+                }, this.digitalContent),
+            });
+
+            this.metadata = _(this.model.predicates()).map(
+                function(predicate) {
+                    var propDefn = this.properties.get(predicate);
+                        if (!propDefn) {
+                            console.log("Property not found in ontology: " + predicate);
+                            return undefined;
+                        } else if (propDefn.get1(QA_DISPLAY, true, true)) {
+                            var value = this.model.get1(predicate, logmultiple);
+                            var precedence = propDefn.get1(QA_DISPLAY_PRECEDENCE);
+                            precedence = precedence ? precedence : MAX_PRECEDENCE;
+
+                            if (propDefn.geta_(RDF_TYPE).contains(OWL_OBJECT_PROPERTY)) {
+                                if (this.entities.get(value) && this.entities.get(value).get1(QA_LABEL)) {
+                                    return {
+                                        label : propDefn.get1(QA_LABEL,logmultiple),
+                                        value : this.entities.get(value).get1(QA_LABEL, logmultiple),
+                                        precedence : precedence,
+                                        uri : predicate,
+                                    };
+                                } else {
+                                    console.log("ObjectProperty(" + predicate + ") failed resolve");
+                                    console.log(this.entities.get(value));
+                                    return undefined;
+                                }
+                            } else {
+                                return {
+                                    label : propDefn.get1(QA_LABEL, logmultiple),
+                                    value : value,
+                                    precedence : precedence,
+                                    uri : predicate,
+                                };
+                            }
+                        } else {
+                            return undefined;
+                        }
+            }, this);
         },
         
         events: {
@@ -548,6 +664,13 @@ var frontend = (function() {
                 if (!isScrolledIntoView(container, this.$el)) {
                     container.scrollTo(this.$el);
                 }
+
+                var jsonObj = {
+                    'url': Backbone.history.location.origin + Backbone.history.location.pathname + "#" + 
+                        this.router.contentViews[this.type.id] + "/" + this.selection.serialize(),
+                    'metadata' : this.metadata
+                };
+                document.getElementById('compoundcontainer').contentWindow.postMessage(JSON.stringify(jsonObj), '*');
             } else {
                 this.$el.removeClass("selected");
             }
@@ -591,23 +714,6 @@ var frontend = (function() {
                 'selection': newSelection,
                 'type': newSelection ? this.type.id : undefined,
             });
-            
-            console.log("Yoman");
-            console.log(newSelection);
-            console.log(newSelection ? this.type.id : undefined);
-            console.log(this.router.contentViews[this.type.id] + "/" + this.selection.serialize());
-            
-            /*if (newSelection) {
-                if (this.router.contentViews[this.type.id] &&
-                        (this.router.currentRoute.route !==
-                             this.router.contentViews[this.type.id])) {
-                    this.router.navigate(this.router.contentViews[this.type.id] + "/" +
-                            this.selection.serialize(),
-                            { trigger: true, replace: this.typeview.forgetroute });
-                }
-            } else {
-                this.router.navigate("", { trigger: true, replace: false });
-            }*/
         },
     });
     
@@ -724,6 +830,8 @@ var frontend = (function() {
                     function () { this.forgetroute = false });
             this.listenTo(this.router, 'route:mapsearch',
                     function () { this.forgetroute = false });
+            this.listenTo(this.router, 'route:compound',
+                    function() { this.forgetroute = false  });
         },
 
         onClose : function() {
@@ -743,9 +851,104 @@ var frontend = (function() {
                 },
             },
         }),
+    });
+
+    var ResourceListView = Backbone.Marionette.CompositeView.extend({
+        className : 'typeview',
+        template : "#contenttypeTemplate",
+        itemViewContainer : ".contentlist",
+        itemView : ResourceItemView,
+        itemViewOptions : function() {
+            return {
+                typeview : this,
+                router : this.router,
+                selection : this.selection,
+                type : this.model.get('type'),
+                displayedImages : this.displayedImages,
+                contentSearchModel : this.contentSearchModel,
+                digitalContent : this.digitalContent,
+                properties : this.properties,
+                entities : this.entities,
+                files : this.files,
+            };
+        },
+
+        initialize : function(options) {
+            this.router = _.checkarg(options.router).throwNoArg(
+                    "options.router");
+            this.search = _.checkarg(options.search).throwNoArg(
+                    "options.search");
+            this.selection = _.checkarg(options.selection).throwNoArg(
+                    "options.selection");
+            this.entitySearch = _.checkarg(options.entitySearch).throwNoArg(
+                    "options.entitySearch");
+            this.predicatedImages = _.checkarg(options.predicatedImages)
+                    .throwNoArg("options.predicatedImages");
+            this.displayedImages = _.checkarg(options.displayedImages)
+                    .throwNoArg("options.displayedImages");
+
+            this.contentSearchModel = _.checkarg(options.contentSearchModel)
+                    .throwNoArg("options.contentSearchModel");
+            this.digitalContent = _.checkarg(options.digitalContent)
+                    .throwNoArg("options.digitalContent");
+            this.properties = _.checkarg(options.properties).throwNoArg(
+                    "options.properties");
+            this.entities = _.checkarg(options.entities).throwNoArg(
+                    "options.entities");
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
+
+            this.collection = new PredicatedImages({
+                name : "ContentListViewCollection::"
+                        + this.model.get('type').id,
+                tracksort : false,
+                sources : {
+                    artifacts : this.model.get('artifacts'),
+                    search : this.search,
+                    entitySearch : this.entitySearch,
+                    type : this.model.get('type'),
+                },
+            });
+            this.predicatedImages.set(this.model.get('type').id,
+                    this.collection);
+
+            this.forgetroute = false;
+            this.listenTo(this.router, 'route:viewimage', function() {
+                this.forgetroute = true
+            });
+            this.listenTo(this.router, 'route:viewentity', function() {
+                this.forgetroute = false
+            });
+            this.listenTo(this.router, 'route:frontpage', function() {
+                this.forgetroute = false
+            });
+            this.listenTo(this.router, 'route:mapsearch', function() {
+                this.forgetroute = false
+            });
+            this.listenTo(this.router, 'route:compound', function() {
+                this.forgetroute = false
+            });
+        },
+
+        onClose : function() {
+            this.predicatedImages.set(this.model.get('type').id, undefined);
+        },
+
+        ViewModel : Backbone.ViewModel.extend({
+            computed_attributes : {
+                type : function() {
+                    return this.get('type');
+                },
+                uri : function() {
+                    return this.get('type').id;
+                },
+                label : function() {
+                    return this.get('type').get1(QA_LABEL, logmultiple);
+                },
+            },
+        }),
 
     });
-    
+
     var DigitalContentView = Backbone.Marionette.CompositeView.extend({
         template: "#contentTemplate",
         itemViewContainer: ".contentdiv",
@@ -811,6 +1014,88 @@ var frontend = (function() {
         },
     });
     
+    var ResourceContentView = Backbone.Marionette.CompositeView.extend({
+        template : "#contentTemplate",
+        itemViewContainer : ".contentdiv",
+
+        itemView : ResourceListView,
+        itemViewOptions : function() {
+            return {
+                router : this.router,
+                search : this.search,
+                selection : this.selection,
+                entitySearch : this.entitySearch,
+                entities : this.entities,
+                predicatedImages : this.predicatedImages,
+                displayedImages : this.displayedImages,
+                contentSearchModel : this.contentSearchModel,
+                digitalContent : this.digitalContent,
+                properties : this.properties,
+                files : this.files,
+            };
+        },
+
+        serializeData : function() {
+            return {
+                title : "Available Resources",
+            };
+        },
+
+        initialize : function(options) {
+            options = _.checkarg(options).withDefault({});
+            this.router = _.checkarg(options.router).throwNoArg(
+                    "options.router");
+            this.content = _.checkarg(options.content).throwNoArg(
+                    "options.content");
+            this.artifacts = _.checkarg(options.artifacts).throwNoArg(
+                    "options.artifacts");
+            this.search = _.checkarg(options.search).throwNoArg(
+                    "options.search");
+            this.selection = _.checkarg(options.selection).throwNoArg(
+                    "options.selection");
+            this.entitySearch = _.checkarg(options.entitySearch).throwNoArg(
+                    "options.entitySearch");
+            this.entities = _.checkarg(options.entities).throwNoArg(
+                    "options.entities");
+            this.predicatedImages = _.checkarg(options.predicatedImages)
+                    .throwNoArg("options.predicatedImages");
+            this.displayedImages = _.checkarg(options.displayedImages)
+                    .throwNoArg("options.displayedImages");
+
+            this.contentSearchModel = _.checkarg(options.contentSearchModel)
+                    .throwNoArg("options.contentSearchModel");
+            this.digitalContent = _.checkarg(options.digitalContent)
+                    .throwNoArg("options.digitalContent");
+            this.properties = _.checkarg(options.properties).throwNoArg(
+                    "options.properties");
+            this.entities = _.checkarg(options.entities).throwNoArg(
+                    "options.entities");
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
+
+            this.collection = new (Backbone.ViewCollection.extend({
+                computeModelArray : function() {
+                    var r = this.sources.artifacts.chain().filter(
+                            function(type) {
+                                return type.id && this.sources[type.id];
+                            }, this).map(function(type) {
+                        return new ContentListView.prototype.ViewModel({
+                            artifacts : this.sources[type.id],
+                            source_models : {
+                                type : type,
+                            },
+                        });
+                    }, this).value();
+                    return r;
+                },
+            }))({
+                name : "DigitalContent ViewCollection",
+                sources : _.extend({
+                    artifacts : this.artifacts,
+                }, this.content),
+            });
+        },
+    });
+
     var EntityContentView = ToplevelView.extend({
         template: "#contentTemplate",
 
@@ -1900,7 +2185,32 @@ var frontend = (function() {
         	this.tags = tags;
         },
     });
-    
+
+    var TranscriptResultView = Backbone.Marionette.ItemView.extend({
+        className : "transcriptref",
+        template : "#transcriptresultTemplate",
+
+        serializeData : function() {
+            return {
+                speaker : this.speaker,
+                time : this.time,
+                transcript : this.transcript,
+            };
+        },
+
+        initialize : function(options) {
+            this.speaker = _.checkarg(options.speaker).throwNoArg(
+                    "options.speaker");
+            this.time = _.checkarg(options.time).throwNoArg("options.time");
+            this.transcript = _.checkarg(options.transcript).throwNoArg(
+                    "options.transcript");
+        },
+
+        onRender : function() {
+        },
+
+    });
+
     var TranscriptCloudView = Backbone.Marionette.CompositeView.extend({
         className: "transcriptcloud",
         template: "#transcriptcloudTemplate",
@@ -3238,6 +3548,52 @@ var frontend = (function() {
         },
     });
 
+    var CompoundView = Backbone.Marionette.Layout.extend({
+        className : "compoundsearch",
+        template : "#compoundTemplate",
+
+        regions : {
+            compoundObject : ".compoundcontainer"
+        },
+
+        initialize : function(options) {
+            _.checkarg(options).throwNoArg("options");
+
+            this.router = _.checkarg(options.router).throwNoArg(
+                    "options.router");
+            this.entities = _.checkarg(options.entities).throwNoArg(
+                    "options.entities");
+            this.files = _.checkarg(options.files).throwNoArg("options.files");
+            this.properties = _.checkarg(options.properties).throwNoArg(
+                    "options.properties");
+            this.entitySearch = _.checkarg(options.entitySearch).throwNoArg(
+                    "options.entitySearch");
+            this.predicatedImages = _.checkarg(options.predicatedImages)
+                    .throwNoArg("options.predicatedImages");
+            this.displayedImages = _.checkarg(options.displayedImages)
+                    .throwNoArg("options.displayedImages");
+
+            this.geoentities = new SubCollection(this.entities, {
+                name : "geo-entities",
+                tracksort : true,
+                predicate : this.isGeoLocated,
+            });
+
+            this.entitiesOnMap = new SubCollection(this.geoentities, {
+                name : "entitiesOnMap",
+                tracksort : true,
+                predicate : _.no,
+            });
+        },
+
+        onClose : function() {
+
+        },
+        onRender : function onRender() {
+
+        }
+    });
+
     var MapEntityListItemView = Backbone.Marionette.ItemView.extend({
         className: "entityentry",
         template: "#listitemviewTemplate",
@@ -3804,6 +4160,8 @@ var frontend = (function() {
 
         var mapSearchModel = new MapSearchModel();
 
+        var compoundModel = new CompoundModel();
+
         var predicatedImages = new PredicatedImagesMap();
 
         var displayedImages = new DisplayedImages();
@@ -3964,6 +4322,36 @@ var frontend = (function() {
             router: router,
         });
 
+        var compoundButtonView = new CompoundButtonView({
+            router : router,
+        });
+
+        var resourceView = new ResourceContentView(
+                {
+                    router : router,
+                    id : "maincontent",
+                    artifacts : artifacts,
+                    content : {
+                        "http://qldarch.net/ns/rdf/2012-06/terms#Interview" : interviews,
+                        "http://qldarch.net/ns/rdf/2012-06/terms#Photograph" : photographs,
+                        "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing" : linedrawings,
+                        "http://qldarch.net/ns/rdf/2012-06/terms#Article" : articles,
+                    },
+                    search : searchModel,
+                    selection : contentSearchModel,
+                    entitySearch : entitySearchModel,
+                    entities : entities,
+                    predicatedImages : predicatedImages,
+                    displayedImages : displayedImages,
+                    digitalContent : {
+                        "http://qldarch.net/ns/rdf/2012-06/terms#Photograph" : photographs,
+                        "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing" : linedrawings,
+                    },
+                    files : files,
+                    properties : properties,
+                    contentSearchModel : contentSearchModel,
+                });
+
         var contentView = new DigitalContentView({
             router: router,
             id: "maincontent",
@@ -4061,6 +4449,16 @@ var frontend = (function() {
             model: mapSearchModel,
         });
 
+        var compoundView = new CompoundView({
+            router : router,
+            entities : entities,
+            properties : properties,
+            entitySearch : entitySearchModel,
+            predicatedImages : predicatedImages,
+            files : files,
+            displayedImages : displayedImages,
+            model : compoundModel,
+        });
 
         var userView = new UserView({
             model: usermodel,
@@ -4082,8 +4480,11 @@ var frontend = (function() {
             pdfContentView.close();
             transcriptView.close();
             mapSearchView.close();
+            compoundView.close();
+            resourceView.close();
             $("#column1").empty().append(searchView.render().$el);
             $("#column1").append(mapButtonView.render().$el);
+            $("#column1").append(compoundButtonView.render().$el);
             fulltextView.append("#column1");
             $("#column2").empty().append(contentView.render().$el);
             entityView.append("#column3");
@@ -4098,11 +4499,14 @@ var frontend = (function() {
             searchView.close();
             mapButtonView.close();
             fulltextView.detach();
+            compoundButtonView.close();
             entityView.detach();
             imageContentView.close();
             pdfContentView.close();
             transcriptView.close();
             mapSearchView.close();
+            compoundView.close();
+            resourceView.close();
             $("#column12").empty().append(entitycontentpaneView.render().$el);
             $("#column3").empty().append(contentView.render().$el);
             $("#column12,#column3").show();
@@ -4115,10 +4519,13 @@ var frontend = (function() {
             searchView.close();
             mapButtonView.close();
             fulltextView.detach();
+            compoundButtonView.close();
             entityView.detach();
             entitycontentpaneView.close();
             transcriptView.close();
             mapSearchView.close();
+            compoundView.close();
+            resourceView.close();
             $("#column1").empty().append(contentView.render().$el);
             $("#column23").empty().append(imageContentView.render().$el);
             pdfContentView.close();
@@ -4132,11 +4539,14 @@ var frontend = (function() {
             searchView.close();
             mapButtonView.close();
             fulltextView.detach();
+            compoundButtonView.close();
             entityView.detach();
             entitycontentpaneView.close();
             transcriptView.close();
             mapSearchView.close();
             imageContentView.close();
+            compoundView.close();
+            resourceView.close();
             $("#column1").empty().append(contentView.render().$el);
             $("#column23").empty().append(pdfContentView.render().$el);
             $("#column1,#column23").show();
@@ -4149,12 +4559,15 @@ var frontend = (function() {
             searchView.close();
             mapButtonView.close();
             fulltextView.detach();
+            compoundButtonView.close();
             entityView.detach();
             entitycontentpaneView.close();
             contentView.close();
             imageContentView.close();
             pdfContentView.close();
             mapSearchView.close();
+            compoundView.close();
+            resourceView.close();
             $("#column123").empty().append(transcriptView.render().$el);
             $("#column123").show();
         }, contentSearchModel);
@@ -4166,13 +4579,36 @@ var frontend = (function() {
             searchView.close();
             mapButtonView.close();
             fulltextView.detach();
+            compoundButtonView.close();
             entityView.detach();
             entitycontentpaneView.close();
             transcriptView.close();
             imageContentView.close();
             pdfContentView.close();
+            compoundView.close();
+            resourceView.close();
             $("#column12").empty().append(mapSearchView.render().$el);
             $("#column3").empty().append(contentView.render().$el);
+            $("#column12,#column3").show();
+        }, contentSearchModel);
+
+        router.on('route:compound', function(state) {
+            compoundModel.set(compoundModel.deserialize(state));
+
+            $("#column123,#column1,#column2,#column23").hide();
+            searchView.close();
+            mapButtonView.close();
+            fulltextView.detach();
+            compoundButtonView.close();
+            entityView.detach();
+            entitycontentpaneView.close();
+            transcriptView.close();
+            contentView.close();
+            imageContentView.close();
+            pdfContentView.close();
+            searchView.close();
+            $("#column12").empty().append(compoundView.render().$el);
+            $("#column3").empty().append(resourceView.render().$el);
             $("#column12,#column3").show();
         }, contentSearchModel);
 
@@ -4213,6 +4649,7 @@ var frontend = (function() {
             "interview(/*id)": "interview",
             "viewpdf(/*id)": "viewpdf",
             "mapsearch(/*state)": "mapsearch",
+            "compound(/*state)" : "compound",
         },
 
         contentViews: {

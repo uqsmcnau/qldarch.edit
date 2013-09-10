@@ -208,7 +208,7 @@ div.contententry:hover {
 }
 
 .resultlist {
-	height: 550px;
+    height: 550px;
     overflow: auto;
 }
 
@@ -522,6 +522,16 @@ div.mapcontainer>div {
     height: 100%;
 }
 
+div.compoundcontainer {
+	border: 1px solid lightgrey;
+    position: relative;
+    height: 600px;
+}
+
+div.compoundcontainer>div {
+    height: 100%;
+}
+
 .olControlPanel { 
   display:block;
   width:  24px;
@@ -571,6 +581,13 @@ div.mapcontainer>div {
 }
 
 .mapsearchbutton {
+    position: relative;
+    clear: both;
+    margin-bottom: 15px;
+    overflow: auto;
+}
+
+.compoundbutton {
     position: relative;
     clear: both;
     margin-bottom: 15px;
