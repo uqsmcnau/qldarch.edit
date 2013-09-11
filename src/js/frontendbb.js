@@ -172,6 +172,31 @@ var frontend = (function() {
         },
     });
 
+    var ResourceSearchModel = Backbone.Model.extend({
+        defaults: {
+            'searchstring': ""
+        },
+
+        initialize: function() {
+            this.on("change", function() {
+                if (!$.trim(this.get('searchstring'))) {
+                    this.set(this.defaults);
+                }
+            }, this);
+        },
+
+        serialize: function() {
+            return encodeURIComponent(this.get('searchstring'));
+        },
+
+        deserialize: function(string) {
+            var first = string.split("/");
+            return {
+                'searchstring': decodeURIComponent(first[0]),
+            };
+        },
+    });
+    
     var MapSearchModel = Backbone.Model.extend({
         defaults: {
             'lat': "",
@@ -415,6 +440,53 @@ var frontend = (function() {
         },
     });
 
+    var ResourceSearchView = Backbone.Marionette.ItemView.extend({
+        template: "#resourcesearchdivTemplate",
+
+        initialize: function(options) {
+            _.bindAll(this);
+            this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
+            this.suppressUpdate = false;
+
+            this.optionTemplate = _.template($("#searchtypeoptionTemplate").html());
+
+            this.model.on("change:searchstring", this._update);
+            this.proper.on("reset", this.render);
+        },
+        
+        events: {
+            "keyup input"   : "_keyup",
+        },
+
+        onRender: function() {
+            this.bindUIElements();
+            this.delegateEvents();
+
+            this._update();
+            return this;
+        },
+
+        _keyup: function(event) {
+            if (event.keyCode == 13) {
+                this.model.trigger('performsearch');
+            } else {
+                this.suppressUpdate = true;
+                this.model.set({
+                    'searchstring': this.$("input").val(),
+                });
+            }
+            this.router.navigate("compound/" + this.model.serialize(), { trigger: false, replace: true });
+        },
+
+        _update: function() {
+            if (!this.suppressUpdate) {
+                this.$("input").val(this.model.get("searchstring"));
+            }
+            this.suppressUpdate = false;
+        },
+    });
+    
     var MapSearchButtonView = Backbone.Marionette.ItemView.extend({
         className: "mapsearchbutton",
         template: "#mapsearchbuttonTemplate",
@@ -1015,7 +1087,7 @@ var frontend = (function() {
     });
     
     var ResourceContentView = Backbone.Marionette.CompositeView.extend({
-        template : "#contentTemplate",
+        template : "#contentDivTemplate",
         itemViewContainer : ".contentdiv",
 
         itemView : ResourceListView,
@@ -1037,7 +1109,7 @@ var frontend = (function() {
 
         serializeData : function() {
             return {
-                title : "Available Resources",
+                //title : "Available Resources",
             };
         },
 
@@ -4155,8 +4227,8 @@ var frontend = (function() {
 
         var searchModel = new SearchModel();
         var entitySearchModel = new EntitySearchModel();
-
         var contentSearchModel = new ContentSearchModel();
+        var resourceSearchModel = new ResourceSearchModel();
 
         var mapSearchModel = new MapSearchModel();
 
@@ -4317,6 +4389,13 @@ var frontend = (function() {
             proper: proper,
             router: router
         });
+        
+        var resourceSearchView = new ResourceSearchView({
+            id: "mainsearch",
+            model: resourceSearchModel,
+            proper: proper,
+            router: router
+        });
 
         var mapButtonView = new MapSearchButtonView({
             router: router,
@@ -4326,31 +4405,30 @@ var frontend = (function() {
             router : router,
         });
 
-        var resourceView = new ResourceContentView(
-                {
-                    router : router,
-                    id : "maincontent",
-                    artifacts : artifacts,
-                    content : {
-                        "http://qldarch.net/ns/rdf/2012-06/terms#Interview" : interviews,
-                        "http://qldarch.net/ns/rdf/2012-06/terms#Photograph" : photographs,
-                        "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing" : linedrawings,
-                        "http://qldarch.net/ns/rdf/2012-06/terms#Article" : articles,
-                    },
-                    search : searchModel,
-                    selection : contentSearchModel,
-                    entitySearch : entitySearchModel,
-                    entities : entities,
-                    predicatedImages : predicatedImages,
-                    displayedImages : displayedImages,
-                    digitalContent : {
-                        "http://qldarch.net/ns/rdf/2012-06/terms#Photograph" : photographs,
-                        "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing" : linedrawings,
-                    },
-                    files : files,
-                    properties : properties,
-                    contentSearchModel : contentSearchModel,
-                });
+        var resourceView = new ResourceContentView({
+            router : router,
+            id : "maincontent",
+            artifacts : artifacts,
+            content : {
+                "http://qldarch.net/ns/rdf/2012-06/terms#Interview" : interviews,
+                "http://qldarch.net/ns/rdf/2012-06/terms#Photograph" : photographs,
+                "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing" : linedrawings,
+                "http://qldarch.net/ns/rdf/2012-06/terms#Article" : articles,
+            },
+            search : resourceSearchModel,
+            selection : contentSearchModel,
+            entitySearch : entitySearchModel,
+            entities : entities,
+            predicatedImages : predicatedImages,
+            displayedImages : displayedImages,
+            digitalContent : {
+                "http://qldarch.net/ns/rdf/2012-06/terms#Photograph" : photographs,
+                "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing" : linedrawings,
+            },
+            files : files,
+            properties : properties,
+            contentSearchModel : contentSearchModel,
+        });
 
         var contentView = new DigitalContentView({
             router: router,
@@ -4475,6 +4553,7 @@ var frontend = (function() {
             document.title = "Digital Archive of Queensland Architecture";
 
             $("#column123,#column12,#column23").hide();
+            resourceSearchView.close();
             entitycontentpaneView.close();
             imageContentView.close();
             pdfContentView.close();
@@ -4497,6 +4576,7 @@ var frontend = (function() {
 
             $("#column123,#column1,#column2,#column23").hide();
             searchView.close();
+            resourceSearchView.close();
             mapButtonView.close();
             fulltextView.detach();
             compoundButtonView.close();
@@ -4517,6 +4597,7 @@ var frontend = (function() {
 
             $("#column123,#column2,#column3").hide();
             searchView.close();
+            resourceSearchView.close();
             mapButtonView.close();
             fulltextView.detach();
             compoundButtonView.close();
@@ -4537,6 +4618,7 @@ var frontend = (function() {
 
             $("#column123,#column2,#column3").hide();
             searchView.close();
+            resourceSearchView.close();
             mapButtonView.close();
             fulltextView.detach();
             compoundButtonView.close();
@@ -4557,6 +4639,7 @@ var frontend = (function() {
 
             $("#column12,#column1,#column2,#column3, #column23").hide();
             searchView.close();
+            resourceSearchView.close();
             mapButtonView.close();
             fulltextView.detach();
             compoundButtonView.close();
@@ -4577,6 +4660,7 @@ var frontend = (function() {
 
             $("#column123,#column1,#column2,#column23").hide();
             searchView.close();
+            resourceSearchView.close();
             mapButtonView.close();
             fulltextView.detach();
             compoundButtonView.close();
@@ -4592,8 +4676,12 @@ var frontend = (function() {
             $("#column12,#column3").show();
         }, contentSearchModel);
 
-        router.on('route:compound', function(state) {
-            compoundModel.set(compoundModel.deserialize(state));
+        router.on('route:compound', function(search) {
+        	if (search) {
+        		resourceSearchModel.set(this.deserialize(search));
+            } else {
+            	resourceSearchModel.set(resourceSearchModel.defaults);
+            }
 
             $("#column123,#column1,#column2,#column23").hide();
             searchView.close();
@@ -4606,9 +4694,9 @@ var frontend = (function() {
             contentView.close();
             imageContentView.close();
             pdfContentView.close();
-            searchView.close();
             $("#column12").empty().append(compoundView.render().$el);
-            $("#column3").empty().append(resourceView.render().$el);
+            $("#column3").empty().append(resourceSearchView.render().$el);
+            $("#column3").append(resourceView.render().$el);
             $("#column12,#column3").show();
         }, contentSearchModel);
 
@@ -4649,7 +4737,7 @@ var frontend = (function() {
             "interview(/*id)": "interview",
             "viewpdf(/*id)": "viewpdf",
             "mapsearch(/*state)": "mapsearch",
-            "compound(/*state)" : "compound",
+            "compound(/*search)" : "compound",
         },
 
         contentViews: {

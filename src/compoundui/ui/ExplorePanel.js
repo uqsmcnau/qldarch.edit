@@ -554,10 +554,6 @@ lore.ore.ui.ExplorePanel = Ext.extend(Ext.Panel,{
 	            		  bottom = cBottom;
 	            	  }
 	              }	       	              
-	              console.log("Yoman-1");
-	              console.log($("#exploreinfovis")[0]);
-	              console.log($("#exploreinfovis")[0].clientWidth);
-	              console.log($("#exploreinfovis")[0].clientHeight);
 	              this.fd.canvas.translate(((($("#exploreinfovis")[0].clientWidth) - (left + right)) / 2) 
 	            		  / this.fd.canvas.scaleOffsetX, ((($("#exploreinfovis")[0].clientHeight) 
 	            				  - (top + 20 + bottom)) / 2) / this.fd.canvas.scaleOffsetY);

@@ -55,6 +55,9 @@
             <h2 class="columntitle"><%= title %></h2>
             <div class="contentdiv" class=""></div>
         </script>
+        <script type="text/template" id="contentDivTemplate">
+            <div class="contentdiv" class=""></div>
+        </script>
         <script type="text/template" id="contenttypeTemplate">
             <div class="contenttype" data-uri="<%= uri %>">
                 <div class="contentlisttitle"><%= label %></div>
@@ -72,22 +75,17 @@
                 <input class="span-6" type="text" value="" placeHolder="Search Content, People and Things"/>
             </div>
         </script>
-        <script type="text/template" id="resourcedivTemplate">
-            <h2 class="columntitle">Resource Search</h2>
-            <div id="searchdiv" class="clear">
-                <label for="searchtype">Search Type</label>
-                <select name="searchtype">
-                    <option value="fulltext">Fulltext and Metadata</option>
-                    <option value="all">Just Metadata</option>
-                </select>
-                <input class="span-6" type="text" value="" placeHolder="Search Content, People and Things"/>
+        <script type="text/template" id="resourcesearchdivTemplate">
+            <h2 class="columntitle">Available Resources</h2>
+            <div id="resourcesearchdiv" class="clear">
+                <input class="span-6" type="text" style="width: 298px;" value="" placeHolder="Search..."/>
             </div>
         </script>
         <script type="text/template" id="mapsearchbuttonTemplate">
             <div class="returnbutton span-6 last clear">Map Search...</div>
         </script>
         <script type="text/template" id="compoundbuttonTemplate">
-            <div class="returnbutton span-6 last clear">Compound Search...</div>
+            <div class="returnbutton span-6 last clear">Compound Object View</div>
         </script>
         <script type="text/template" id="searchtypeoptionTemplate">
             <option value="<%= value %>"><%= label %></option>
@@ -254,7 +252,7 @@
         <script type="text/template" id="compoundTemplate">
             <h2 class="columntitle">Compound Object</h2>
             <iframe id="compoundcontainer" 
-                style="height: 600px; width: 630px;" 
+                style="height: 628px; width: 630px;" 
                 class="compoundcontainer" 
                 src="/explore/compoundui/compound.html"></iframe>
         </script>
