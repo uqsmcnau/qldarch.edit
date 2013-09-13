@@ -65,6 +65,9 @@ var frontend = (function() {
     var QA_REFERS_TO = "http://qldarch.net/ns/rdf/2012-06/terms#refersTo";
     var QA_REGION_START = "http://qldarch.net/ns/rdf/2012-06/terms#regionStart";
     var QA_REGION_END = "http://qldarch.net/ns/rdf/2012-06/terms#regionEnd";
+    var QA_SUBJECT = "http://qldarch.net/ns/rdf/2012-06/terms#subject";
+    var QA_PREDICATE = "http://qldarch.net/ns/rdf/2012-06/terms#predicate";
+    var QA_OBJECT = "http://qldarch.net/ns/rdf/2012-06/terms#object";
 
     var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
     var OWL_OBJECT_PROPERTY = "http://www.w3.org/2002/07/owl#ObjectProperty";
@@ -75,7 +78,7 @@ var frontend = (function() {
     var RDFS_SUBCLASS_OF = "http://www.w3.org/2000/01/rdf-schema#subClassOf";
     var RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
 
-    var QA_REFERENCE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Reference";
+    var QA_REFERENCE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#ReferenceRelation";
     var QA_INTERVIEW_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Interview";
     var QA_TRANSCRIPT_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Transcript";
     var QA_ARTICLE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Article";
@@ -2896,18 +2899,19 @@ var frontend = (function() {
             console.log(this.currentUtterance);
             var rdf = {};
             rdf[RDF_TYPE] = QA_REFERENCE_TYPE,
-            rdf[RDF_SUBJECT] = this.contentDescriptionSource.get('contentDescription').id,
-            rdf[RDF_PREDICATE] = QA_REFERS_TO,
-            rdf[RDF_OBJECT] = entity.id,
+            rdf[QA_SUBJECT] = this.contentDescriptionSource.get('contentDescription').id,
+            rdf[QA_PREDICATE] = QA_REFERS_TO,
+            rdf[QA_OBJECT] = entity.id,
             rdf[QA_REGION_START] = this.currentUtterance.get('start');
             rdf[QA_REGION_END] = this.currentUtterance.get('end') ?
                 this.currentUtterance.get('end') : this.trackingView.getDuration();
             console.log(rdf);
             $.ajax({
                 type: 'POST',
-                url: JSON_ROOT + 'references',
+                url: JSON_ROOT + 'reference',
                 data: JSON.stringify(rdf),
                 dataType: 'json',
+                contentType: 'application/json',
             }).done(function(data, textStatus, jqXHR) {
                 console.log("success");
                 console.log(rdf);
@@ -2923,7 +2927,6 @@ var frontend = (function() {
                 console.log(jqXHR);
                 console.log(jqXHR.status);
             });
-
         },
     });
 
