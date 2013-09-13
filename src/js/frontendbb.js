@@ -731,20 +731,14 @@ var frontend = (function() {
 
         _updateSelected: function _updateSelected() {
             if (this.selection.get("selection") === this.model.id) {
-                this.$el.addClass("selected");
-                var container = this.$el.parents(".contentlist");
-                if (!isScrolledIntoView(container, this.$el)) {
-                    container.scrollTo(this.$el);
-                }
-
                 var jsonObj = {
                     'url': Backbone.history.location.origin + Backbone.history.location.pathname + "#" + 
                         this.router.contentViews[this.type.id] + "/" + this.selection.serialize(),
                     'metadata' : this.metadata
                 };
                 document.getElementById('compoundcontainer').contentWindow.postMessage(JSON.stringify(jsonObj), '*');
-            } else {
-                this.$el.removeClass("selected");
+                
+                this.selection.set(this.selection.defaults);
             }
         },
 
