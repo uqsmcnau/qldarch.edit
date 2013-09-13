@@ -9,8 +9,16 @@ if (typeof lore !== "object"){
     var lore = {};   
 }
 lore.constants = {
-	 baseUrl: "http://localhost:8080/lore/", 
-	 //baseUrl: "http://115.146.93.139/virtual_lab/toolLibrary/annotation/lore-test-2/",	
+	 baseUrl: "http://localhost:8080/lore/", 	 
+	 repositoryBaseURL: "http://localhost/op",
+	 repositoryGraphStoreEndPoint: "/data",
+	 repositoryGraphNamePrefix: "http://localhost/op/data/",
+
+	 /*baseUrl: "http://115.146.93.139/virtual_lab/toolLibrary/annotation/lore-test-2/", 	 
+	 repositoryBaseURL: "http://corbicula.huni.net.au/dataset",
+	 repositoryGraphStoreEndPoint: "/graph-store",
+	 repositoryGraphNamePrefix: "http://corbicula.huni.net.au/dataset/data/",*/
+		 
      nsprefix : function(ns, defaultNS) {
         var nssize = 0;
         for (var prefix in this.NAMESPACES) {
