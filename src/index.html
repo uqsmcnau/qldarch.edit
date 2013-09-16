@@ -295,10 +295,30 @@
             </div>
             <div class="full span-16 last">
             </div>
+            <div class="annotations span-16 last">
+            </div>
+        </script>
+        <script type="text/template" id="annotationstableTemplate">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Relationship</th>
+                        <th>Object</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </script>
+        <script type="text/template" id="annotationrowTemplate">
+            <td><%- subject %></td>
+            <td><%- relationship %></td>
+            <td><%- object %></td>
         </script>
         <script type="text/template" id="simpleannotationTemplate">
             <div class="referral">
-                <span>The current speaker is referring to the </span>
+                <span>The current speaker is referencing the </span>
                 <span class="entityselection">Entity Selection</span>
                 <button class="addrefersto">Add Simple Annotation</button>
             </div>

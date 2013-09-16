@@ -62,7 +62,7 @@ var frontend = (function() {
     var QA_BASIC_MIME_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#basicMimeType";
     var QA_DEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#definiteMapIcon";
     var QA_INDEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#indefiniteMapIcon";
-    var QA_REFERS_TO = "http://qldarch.net/ns/rdf/2012-06/terms#refersTo";
+    var QA_REFERENCES = "http://qldarch.net/ns/rdf/2012-06/terms#references";
     var QA_REGION_START = "http://qldarch.net/ns/rdf/2012-06/terms#regionStart";
     var QA_REGION_END = "http://qldarch.net/ns/rdf/2012-06/terms#regionEnd";
     var QA_SUBJECT = "http://qldarch.net/ns/rdf/2012-06/terms#subject";
@@ -1818,8 +1818,6 @@ var frontend = (function() {
         onShow: function() {
         	this.parseText($(".transcript").text());
             var words = this.tags.slice(0, Math.min(this.tags.length, 50));
-            console.log("Histogram onShow");
-            console.log(words);
             
         	var margin = {top: 20, right: 20, bottom: 60, left: 40},
 	            width = 500 - margin.left - margin.right,
@@ -2239,7 +2237,6 @@ var frontend = (function() {
             var popcorn = this.popcornModel.get('popcorn');
             if (!popcorn) return;
 
-            console.log(this.model);
             var start = Math.max(0.5, this.model.get('start')) - 0.5;
             var end = this.model.get('end') ? this.model.get('end') - 0.5 : popcorn.duration();
 
@@ -2249,7 +2246,6 @@ var frontend = (function() {
                 onStart: _.bind(this.showSubtitle, this),
                 onEnd: _.bind(this.hideSubtitle, this),
             };
-            console.log(this.popcornInterval);
             var r = popcorn.code(this.popcornInterval);
         },
 
@@ -2489,14 +2485,9 @@ var frontend = (function() {
 
         _selecttab: function(event) {
             var newState = $(event.target).attr("type");
-            console.log("Clicked " + newState);
             this.triggerMethod("select:tab", newState);
             this.$(".tab.selected").removeClass("selected");
             $(event.target).addClass("selected");
-        },
-
-        onRender: function() {
-            console.log("Rendering transcript tabs");
         },
     });
 
@@ -2604,7 +2595,6 @@ var frontend = (function() {
         },
 
         onAddEntity: function() {
-            console.log("simple add:entity invoked");
         },
 
         onSelectEntity: function() {
@@ -2701,7 +2691,159 @@ var frontend = (function() {
         },
 
         onAddRefersTo: function() {
-            console.log("full add:refersTo invoked: " + this.subjectView.getCurrentSelection() + " -> " + this.objectView.getCurrentSelection());
+        },
+    });
+
+    var AnnotationRowView = Backbone.Marionette.ItemView.extend({
+        tagName: "tr",
+        template: "#annotationrowTemplate",
+
+        serializeData: function() {
+            var subject = this.model.get1(QA_SUBJECT);
+            var predicate = this.model.get1(QA_PREDICATE);
+            var object = this.model.get1(QA_OBJECT);
+
+            var contentDescription = this.contentDescriptionSource.get('contentDescription');
+
+            var subjectEntity = this.entities.get(subject);
+            var subjectLabel = "Unrecognised subject";
+            if (subjectEntity) {
+                subjectLabel = subjectEntity.get(QA_LABEL) || "Unnamed subject";
+            } else if (contentDescription && contentDescription.id == subject) {
+                subjectLabel = "This point in the interview";
+            }
+
+            var predicateEntity = this.properties.get(predicate);
+            var predicateLabel = "Has unrecognised relationship to";
+            if (predicateEntity) {
+                predicateLabel = predicateEntity.get(QA_LABEL) || "Unnamed relationship to";
+            }
+
+            var objectEntity = this.entities.get(object);
+            var objectLabel = "Unrecognised object";
+            if (objectEntity) {
+                objectLabel = objectEntity.get(QA_LABEL) || "Unnamed object";
+            }
+
+            return {
+                subject: subjectLabel,
+                relationship: predicateLabel,
+                object: objectLabel,
+            };
+        },
+
+        initialize: function(options) {
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
+        },
+    });
+
+    var AnnotationCollectionModel = Backbone.Model.extend({
+        defaults: {
+            url: undefined,
+        },
+
+        initialize: function(attrs, options) {
+            this.utteranceEventSrc = _.checkarg(options.utteranceEventSrc)
+                .throwNoArg("options.utteranceEventSrc");
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
+
+            this.listenTo(this.utteranceEventSrc, "utterance:active", this.handleUtterance);
+            this.listenTo(this.contentDescriptionSource, "change", this.handleContent);
+
+            this.start = 0;
+            this.end = 30;
+
+            this.handleContent();
+        },
+
+        handleUtterance: function(utterance) {
+            this.start = utterance.get('start');
+            this.end = utterance.get('end');
+            this._setURL();
+        },
+
+        handleContent: function() {
+            this.contentDescription = this.contentDescriptionSource.get('contentDescription');
+            this._setURL();
+        },
+
+        _setURL: function() {
+            var url = (this.start && this.end && this.contentDescription) ?
+                JSON_ROOT + 'reference?' + $.param({
+                    RESOURCE: this.contentDescription.id,
+                    TIME: this.start + 0.01,
+                    DURATION: this.end - this.start - 0.01,
+                }) : undefined;
+
+            this.set('url', url);
+        },
+    });
+
+    var AnnotationCollection = Backbone.RDFGraph.extend({
+        initialize: function(attributes, options) {
+            this.utteranceEventSrc = _.checkarg(options.utteranceEventSrc)
+                .throwNoArg("options.utteranceEventSrc");
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
+
+            var _setURL = _.throttle(_.bind(this.__setURL, this), 3000);
+
+            this.internalModel = new AnnotationCollectionModel({}, {
+                utteranceEventSrc: this.utteranceEventSrc,
+                contentDescriptionSource: this.contentDescriptionSource,
+            });
+
+            this.listenTo(this.internalModel, "change:url", _setURL);
+        },
+
+        __setURL: function() {
+            this.url = this.internalModel.get('url');
+            this.fetch();
+        },
+        
+        fetch: function(options) {
+            if (_.isUndefined(this.url)) {
+                this.reset({});
+            } else {
+                Backbone.Collection.prototype.fetch.apply(this, arguments);
+            }
+        }
+    });
+
+    var AnnotationsTableView = Backbone.Marionette.CompositeView.extend({
+        className: "annotations",
+        template: "#annotationstableTemplate",
+
+        itemViewContainer: "tbody",
+        itemView: AnnotationRowView,
+        itemViewOptions: function() {
+            return {
+                properties: this.properties,
+                entities: this.entities,
+                contentDescriptionSource: this.contentDescriptionSource,
+            };
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        initialize: function(options) {
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
+            this.utteranceEventSrc = _.checkarg(options.utteranceEventSrc).throwNoArg("options.utteranceEventSrc");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+
+            this.collection = new AnnotationCollection([], {
+                contentDescriptionSource: this.contentDescriptionSource,
+                utteranceEventSrc: this.utteranceEventSrc,
+                properties: this.properties,
+            });
         },
     });
 
@@ -2712,6 +2854,7 @@ var frontend = (function() {
         regions: {
             simple: ".simple",
             full: ".full",
+            annotations: ".annotations",
         },
 
         ui: {
@@ -2729,6 +2872,11 @@ var frontend = (function() {
         initialize: function(options) {
             this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
+            this.utteranceEventSrc = _.checkarg(options.utteranceEventSrc)
+                .throwNoArg("options.utteranceEventSrc");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.paused = false;
         },
 
@@ -2743,10 +2891,18 @@ var frontend = (function() {
             this.listenTo(this.simpleAnnotationView, "simple:add", this.onChildSimpleAdd);
             this.simple.show(this.simpleAnnotationView);
 
-            this.full.show(new FullAnnotationView({
-                proper: this.proper,
+//            this.full.show(new FullAnnotationView({
+//                proper: this.proper,
+//                entities: this.entities,
+//            }));
+
+            this.annotationsView = new AnnotationsTableView({
+                contentDescriptionSource: this.contentDescriptionSource,
+                utteranceEventSrc: this.utteranceEventSrc,
                 entities: this.entities,
-            }));
+                properties: this.properties,
+            });
+            this.annotations.show(this.annotationsView);
         },
 
         onDoPause: function() {
@@ -2762,7 +2918,6 @@ var frontend = (function() {
         },
 
         onChildSimpleAdd: function(entity) {
-            console.log(entity);
             this.triggerMethod("simple:add", entity);
         }
     });
@@ -2787,7 +2942,7 @@ var frontend = (function() {
         states: {
             Search: function(view) {
                 return new TranscriptSearchView({
-                	contentDescriptionSource: view.contentDescriptionSource
+                	contentDescriptionSource: view.contentDescriptionSource,
                 });
             },
             Cloud: function(view) {
@@ -2802,8 +2957,11 @@ var frontend = (function() {
             },
             Annotate: function(view) {
                 var av = new AnnotateView({
+                    utteranceEventSrc: view,
+                	contentDescriptionSource: view.contentDescriptionSource,
                     proper: view.proper,
                     entities: view.entities,
+                    properties: view.properties,
                 });
                 view.listenTo(av, "pause:set", view.pauseSet);
                 view.listenTo(av, "simple:add", view.onSimpleAdd);
@@ -2825,6 +2983,7 @@ var frontend = (function() {
             this.files = _.checkarg(options.files).throwNoArg("options.files");
             this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
 
             this.contentDescriptionSource = new ContentDescriptionModel({
                 types: _.keys(this.digitalContent),
@@ -2883,29 +3042,19 @@ var frontend = (function() {
         },
 
         triggerUtteranceActive: function(model) {
-            console.log("Utterance active");
-            console.log(model);
             this.triggerMethod("utterance:active", model);
             this.currentUtterance = model;
-            model.on("change", function() {
-                console.log("model changed");
-                console.trace();
-            });
         },
 
         onSimpleAdd: function(entity) {
-            console.log("SimpleAdd");
-            console.log(this.contentDescriptionSource.get('contentDescription'));
-            console.log(this.currentUtterance);
             var rdf = {};
             rdf[RDF_TYPE] = QA_REFERENCE_TYPE,
             rdf[QA_SUBJECT] = this.contentDescriptionSource.get('contentDescription').id,
-            rdf[QA_PREDICATE] = QA_REFERS_TO,
+            rdf[QA_PREDICATE] = QA_REFERENCES,
             rdf[QA_OBJECT] = entity.id,
             rdf[QA_REGION_START] = this.currentUtterance.get('start');
             rdf[QA_REGION_END] = this.currentUtterance.get('end') ?
                 this.currentUtterance.get('end') : this.trackingView.getDuration();
-            console.log(rdf);
             $.ajax({
                 type: 'POST',
                 url: JSON_ROOT + 'reference',
@@ -4433,6 +4582,7 @@ var frontend = (function() {
             files: files,
             proper: proper,
             entities: entities,
+            properties: properties,
         });
 
         var pdfContentView = new PdfContentView({
