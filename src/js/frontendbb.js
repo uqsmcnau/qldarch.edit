@@ -2776,7 +2776,7 @@ var frontend = (function() {
                 JSON_ROOT + 'reference?' + $.param({
                     RESOURCE: this.contentDescription.id,
                     TIME: this.start + 0.01,
-                    DURATION: this.end - this.start - 0.01,
+                    DURATION: this.end - this.start - 0.02,
                 }) : undefined;
 
             this.set('url', url);
@@ -2798,6 +2798,7 @@ var frontend = (function() {
             });
 
             this.listenTo(this.internalModel, "change:url", _setURL);
+            this.listenTo(this.utteranceEventSrc, "utterance:refresh", this.fetch)
         },
 
         __setURL: function() {
@@ -3061,14 +3062,9 @@ var frontend = (function() {
                 data: JSON.stringify(rdf),
                 dataType: 'json',
                 contentType: 'application/json',
-            }).done(function(data, textStatus, jqXHR) {
-                console.log("success");
-                console.log(rdf);
-                console.log(data);
-                console.log(textStatus);
-                console.log(jqXHR);
-                console.log(jqXHR.status);
-            }).fail(function(jqXHR, textStatus, errorThrown) {
+            }).done(_.bind(function(data, textStatus, jqXHR) {
+                this.triggerMethod("utterance:refresh");
+            }, this)).fail(function(jqXHR, textStatus, errorThrown) {
                 console.log("failure");
                 console.log(rdf);
                 console.log(errorThrown);
