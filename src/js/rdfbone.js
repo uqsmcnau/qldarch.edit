@@ -41,7 +41,6 @@
 
     });
 
-    // This should probably be a sub-class rather than sub-type of Collection.
     var RDFGraph = Backbone.Collection.extend({
         model: RDFDescription,
 
