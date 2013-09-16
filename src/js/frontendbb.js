@@ -62,14 +62,23 @@ var frontend = (function() {
     var QA_BASIC_MIME_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#basicMimeType";
     var QA_DEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#definiteMapIcon";
     var QA_INDEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#indefiniteMapIcon";
-
+    var QA_REFERENCES = "http://qldarch.net/ns/rdf/2012-06/terms#references";
+    var QA_REGION_START = "http://qldarch.net/ns/rdf/2012-06/terms#regionStart";
+    var QA_REGION_END = "http://qldarch.net/ns/rdf/2012-06/terms#regionEnd";
+    var QA_SUBJECT = "http://qldarch.net/ns/rdf/2012-06/terms#subject";
+    var QA_PREDICATE = "http://qldarch.net/ns/rdf/2012-06/terms#predicate";
+    var QA_OBJECT = "http://qldarch.net/ns/rdf/2012-06/terms#object";
 
     var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
     var OWL_OBJECT_PROPERTY = "http://www.w3.org/2002/07/owl#ObjectProperty";
     var RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+    var RDF_SUBJECT = "http://www.w3.org/1999/02/22-rdf-syntax-ns#subject";
+    var RDF_PREDICATE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate";
+    var RDF_OBJECT = "http://www.w3.org/1999/02/22-rdf-syntax-ns#object";
     var RDFS_SUBCLASS_OF = "http://www.w3.org/2000/01/rdf-schema#subClassOf";
     var RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
 
+    var QA_REFERENCE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#ReferenceRelation";
     var QA_INTERVIEW_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Interview";
     var QA_TRANSCRIPT_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Transcript";
     var QA_ARTICLE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Article";
@@ -1809,8 +1818,6 @@ var frontend = (function() {
         onShow: function() {
         	this.parseText($(".transcript").text());
             var words = this.tags.slice(0, Math.min(this.tags.length, 50));
-            console.log("Histogram onShow");
-            console.log(words);
             
         	var margin = {top: 20, right: 20, bottom: 60, left: 40},
 	            width = 500 - margin.left - margin.right,
@@ -2121,13 +2128,14 @@ var frontend = (function() {
                 var curr = transcript.exchanges[i];
                 var next = transcript.exchanges[i+1];
 
-                var start = Math.max(0.5, Popcorn.util.toSeconds(curr.time)) - 0.5;
-                var end = next ? Popcorn.util.toSeconds(next.time) - 0.5 : NaN;
+                var start = Popcorn.util.toSeconds(curr.time);
+                var end = next ? Popcorn.util.toSeconds(next.time) : NaN;
 
                 exchanges.push({
                     speaker: curr.speaker,
                     transcript: curr.transcript,
                     time: curr.time,
+                    next: next ? next.time : NaN,
                     start: start,
                     end: end,
                 });
@@ -2229,9 +2237,12 @@ var frontend = (function() {
             var popcorn = this.popcornModel.get('popcorn');
             if (!popcorn) return;
 
+            var start = Math.max(0.5, this.model.get('start')) - 0.5;
+            var end = this.model.get('end') ? this.model.get('end') - 0.5 : popcorn.duration();
+
             this.popcornInterval = {
-                start: this.model.get('start'),
-                end: this.model.get('end') || popcorn.duration(),
+                start: start,
+                end: end,
                 onStart: _.bind(this.showSubtitle, this),
                 onEnd: _.bind(this.hideSubtitle, this),
             };
@@ -2249,6 +2260,8 @@ var frontend = (function() {
             container.scrollTo(this.$el, "fast", {
                 offset: { top: -10 },
             });
+
+            this.triggerMethod("utterance:active", this.model);
         },
 
         hideSubtitle: function() {
@@ -2272,7 +2285,6 @@ var frontend = (function() {
                 }
             }
         },
-
     });
 
     var TranscriptPaneTabs = Backbone.Marionette.ItemView.extend({
@@ -2431,6 +2443,16 @@ var frontend = (function() {
             }
         },
 
+        onItemviewUtteranceActive: function(childView, model) {
+            this.triggerMethod("utterance:active", model);
+        },
+
+        getDuration: function() {
+            var popcorn = this.popcornModel.get('popcorn');
+            if (popcorn) {
+                return popcorn.duration();
+            }
+        },
     });
 
     var UnimplementedTranscriptTabView = Backbone.Marionette.ItemView.extend({
@@ -2463,14 +2485,9 @@ var frontend = (function() {
 
         _selecttab: function(event) {
             var newState = $(event.target).attr("type");
-            console.log("Clicked " + newState);
             this.triggerMethod("select:tab", newState);
             this.$(".tab.selected").removeClass("selected");
             $(event.target).addClass("selected");
-        },
-
-        onRender: function() {
-            console.log("Rendering transcript tabs");
         },
     });
 
@@ -2578,7 +2595,6 @@ var frontend = (function() {
         },
 
         onAddEntity: function() {
-            console.log("simple add:entity invoked");
         },
 
         onSelectEntity: function() {
@@ -2620,11 +2636,21 @@ var frontend = (function() {
                 proper: this.proper,
                 entities: this.entities,
             });
+            this.listenTo(this.entityView, "selection:changed", this.setSelection);
             this.entityselection.show(this.entityView);
         },
 
+        setSelection: function(selection) {
+            this.selectionURI = selection;
+        },
+
         onAddRefersTo: function() {
-            console.log("simple add:refersTo invoked with selection: " + this.entityView.getCurrentSelection());
+            if (this.selectionURI) {
+                var entity = this.entities.get(this.selectionURI);
+                this.triggerMethod("simple:add", entity);
+            } else {
+                console.log("No entity selected");
+            }
         },
     });
 
@@ -2665,7 +2691,159 @@ var frontend = (function() {
         },
 
         onAddRefersTo: function() {
-            console.log("full add:refersTo invoked: " + this.subjectView.getCurrentSelection() + " -> " + this.objectView.getCurrentSelection());
+        },
+    });
+
+    var AnnotationRowView = Backbone.Marionette.ItemView.extend({
+        tagName: "tr",
+        template: "#annotationrowTemplate",
+
+        serializeData: function() {
+            var subject = this.model.get1(QA_SUBJECT);
+            var predicate = this.model.get1(QA_PREDICATE);
+            var object = this.model.get1(QA_OBJECT);
+
+            var contentDescription = this.contentDescriptionSource.get('contentDescription');
+
+            var subjectEntity = this.entities.get(subject);
+            var subjectLabel = "Unrecognised subject";
+            if (subjectEntity) {
+                subjectLabel = subjectEntity.get(QA_LABEL) || "Unnamed subject";
+            } else if (contentDescription && contentDescription.id == subject) {
+                subjectLabel = "This point in the interview";
+            }
+
+            var predicateEntity = this.properties.get(predicate);
+            var predicateLabel = "Has unrecognised relationship to";
+            if (predicateEntity) {
+                predicateLabel = predicateEntity.get(QA_LABEL) || "Unnamed relationship to";
+            }
+
+            var objectEntity = this.entities.get(object);
+            var objectLabel = "Unrecognised object";
+            if (objectEntity) {
+                objectLabel = objectEntity.get(QA_LABEL) || "Unnamed object";
+            }
+
+            return {
+                subject: subjectLabel,
+                relationship: predicateLabel,
+                object: objectLabel,
+            };
+        },
+
+        initialize: function(options) {
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
+        },
+    });
+
+    var AnnotationCollectionModel = Backbone.Model.extend({
+        defaults: {
+            url: undefined,
+        },
+
+        initialize: function(attrs, options) {
+            this.utteranceEventSrc = _.checkarg(options.utteranceEventSrc)
+                .throwNoArg("options.utteranceEventSrc");
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
+
+            this.listenTo(this.utteranceEventSrc, "utterance:active", this.handleUtterance);
+            this.listenTo(this.contentDescriptionSource, "change", this.handleContent);
+
+            this.start = 0;
+            this.end = 30;
+
+            this.handleContent();
+        },
+
+        handleUtterance: function(utterance) {
+            this.start = utterance.get('start');
+            this.end = utterance.get('end');
+            this._setURL();
+        },
+
+        handleContent: function() {
+            this.contentDescription = this.contentDescriptionSource.get('contentDescription');
+            this._setURL();
+        },
+
+        _setURL: function() {
+            var url = (this.start && this.end && this.contentDescription) ?
+                JSON_ROOT + 'reference?' + $.param({
+                    RESOURCE: this.contentDescription.id,
+                    TIME: this.start + 0.01,
+                    DURATION: this.end - this.start - 0.01,
+                }) : undefined;
+
+            this.set('url', url);
+        },
+    });
+
+    var AnnotationCollection = Backbone.RDFGraph.extend({
+        initialize: function(attributes, options) {
+            this.utteranceEventSrc = _.checkarg(options.utteranceEventSrc)
+                .throwNoArg("options.utteranceEventSrc");
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
+
+            var _setURL = _.throttle(_.bind(this.__setURL, this), 3000);
+
+            this.internalModel = new AnnotationCollectionModel({}, {
+                utteranceEventSrc: this.utteranceEventSrc,
+                contentDescriptionSource: this.contentDescriptionSource,
+            });
+
+            this.listenTo(this.internalModel, "change:url", _setURL);
+        },
+
+        __setURL: function() {
+            this.url = this.internalModel.get('url');
+            this.fetch();
+        },
+        
+        fetch: function(options) {
+            if (_.isUndefined(this.url)) {
+                this.reset({});
+            } else {
+                Backbone.Collection.prototype.fetch.apply(this, arguments);
+            }
+        }
+    });
+
+    var AnnotationsTableView = Backbone.Marionette.CompositeView.extend({
+        className: "annotations",
+        template: "#annotationstableTemplate",
+
+        itemViewContainer: "tbody",
+        itemView: AnnotationRowView,
+        itemViewOptions: function() {
+            return {
+                properties: this.properties,
+                entities: this.entities,
+                contentDescriptionSource: this.contentDescriptionSource,
+            };
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        initialize: function(options) {
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
+            this.utteranceEventSrc = _.checkarg(options.utteranceEventSrc).throwNoArg("options.utteranceEventSrc");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+
+            this.collection = new AnnotationCollection([], {
+                contentDescriptionSource: this.contentDescriptionSource,
+                utteranceEventSrc: this.utteranceEventSrc,
+                properties: this.properties,
+            });
         },
     });
 
@@ -2676,6 +2854,7 @@ var frontend = (function() {
         regions: {
             simple: ".simple",
             full: ".full",
+            annotations: ".annotations",
         },
 
         ui: {
@@ -2693,6 +2872,11 @@ var frontend = (function() {
         initialize: function(options) {
             this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
+            this.utteranceEventSrc = _.checkarg(options.utteranceEventSrc)
+                .throwNoArg("options.utteranceEventSrc");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.paused = false;
         },
 
@@ -2700,19 +2884,29 @@ var frontend = (function() {
             // FIXME: This should be a shared model between the player and the controls.
             this.paused = this.ui.pauseBtn.hasClass('selected');
 
-            this.simple.show(new SimpleAnnotationView({
+            this.simpleAnnotationView = new SimpleAnnotationView({
                 proper: this.proper,
                 entities: this.entities,
-            }));
-            this.full.show(new FullAnnotationView({
-                proper: this.proper,
+            });
+            this.listenTo(this.simpleAnnotationView, "simple:add", this.onChildSimpleAdd);
+            this.simple.show(this.simpleAnnotationView);
+
+//            this.full.show(new FullAnnotationView({
+//                proper: this.proper,
+//                entities: this.entities,
+//            }));
+
+            this.annotationsView = new AnnotationsTableView({
+                contentDescriptionSource: this.contentDescriptionSource,
+                utteranceEventSrc: this.utteranceEventSrc,
                 entities: this.entities,
-            }));
+                properties: this.properties,
+            });
+            this.annotations.show(this.annotationsView);
         },
 
         onDoPause: function() {
             this.paused = !this.paused;
-            console.log("onDoPause: " + this.paused);
             if (this.paused) {
                 this.ui.pauseBtn.addClass("selected");
                 this.ui.pauseBtn.text("Play");
@@ -2722,6 +2916,10 @@ var frontend = (function() {
             }
             this.triggerMethod("pause:set", this.paused);
         },
+
+        onChildSimpleAdd: function(entity) {
+            this.triggerMethod("simple:add", entity);
+        }
     });
 
     var TranscriptPaneModel = Backbone.ViewModel.extend({
@@ -2744,7 +2942,7 @@ var frontend = (function() {
         states: {
             Search: function(view) {
                 return new TranscriptSearchView({
-                	contentDescriptionSource: view.contentDescriptionSource
+                	contentDescriptionSource: view.contentDescriptionSource,
                 });
             },
             Cloud: function(view) {
@@ -2759,10 +2957,14 @@ var frontend = (function() {
             },
             Annotate: function(view) {
                 var av = new AnnotateView({
+                    utteranceEventSrc: view,
+                	contentDescriptionSource: view.contentDescriptionSource,
                     proper: view.proper,
                     entities: view.entities,
+                    properties: view.properties,
                 });
                 view.listenTo(av, "pause:set", view.pauseSet);
+                view.listenTo(av, "simple:add", view.onSimpleAdd);
                 return av;
             },
         },
@@ -2781,6 +2983,7 @@ var frontend = (function() {
             this.files = _.checkarg(options.files).throwNoArg("options.files");
             this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
 
             this.contentDescriptionSource = new ContentDescriptionModel({
                 types: _.keys(this.digitalContent),
@@ -2804,9 +3007,12 @@ var frontend = (function() {
                 router: this.router,
             }));
 
-            this.primary.show(new TrackingPlayerView({
+            this.trackingView = new TrackingPlayerView({
                 contentDescriptionSource: this.contentDescriptionSource,
-            }));
+            });
+            this.primary.show(this.trackingView);
+
+            this.listenTo(this.trackingView, "utterance:active", this.triggerUtteranceActive);
             
             this.listenTo(this.model, "change:state", this.setTab);
             this.tabview = new TranscriptPaneTabs({});
@@ -2816,11 +3022,11 @@ var frontend = (function() {
         },
         
         pauseSet: function(pause) {
-            if (this.playerView) {
+            if (this.trackingView) {
                 if (pause) {
-                    this.playerView.doPause();
+                    this.trackingView.doPause();
                 } else  {
-                    this.playerView.doPlay();
+                    this.trackingView.doPlay();
                 }
             }
         },
@@ -2833,6 +3039,43 @@ var frontend = (function() {
 
         setTab: function(model, value) {
             this.secondary.show(this.states[value](this));
+        },
+
+        triggerUtteranceActive: function(model) {
+            this.triggerMethod("utterance:active", model);
+            this.currentUtterance = model;
+        },
+
+        onSimpleAdd: function(entity) {
+            var rdf = {};
+            rdf[RDF_TYPE] = QA_REFERENCE_TYPE,
+            rdf[QA_SUBJECT] = this.contentDescriptionSource.get('contentDescription').id,
+            rdf[QA_PREDICATE] = QA_REFERENCES,
+            rdf[QA_OBJECT] = entity.id,
+            rdf[QA_REGION_START] = this.currentUtterance.get('start');
+            rdf[QA_REGION_END] = this.currentUtterance.get('end') ?
+                this.currentUtterance.get('end') : this.trackingView.getDuration();
+            $.ajax({
+                type: 'POST',
+                url: JSON_ROOT + 'reference',
+                data: JSON.stringify(rdf),
+                dataType: 'json',
+                contentType: 'application/json',
+            }).done(function(data, textStatus, jqXHR) {
+                console.log("success");
+                console.log(rdf);
+                console.log(data);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
+            }).fail(function(jqXHR, textStatus, errorThrown) {
+                console.log("failure");
+                console.log(rdf);
+                console.log(errorThrown);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
+            });
         },
     });
 
@@ -4339,6 +4582,7 @@ var frontend = (function() {
             files: files,
             proper: proper,
             entities: entities,
+            properties: properties,
         });
 
         var pdfContentView = new PdfContentView({
