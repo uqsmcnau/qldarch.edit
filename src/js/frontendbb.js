@@ -62,12 +62,19 @@ var frontend = (function() {
     var QA_BASIC_MIME_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#basicMimeType";
     var QA_DEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#definiteMapIcon";
     var QA_INDEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#indefiniteMapIcon";
+
     var QA_REFERENCES = "http://qldarch.net/ns/rdf/2012-06/terms#references";
     var QA_REGION_START = "http://qldarch.net/ns/rdf/2012-06/terms#regionStart";
     var QA_REGION_END = "http://qldarch.net/ns/rdf/2012-06/terms#regionEnd";
     var QA_SUBJECT = "http://qldarch.net/ns/rdf/2012-06/terms#subject";
     var QA_PREDICATE = "http://qldarch.net/ns/rdf/2012-06/terms#predicate";
     var QA_OBJECT = "http://qldarch.net/ns/rdf/2012-06/terms#object";
+    var QA_IMPLIES_RELATIONSHIP = "http://qldarch.net/ns/rdf/2012-06/terms#impliesRelationship";
+    var QA_START_DATE = "http://qldarch.net/ns/rdf/2012-06/terms#startDate";
+    var QA_END_DATE = "http://qldarch.net/ns/rdf/2012-06/terms#endDate";
+    var QA_EVIDENCE = "http://qldarch.net/ns/rdf/2012-06/terms#evidence";
+    var QA_TIME_FROM = "http://qldarch.net/ns/rdf/2012-06/terms#timeFrom";
+    var QA_TIME_TO = "http://qldarch.net/ns/rdf/2012-06/terms#timeTo";
 
     var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
     var OWL_OBJECT_PROPERTY = "http://www.w3.org/2002/07/owl#ObjectProperty";
@@ -76,6 +83,8 @@ var frontend = (function() {
     var RDF_PREDICATE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate";
     var RDF_OBJECT = "http://www.w3.org/1999/02/22-rdf-syntax-ns#object";
     var RDFS_SUBCLASS_OF = "http://www.w3.org/2000/01/rdf-schema#subClassOf";
+    var RDFS_DOMAIN = "http://www.w3.org/2000/01/rdf-schema#domain";
+    var RDFS_RANGE = "http://www.w3.org/2000/01/rdf-schema#range";
     var RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
 
     var QA_REFERENCE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#ReferenceRelation";
@@ -2613,10 +2622,9 @@ var frontend = (function() {
 
         onSelectEntity: function() {
             var selection = this.ui.entityselect.val();
+            var type = this.ui.typeselect.val();
             this.model.set('selection', selection);
-            // Not sure this is the right way to do this, maybe use a shared model?
-            //    OTOH, there is no output from this view except the current selection.
-            this.triggerMethod("selection:changed", selection);
+            this.triggerMethod("selection:changed", selection, type);
         },
 
         getCurrentSelection: function() {
@@ -2677,8 +2685,19 @@ var frontend = (function() {
             object: ".objectselection",
         },
 
+        ui: {
+            relselect: "select[name='relationship']",
+            fromdate: "input[name='fromdate']",
+            todate: "input[name='todate']",
+        },
+
         triggers: {
             "click .addrefersto" : "add:refersTo",
+            "change select[name='relationship']" : "select:rel",
+        },
+
+        events: {
+            "keyup input.date"   : "onSetDate",
         },
 
         serializeData: function() {
@@ -2688,6 +2707,20 @@ var frontend = (function() {
         initialize: function(options) {
             this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.relationships = _.checkarg(options.relationships)
+                .throwNoArg("options.relationships");
+            this.displayedEntities = _.checkarg(options.displayedEntities)
+                .throwNoArg("options.displayedEntities");
+
+            this.optionTemplate = _.checkarg(_.template($("#optionTemplate").html()))
+                .throwNoArg("optionTemplate");
+
+            this.datePattern = /^\d\d\d\d(-\d\d){0,2}$/;
+            this.dates = {
+                fromdate: undefined,
+                todate: undefined,
+            };
         },
         
         onRender: function() {
@@ -2695,16 +2728,145 @@ var frontend = (function() {
                 proper: this.proper,
                 entities: this.entities,
             });
+            this.listenTo(this.subjectView, "selection:changed", this.setSubject);
             this.subject.show(this.subjectView);
 
             this.objectView = new EntitySelectionView({
                 proper: this.proper,
                 entities: this.entities,
             });
+            this.listenTo(this.objectView, "selection:changed", this.setObject);
             this.object.show(this.objectView);
+
+            _.defer(_.bind(this.displayRelationships, this));
+        },
+
+        displayRelationships: function() {
+            this.ui.relselect.empty();
+            this.relationships.each(function(rel) {
+                var pURI = rel.get1(QA_IMPLIES_RELATIONSHIP);
+                if (!pURI) {
+                    console.log("no pURI");
+                    console.log(rel);
+                    return;
+                }
+                var p = this.properties.get(pURI);
+                if (!p) {
+                    console.log("no p");
+                    console.log(pURI);
+                    return;
+                }
+                var domain = p.geta(RDFS_DOMAIN);
+                if (!domain) {
+                    console.log("no domain");
+                    console.log(p);
+                    return;
+                }
+                var range = p.geta(RDFS_RANGE);
+                if (!range) {
+                    console.log("no range");
+                    console.log(p);
+                    return;
+                }
+                var sEntity = this.displayedEntities.get(this.subjectType);
+                if (!sEntity) {
+                    console.log("no sEntity");
+                    console.log(this.subjectType);
+                    return;
+                }
+                var sTypes = sEntity.geta(RDFS_SUBCLASS_OF);
+                var oEntity = this.displayedEntities.get(this.objectType);
+                if (!oEntity) {
+                    console.log("no oEntity");
+                    console.log(this.objectType);
+                    return;
+                }
+                var oTypes = oEntity.geta(RDFS_SUBCLASS_OF);
+
+                if (_.isEmpty(_.intersection(domain, sTypes))) return;
+                if (_.isEmpty(_.intersection(range, oTypes))) return;
+
+                var label = p.get1(QA_SINGULAR) || p.get1(QA_LABEL) || 
+                    rel.get1(QA_SINGULAR) || rel.get1(QA_LABEL) || "No label provided";
+
+                this.ui.relselect.append(this.optionTemplate({
+                    value: rel.id,
+                    label: label,
+                }));
+            }, this);
+
+            this.onSelectRel();
+        },
+
+        setSubject: function(selection, type) {
+            this.subjectURI = selection;
+            this.subjectType = type;
+            this.displayRelationships();
+        },
+
+        setObject: function(selection, type) {
+            this.objectURI = selection;
+            this.objectType = type;
+            this.displayRelationships();
+        },
+
+        onSetDate: function(event) {
+            var dateName = $(event.target).attr("name");
+            var dateStr = $(event.target).val().trim();
+
+            if (dateStr.length == 0) {
+                this.dates[dateName] = undefined;
+            } else if (this.datePattern.test(dateStr)) {
+                this.dates[dateName] = dateStr;
+            } else {
+                this.dates[dateName] = null;
+            }
+        },
+
+        onSelectRel: function() {
+            this.predicateURI = this.ui.relselect.val();
         },
 
         onAddRefersTo: function() {
+            var minimal = true;
+            if (!this.subjectURI) {
+                console.log("No subject specified");
+                minimal = false;
+            }
+            if (!this.predicateURI) {
+                console.log("No predicate specified");
+                minimal = false;
+            }
+            if (!this.objectURI) {
+                console.log("No object specified");
+                minimal = false;
+            }
+            if (minimal) {
+                var valid = true;
+                console.log(this.dates.fromdate);
+                if (_.isNull(this.dates.fromdate)) {
+                    console.log("From date invalid");
+                    valid = false;
+                }
+                console.log(this.dates.todate);
+                if (_.isNull(this.dates.todate)) {
+                    console.log("To date invalid");
+                    valid = false;
+                }
+                if (!valid) return;
+
+                var rel = {
+                    subjectURI: this.subjectURI,
+                    predicateURI: this.predicateURI,
+                    objectURI: this.objectURI,
+                    fromDate: this.dates.fromdate,
+                    toDate: this.dates.todate,
+                };
+
+                console.log("Valid relationship identified");
+                console.log(rel);
+                this.triggerMethod("full:add", rel);
+            }
         },
     });
 
@@ -2892,11 +3054,17 @@ var frontend = (function() {
             this.utteranceEventSrc = _.checkarg(options.utteranceEventSrc)
                 .throwNoArg("options.utteranceEventSrc");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.relationships = _.checkarg(options.relationships)
+                .throwNoArg("options.relationships");
+            this.displayedEntities = _.checkarg(options.displayedEntities)
+                .throwNoArg("options.displayedEntities");
+
             this.paused = false;
         },
 
         onRender: function() {
             // FIXME: This should be a shared model between the player and the controls.
+            //        This is why the player and button status can fall out of sync.
             this.paused = this.ui.pauseBtn.hasClass('selected');
 
             this.simpleAnnotationView = new SimpleAnnotationView({
@@ -2906,10 +3074,15 @@ var frontend = (function() {
             this.listenTo(this.simpleAnnotationView, "simple:add", this.onChildSimpleAdd);
             this.simple.show(this.simpleAnnotationView);
 
-            this.full.show(new FullAnnotationView({
+            this.fullAnnotationView = new FullAnnotationView({
                 proper: this.proper,
                 entities: this.entities,
-            }));
+                properties: this.properties,
+                relationships: this.relationships,
+                displayedEntities: this.displayedEntities,
+            });
+            this.listenTo(this.fullAnnotationView, "full:add", this.onChildFullAdd);
+            this.full.show(this.fullAnnotationView);
 
             this.annotationsView = new AnnotationsTableView({
                 contentDescriptionSource: this.contentDescriptionSource,
@@ -2934,7 +3107,11 @@ var frontend = (function() {
 
         onChildSimpleAdd: function(entity) {
             this.triggerMethod("simple:add", entity);
-        }
+        },
+
+        onChildFullAdd: function(entity) {
+            this.triggerMethod("full:add", entity);
+        },
     });
 
     var TranscriptPaneModel = Backbone.ViewModel.extend({
@@ -2976,10 +3153,13 @@ var frontend = (function() {
                 	contentDescriptionSource: view.contentDescriptionSource,
                     proper: view.proper,
                     entities: view.entities,
+                    displayedEntities: view.displayedEntities,
                     properties: view.properties,
+                    relationships: view.relationships,
                 });
                 view.listenTo(av, "pause:set", view.pauseSet);
                 view.listenTo(av, "simple:add", view.onSimpleAdd);
+                view.listenTo(av, "full:add", view.onFullAdd);
                 return av;
             },
         },
@@ -2998,7 +3178,11 @@ var frontend = (function() {
             this.files = _.checkarg(options.files).throwNoArg("options.files");
             this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.displayedEntities = _.checkarg(options.displayedEntities)
+                .throwNoArg("options.displayedEntities");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.relationships = _.checkarg(options.relationships)
+                .throwNoArg("options.relationships");
 
             this.contentDescriptionSource = new ContentDescriptionModel({
                 types: _.keys(this.digitalContent),
@@ -3077,6 +3261,49 @@ var frontend = (function() {
                 dataType: 'json',
                 contentType: 'application/json',
             }).done(_.bind(function(data, textStatus, jqXHR) {
+                this.triggerMethod("utterance:refresh");
+            }, this)).fail(function(jqXHR, textStatus, errorThrown) {
+                console.log("failure");
+                console.log(rdf);
+                console.log(errorThrown);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
+            });
+        },
+
+        onFullAdd: function(rel) {
+            var rdf = {};
+            rdf[RDF_TYPE] = rel.predicateURI,
+            rdf[QA_SUBJECT] = rel.subjectURI,
+            rdf[QA_PREDICATE] = this.relationships.get(rel.predicateURI)
+                .get1(QA_IMPLIES_RELATIONSHIP);
+            rdf[QA_OBJECT] = rel.objectURI;
+            if (rel.fromDate) {
+                rdf[QA_START_DATE] = rel.fromDate;
+            }
+            if (rel.toDate) {
+                rdf[QA_END_DATE] = rel.toDate;
+            }
+
+            var evidence = rdf[QA_EVIDENCE] = {};
+            evidence[QA_TIME_FROM] = this.currentUtterance.get('start');
+            evidence[QA_TIME_TO] = this.currentUtterance.get('end') ?
+                this.currentUtterance.get('end') : this.trackingView.getDuration();
+
+            $.ajax({
+                type: 'POST',
+                url: JSON_ROOT + 'annotation',
+                data: JSON.stringify(rdf),
+                dataType: 'json',
+                contentType: 'application/json',
+            }).done(_.bind(function(data, textStatus, jqXHR) {
+                console.log("success");
+                console.log(rdf);
+                console.log(data);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
                 this.triggerMethod("utterance:refresh");
             }, this)).fail(function(jqXHR, textStatus, errorThrown) {
                 console.log("failure");
@@ -4411,6 +4638,11 @@ var frontend = (function() {
             comparator: QA_LABEL,
         });
 
+        var relationships = new RDFGraph([], {
+            url: function() { return JSON_ROOT + "ontology/Relationships" },
+            comparator: QA_LABEL,
+        });
+
         var files = new CachedRDFGraph([], {
             constructURL: function(ids) {
                 if (ids.length == 1) {
@@ -4593,6 +4825,8 @@ var frontend = (function() {
             proper: proper,
             entities: entities,
             properties: properties,
+            relationships: relationships,
+            displayedEntities: displayedEntities,
         });
 
         var pdfContentView = new PdfContentView({
@@ -4753,6 +4987,7 @@ var frontend = (function() {
             transcripts.fetch({ reset: true });
             linedrawings.fetch({ reset: true });
             articles.fetch({ reset: true });
+            relationships.fetch({ reset: true });
         });
     }
 
