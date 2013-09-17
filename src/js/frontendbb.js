@@ -2418,6 +2418,12 @@ var frontend = (function() {
         },
 
         onDomRefresh: function() {
+            var old = this.popcornModel.get('popcorn');
+            if (old) {
+                old.destroy();
+                this.popcornModel.set('popcorn', undefined);
+            }
+
             var popcorn = Popcorn("#" + this.model.get('audiocontrolid'));
             this.popcornModel.set('popcorn', popcorn);
 
@@ -2426,6 +2432,14 @@ var frontend = (function() {
             if (this.offset) {
                 var start = Math.max(0.5, Popcorn.util.toSeconds(this.offset)) - 0.5;
                 _.delay(function() { popcorn.currentTime(start); }, 2000);
+            }
+        },
+
+        onClose: function() {
+            var old = this.popcornModel.get('popcorn');
+            if (old) {
+                old.destroy();
+                this.popcornModel.set('popcorn', undefined);
             }
         },
 
@@ -2892,10 +2906,10 @@ var frontend = (function() {
             this.listenTo(this.simpleAnnotationView, "simple:add", this.onChildSimpleAdd);
             this.simple.show(this.simpleAnnotationView);
 
-//            this.full.show(new FullAnnotationView({
-//                proper: this.proper,
-//                entities: this.entities,
-//            }));
+            this.full.show(new FullAnnotationView({
+                proper: this.proper,
+                entities: this.entities,
+            }));
 
             this.annotationsView = new AnnotationsTableView({
                 contentDescriptionSource: this.contentDescriptionSource,
