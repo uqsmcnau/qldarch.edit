@@ -2951,7 +2951,7 @@ var frontend = (function() {
 
         _setURL: function() {
             var url = (this.start && this.end && this.contentDescription) ?
-                JSON_ROOT + 'reference?' + $.param({
+                JSON_ROOT + 'annotation?' + $.param({
                     RESOURCE: this.contentDescription.id,
                     TIME: this.start + 0.01,
                     DURATION: this.end - this.start - 0.02,
@@ -3017,12 +3017,33 @@ var frontend = (function() {
             this.utteranceEventSrc = _.checkarg(options.utteranceEventSrc).throwNoArg("options.utteranceEventSrc");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            var relationships = this.relationships = _.checkarg(options.relationships)
+                .throwNoArg("options.relationships");
 
-            this.collection = new AnnotationCollection([], {
+            this.annotations = new AnnotationCollection([], {
                 contentDescriptionSource: this.contentDescriptionSource,
                 utteranceEventSrc: this.utteranceEventSrc,
                 properties: this.properties,
             });
+
+            this.collection = new SubCollection(this.annotations, {
+                name: "Relationships",
+                tracksort: false,
+                predicate: function(model) {
+                        console.log("In predicate");
+                        console.log(relationships);
+                        return relationships.any(function(rel) {
+                            console.log("In any");
+                            console.log(rel);
+                            console.log(model);
+                            console.log(RDF_TYPE);
+                            return !_.isEmpty(_.intersection(
+                                    rel.geta(RDFS_SUBCLASS_OF), model.geta(RDF_TYPE)));
+                        });
+                    },
+                comparator: QA_PREDICATE,
+            });
+            window.atvcol = this.collection;
         },
     });
 
@@ -3091,6 +3112,7 @@ var frontend = (function() {
                 utteranceEventSrc: this.utteranceEventSrc,
                 entities: this.entities,
                 properties: this.properties,
+                relationships: this.relationships,
             });
             this.annotations.show(this.annotationsView);
         },
