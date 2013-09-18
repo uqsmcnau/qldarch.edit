@@ -530,7 +530,7 @@ lore.ore.WordSerializer = function(){
     var oThis = this;
     // Load xslt from local file for transforming body content to ooxml for inclusion in docx
     
-    var xhr = new XMLHttpRequest();                
+    /*var xhr = new XMLHttpRequest();                
     xhr.overrideMimeType('text/xml');
     var oThis = this;
     xhr.open("GET", lore.constants.baseUrl + 'export/html2word.xsl');
@@ -541,7 +541,7 @@ lore.ore.WordSerializer = function(){
             oThis.xsltproc.importStylesheet(oThis.bodyStylesheet);
         }
     };
-    xhr.send(null);
+    xhr.send(null);*/
 };
 Ext.apply(lore.ore.WordSerializer.prototype, {
     serialize: function(co) {

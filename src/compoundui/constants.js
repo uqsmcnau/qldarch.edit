@@ -9,9 +9,14 @@ if (typeof lore !== "object"){
     var lore = {};   
 }
 lore.constants = {
-	 baseUrl: "http://localhost:8080/lore/", 	 
+     // The url to the folder this file is located in
+	 baseUrl: window.location.href.substring(0, window.location.href.lastIndexOf("/") + 1),
+	 // The url of the SPARQL repository
 	 repositoryBaseURL: "http://localhost/op",
+	 // The suffix for the graphstore endpoint on the SPARQL repository
 	 repositoryGraphStoreEndPoint: "/data",
+	 // The url prefix for triples in the repository
+	 // Is generally repositoryBaseURL + repositoryGraphStoreEndPoint
 	 repositoryGraphNamePrefix: "http://localhost/op/data/",
 
 	 /*baseUrl: "http://115.146.93.139/virtual_lab/toolLibrary/annotation/lore-test-2/", 	 
