@@ -73,8 +73,10 @@ var frontend = (function() {
     var QA_START_DATE = "http://qldarch.net/ns/rdf/2012-06/terms#startDate";
     var QA_END_DATE = "http://qldarch.net/ns/rdf/2012-06/terms#endDate";
     var QA_EVIDENCE = "http://qldarch.net/ns/rdf/2012-06/terms#evidence";
+    var QA_EVIDENCE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Evidence";
     var QA_TIME_FROM = "http://qldarch.net/ns/rdf/2012-06/terms#timeFrom";
     var QA_TIME_TO = "http://qldarch.net/ns/rdf/2012-06/terms#timeTo";
+    var QA_DOCUMENTED_BY = "http://qldarch.net/ns/rdf/2012-06/terms#documentedBy";
 
     var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
     var OWL_OBJECT_PROPERTY = "http://www.w3.org/2002/07/owl#ObjectProperty";
@@ -3287,6 +3289,9 @@ var frontend = (function() {
             }
 
             var evidence = rdf[QA_EVIDENCE] = {};
+            evidence[RDF_TYPE] = QA_EVIDENCE_TYPE;
+            evidence[QA_DOCUMENTED_BY] =
+                this.contentDescriptionSource.get('contentDescription').id,
             evidence[QA_TIME_FROM] = this.currentUtterance.get('start');
             evidence[QA_TIME_TO] = this.currentUtterance.get('end') ?
                 this.currentUtterance.get('end') : this.trackingView.getDuration();
