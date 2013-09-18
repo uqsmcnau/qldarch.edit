@@ -69,7 +69,8 @@ lore.constants = {
         "lorestore" : "http://auselit.metadata.net/lorestore/",
         "cnt"     	: "http://www.w3.org/2011/content#",
         "ecrm"		: "http://erlangen-crm.org/current/",
-        "skos"		: "http://www.w3.org/2004/02/skos/core#"
+        "skos"		: "http://www.w3.org/2004/02/skos/core#",
+        "qldarch"	: "http://qldarch.net/ns/rdf/2012-06/terms#"
     },
     
     // RDF/OWL

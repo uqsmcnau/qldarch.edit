@@ -166,6 +166,12 @@ window.addEventListener('message', function(message){
 				if (label == "Title") {
 					props["dc:title_0"] = value;
 				} else {
+					for (var ns in lore.constants.NAMESPACES) {
+	        			if (uri.indexOf(lore.constants.NAMESPACES[ns]) == 0) {
+	        				uri = ns + ":" + uri.substring(lore.constants.NAMESPACES[ns].length);
+	        			}
+	        		}
+					
 					props[uri] = value;
 				}
 			}
