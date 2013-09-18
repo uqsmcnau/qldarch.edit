@@ -2887,7 +2887,8 @@ var frontend = (function() {
             var subjectLabel = "Unrecognised subject";
             if (subjectEntity) {
                 subjectLabel = subjectEntity.get(QA_LABEL) || "Unnamed subject";
-            } else if (contentDescription && contentDescription.id == subject) {
+            } else if (contentDescription && subject.lastIndexOf(contentDescription.id, 0) === 0) {
+                // Note: lastIndexOf(str, 0) is javascript for startsWith(str)
                 subjectLabel = "This point in the interview";
             }
 
@@ -3032,14 +3033,20 @@ var frontend = (function() {
                 predicate: function(model) {
                         console.log("In predicate");
                         console.log(relationships);
-                        return relationships.any(function(rel) {
-                            console.log("In any");
-                            console.log(rel);
-                            console.log(model);
-                            console.log(RDF_TYPE);
-                            return !_.isEmpty(_.intersection(
+                        console.log(model);
+                        var result = relationships.any(function(rel) {
+//                            console.log("In any");
+//                            console.log(rel);
+//                            console.log(model);
+//                            console.log(RDF_TYPE);
+                            var result = !_.isEmpty(_.intersection(
                                     rel.geta(RDFS_SUBCLASS_OF), model.geta(RDF_TYPE)));
+//                            console.log(result);
+                            return result;
                         });
+
+                        console.log("Predicate returns: " + result);
+                        return result;
                     },
                 comparator: QA_PREDICATE,
             });
@@ -3271,20 +3278,33 @@ var frontend = (function() {
 
         onSimpleAdd: function(entity) {
             var rdf = {};
-            rdf[RDF_TYPE] = QA_REFERENCE_TYPE,
-            rdf[QA_SUBJECT] = this.contentDescriptionSource.get('contentDescription').id,
-            rdf[QA_PREDICATE] = QA_REFERENCES,
-            rdf[QA_OBJECT] = entity.id,
-            rdf[QA_REGION_START] = this.currentUtterance.get('start');
-            rdf[QA_REGION_END] = this.currentUtterance.get('end') ?
+            rdf[RDF_TYPE] = QA_REFERENCE_TYPE;
+            rdf[QA_SUBJECT] = this.contentDescriptionSource.get('contentDescription').id +
+                "#@" + this.currentUtterance.get('start');
+            rdf[QA_PREDICATE] = QA_REFERENCES;
+            rdf[QA_OBJECT] = entity.id;
+
+            var evidence = rdf[QA_EVIDENCE] = {};
+            evidence[RDF_TYPE] = QA_EVIDENCE_TYPE;
+            evidence[QA_DOCUMENTED_BY] =
+                this.contentDescriptionSource.get('contentDescription').id;
+            evidence[QA_TIME_FROM] = this.currentUtterance.get('start');
+            evidence[QA_TIME_TO] = this.currentUtterance.get('end') ?
                 this.currentUtterance.get('end') : this.trackingView.getDuration();
+
             $.ajax({
                 type: 'POST',
-                url: JSON_ROOT + 'reference',
+                url: JSON_ROOT + 'annotation',
                 data: JSON.stringify(rdf),
                 dataType: 'json',
                 contentType: 'application/json',
             }).done(_.bind(function(data, textStatus, jqXHR) {
+                console.log("success");
+                console.log(rdf);
+                console.log(data);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
                 this.triggerMethod("utterance:refresh");
             }, this)).fail(function(jqXHR, textStatus, errorThrown) {
                 console.log("failure");
