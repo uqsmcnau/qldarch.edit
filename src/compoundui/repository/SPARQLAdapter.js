@@ -33,244 +33,7 @@ lore.ore.repos.SPARQLAdapter = Ext.extend(lore.ore.repos.RepositoryAdapter,{
         }
         lore.ore.repos.SPARQLAdapter.maskCount = 0;
         
-        if (isSearchQuery) {
-        	//lore.ore.reposAdapter.getBasicObjects(matchval);
-        	//lore.ore.reposAdapter.getBasicHuniObjects(matchval);
-        }
         lore.ore.reposAdapter.getResourceMapObjects(matchuri, matchpred, matchval, isSearchQuery);
-    },
-    getBasicObjects : function(matchval){            
-    	try {
-	    	if (matchval == null || matchval == "") {
-	    		return;
-	    	}
-	    	
-	    	var queryURL = "http://corbicula.huni.net.au/dataset/query?query=" 
-	    	queryURL += encodeURIComponent("SELECT distinct(?item as ?hit) ?name ?type ");
-	    	queryURL += encodeURIComponent("WHERE {");
-	    	queryURL += encodeURIComponent("{?item a ?type.");
-	    	queryURL += encodeURIComponent("?item (<http://xmlns.com/foaf/0.1/name>|<http://xmlns.com/foaf/0.1/firstName>|");
-	    	queryURL += encodeURIComponent("<http://xmlns.com/foaf/0.1/lastName>|<http://www.w3.org/2004/02/skos/core#prefLabel>) ?textValue. ");
-	    	queryURL += encodeURIComponent("FILTER(REGEX(?textValue, '" + matchval + "', 'i'))} ");
-	    	queryURL += encodeURIComponent("OPTIONAL {");
-	    	queryURL += encodeURIComponent("SELECT ?item (CONCAT(?fname, ' ', ?lname) AS ?name)");
-	    	queryURL += encodeURIComponent("WHERE {");
-	    	queryURL += encodeURIComponent("?item <http://xmlns.com/foaf/0.1/firstName> ?fname.");
-	    	queryURL += encodeURIComponent("?item <http://xmlns.com/foaf/0.1/lastName> ?lname.");
-	    	queryURL += encodeURIComponent("}");
-	    	queryURL += encodeURIComponent("GROUP BY ?item ?fname ?lname");
-	    	queryURL += encodeURIComponent("}");
-	    	queryURL += encodeURIComponent("OPTIONAL {?item <http://xmlns.com/foaf/0.1/name> ?name}");
-	    	queryURL += encodeURIComponent("OPTIONAL {?item <http://www.w3.org/2004/02/skos/core#prefLabel> ?name}");
-	    	queryURL += encodeURIComponent("}");
-		   	queryURL += "&output=xml";   
-		   	lore.debug.ore("SPARQLAdapter.getBasicObjects", queryURL);
-
-		   	if (lore.ore.repos.SPARQLAdapter.maskCount == 0) {
-			   	lore.ore.repos.SPARQLAdapter.mask.show();
-		   	}
-		   	lore.ore.repos.SPARQLAdapter.maskCount += 1;
-		   	
-	        Ext.Ajax.request({
-	    		url: queryURL,
-	            headers: {
-	                Accept: 'application/rdf+xml'
-	            },
-	            method: "GET",
-	            success: function (xhr) {
-	    		   	lore.ore.repos.SPARQLAdapter.maskCount += -1;
-	    		   	if (lore.ore.repos.SPARQLAdapter.maskCount <= 0) {
-	    			   	lore.ore.repos.SPARQLAdapter.mask.hide();
-	    		   	}
-	    		   	
-	            	var xmldoc = xhr.responseXML;
-	                var results = {};
-	                if (xmldoc) {
-	                    results = xmldoc.getElementsByTagNameNS(lore.constants.NAMESPACES["sparql"], "result");
-	                }
-	                
-	                if (results.length > 0){
-	                    var coList = [];
-	                    
-	                    for (var i = 0; i < results.length; i++) {                    	
-	                    	var bindings = results[i].getElementsByTagName("binding");
-	                    	
-	                    	var props = {};
-	                    	props.creator = "Corbicula";
-	                    	props.type = "";
-	                    	props.entryType = lore.constants.BASIC_OBJECT_TYPE;
-	                    	
-	                        for (var j = 0; j < bindings.length; j++){  
-		                         attr = bindings[j].getAttribute('name');
-		                         if (attr =='hit'){
-		                             var node = bindings[j].getElementsByTagName('uri'); 
-		                             props.uri = lore.util.safeGetFirstChildValue(node);
-		                         } else if (attr == 'type'){
-		                             var node = bindings[j].getElementsByTagName('uri'); 
-		                             var type = lore.util.safeGetFirstChildValue(node);
-
-		                             while (type.indexOf("/") != -1) {
-		                            	 type = type.substring(type.indexOf("/") + 1);
-	                            	 }
-		                             while (type.indexOf("_") != -1) {
-		                            	 type = type.substring(type.indexOf("_") + 1);
-	                            	 }
-		                             while (type.indexOf("#") != -1) {
-		                            	 type = type.substring(type.indexOf("#") + 1);
-	                            	 }
-		                             props.type = type;
-		                         } else if (attr == 'name'){
-		                             var node = bindings[j].getElementsByTagName('literal');
-		                             var nodeVal = lore.util.safeGetFirstChildValue(node);
-		                             if (!nodeVal){
-		                                 node = bindings[j].getElementsByTagName('uri');
-		                                 nodeVal = lore.util.safeGetFirstChildValue(node);
-		                             }
-		                             props.title = nodeVal;
-		                         } 
-	                        }
-	                        
-	                        coList.push(props);
-	                    }
-	                    lore.ore.coListManager.add(coList, "search");
-	                }
-                },
-                failure: function(response, opts) {
-	    		   	lore.ore.repos.SPARQLAdapter.maskCount += -1;
-	    		   	if (lore.ore.repos.SPARQLAdapter.maskCount <= 0) {
-	    			   	lore.ore.repos.SPARQLAdapter.mask.hide();
-	    		   	}
-	    		   	
-    	            lore.ore.ui.vp.warning("Unable to contact corbicula.");
-                	lore.debug.ore("Error: Unable to load URL " + opts.url, response);
-                }
-	        }); 
-	    } catch (e) {
-	        lore.debug.ore("Error: Unable to retrieve Resource Maps",e);
-	        lore.ore.ui.vp.warning("Unable to retrieve Resource Maps");
-	    }
-    },
-    getBasicHuniObjects : function(matchval){            
-    	try {
-	    	if (matchval == null || matchval == "") {
-	    		return;
-	    	}
-	    	
-	    	if (matchval.indexOf(" ") != -1) {
-	    		var split = matchval.split(" ");
-	    		matchval = "";
-	    		for (var i = 0; i < split.length; i++) {
-	    			matchval += split[i];
-	    			if (i < (split.length - 1)) {
-	    				matchval += "%20AND%20";
-	    			}
-	    		}
-	    	}
-	    	
-	    	var queryURL = "http://huni.esrc.unimelb.edu.au/solr/huni/select?q=(text:" 
-	    		+ matchval + "%20OR%20text_rev:" + matchval + ")&rows=999999&wt=json" 
-		   	lore.debug.ore("SPARQLAdapter.getBasicHuniObjects", queryURL);
-		   			    
-		   	if (lore.ore.repos.SPARQLAdapter.maskCount == 0) {
-			   	lore.ore.repos.SPARQLAdapter.mask.show();
-		   	}
-		   	lore.ore.repos.SPARQLAdapter.maskCount += 1;
-		    
-		    var xhr = new XMLHttpRequest();                
-		    xhr.overrideMimeType('text/xml');
-		    var oThis = this;
-		    xhr.open("GET", queryURL);
-		    xhr.onreadystatechange= function(){
-		        if (xhr.readyState == 4) {
-		   	
-	    		   	lore.ore.repos.SPARQLAdapter.maskCount += -1;
-	    		   	if (lore.ore.repos.SPARQLAdapter.maskCount <= 0) {
-	    			   	lore.ore.repos.SPARQLAdapter.mask.hide();
-	    		   	}
-	    		   	
-			    	var docs = xhr.responseXML.response.docs;
-		    		var coList = [];
-		    		var uris = [];
-		    		
-			    	for (var i = 0; i < docs.length; i++) {  
-		            	var props = {};
-		            	props.creator = "Huni";
-		            	props.type = "";
-		            	props.entryType = lore.constants.HUNI_OBJECT_TYPE;
-		            	
-		            	var doc = docs[i];
-		            	if (doc.type) {
-		            		props.type = doc.type;
-		            	}
-		            	
-		            	if (doc.prov_source) {
-		            		props.uri = doc.prov_source;
-		            	}
-		            	
-		            	if (doc.name) {
-		            		props.title = doc.name;
-		            	} else if (doc.title) {
-		            		props.title = doc.title[0];
-		            	} else if (doc.family_name && doc.given_name) {
-		            		props.title = doc.given_name + " " + doc.family_name;
-		            	} else if (doc.family_name) {
-		            		props.title = doc.family_name;
-		            	} else if (doc.given_name) {
-		            		props.title = doc.given_name;
-		            	}
-		            	
-		            	if (doc.description) {
-		            		props.description = doc.description[0];
-		            	} else if (doc.bio) {
-		            		props.description = doc.bio;
-		            	}
-		            	
-		            	if (props.description) {
-	            			props.description = Ext.util.Format.ellipsis(props.description, 100);
-	            			
-	            			while(props.description.indexOf("\n") != -1) {
-	    	            		props.description = props.description.replace("\n","");
-	            			}
-	            			while(props.description.indexOf("\r") != -1) {
-	    	            		props.description = props.description.replace("\r","");            				
-	            			}
-	            			
-	            			if (props.description.toUpperCase() == "NONE") {
-	            				props.description = null;
-	            			}
-		            	}
-		            	
-		            	if (doc.latitude) {
-		            		props.latitude = doc.latitude;
-		            	}
-		            	if (doc.longitude) {
-		            		props.longitude = doc.longitude;
-		            	}
-		            	if (doc.date_begin) {
-		            		props.date_begin = doc.date_begin;
-		            	}
-		            	if (doc.date_end) {
-		            		props.date_end = doc.date_end;
-		            	}
-		            	
-		            	if (doc.prov_short) {
-		            		props.creator = doc.prov_short;
-		            	}
-		            	
-		            	if (props.uri && (uris.indexOf(props.uri) == -1)) {
-		            		coList.push(props);
-		            		uris.push(props.uri);
-		            	}
-			    	}
-	                lore.ore.coListManager.add(coList, "search");
-		        }
-		    };
-		    xhr.send(null);
-	        
-	    } catch (e) {
-	        lore.debug.ore("Error: Unable to retrieve Resource Maps",e);
-	        lore.ore.ui.vp.warning("Unable to retrieve Resource Maps");
-	    }
     },
     getResourceMapObjects : function(matchuri, matchpred, matchval, isSearchQuery){ 
     	try {
@@ -293,7 +56,7 @@ lore.ore.repos.SPARQLAdapter = Ext.extend(lore.ore.repos.RepositoryAdapter,{
 	   	   		}
 	   	   	}
 	       	
-	       	var queryURL = this.reposURL + "/query?query=";
+	       	var queryURL = this.reposURL + "?query=";
 	  	   	queryURL += encodeURIComponent("SELECT DISTINCT ?g ?a ?m ?t ?priv ");
 	   	   	queryURL += encodeURIComponent("WHERE { GRAPH ?g {");
 	   	   	queryURL += encodeURIComponent("?g <http://www.openarchives.org/ore/terms/describes> ?r.");
@@ -336,6 +99,7 @@ lore.ore.repos.SPARQLAdapter = Ext.extend(lore.ore.repos.RepositoryAdapter,{
 	        xhr.overrideMimeType('text/xml');
 	        var oThis = this;
 	        xhr.open("GET", queryURL);
+	        xhr.setRequestHeader("Accept","application/sparql-results+xml");    
 	        xhr.onreadystatechange= function(){
 	            if (xhr.readyState == 4) {
 		    	
@@ -428,7 +192,7 @@ lore.ore.repos.SPARQLAdapter = Ext.extend(lore.ore.repos.RepositoryAdapter,{
         xhr.overrideMimeType('text/xml');
         var oThis = this;
         xhr.open("PUT", this.reposURL + this.graphStoreEndPoint + "?graph=" + remid);
-        xhr.setRequestHeader("Content-type","application/turtle");
+        xhr.setRequestHeader("Content-type","application/x-turtle");
         xhr.onreadystatechange= function(){
             if (xhr.readyState == 4) {
                 lore.debug.ore("lorestore: RDF saved");
@@ -489,7 +253,7 @@ lore.ore.repos.SPARQLAdapter = Ext.extend(lore.ore.repos.RepositoryAdapter,{
     getExploreData : function(uri,title,isCompoundObject, callback){
         var eid = uri.replace(/&amp;/g,'&').replace(/&amp;/g,'&');
         try {            
-            var queryURL = this.reposURL + "/query?query=";
+            var queryURL = this.reposURL + "?query=";
  		    queryURL += encodeURIComponent("SELECT DISTINCT ?something ?somerel ?sometitle ?sometype ?creator ?modified ?anotherrel ?somethingelse ");
  		    queryURL += encodeURIComponent("WHERE {");
  		    queryURL += encodeURIComponent("{GRAPH ?g {?aggre <http://www.openarchives.org/ore/terms/aggregates> <" + uri + "> . ");
@@ -560,7 +324,7 @@ lore.ore.repos.SPARQLAdapter = Ext.extend(lore.ore.repos.RepositoryAdapter,{
     },
     
     generateID : function() {
-    	return this.graphNamePrefix + lore.draw2d.UUID.create();
+    	return this.graphNamePrefix + "/" + lore.draw2d.UUID.create();
     },
     /**
     * Parses Resource Map details from a SPARQL XML result

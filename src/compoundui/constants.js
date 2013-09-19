@@ -14,10 +14,10 @@ lore.constants = {
 	 // The url of the SPARQL repository
 	 repositoryBaseURL: "/openrdf-sesame",
 	 // The suffix for the graphstore endpoint on the SPARQL repository
-	 repositoryGraphStoreEndPoint: "/data",
+	 repositoryGraphStoreEndPoint: "/rdf-graphs/service",
 	 // The url prefix for triples in the repository
 	 // Is generally repositoryBaseURL + repositoryGraphStoreEndPoint
-	 repositoryGraphNamePrefix: "http://localhost/op/data/",
+	 repositoryGraphNamePrefix: "/openrdf-sesame",
 
 	 /*baseUrl: "http://115.146.93.139/virtual_lab/toolLibrary/annotation/lore-test-2/", 	 
 	 repositoryBaseURL: "http://corbicula.huni.net.au/dataset",
