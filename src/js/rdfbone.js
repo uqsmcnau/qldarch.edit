@@ -41,7 +41,6 @@
 
     });
 
-    // This should probably be a sub-class rather than sub-type of Collection.
     var RDFGraph = Backbone.Collection.extend({
         model: RDFDescription,
 
@@ -72,7 +71,8 @@
 
     _.extend(SubCollection.prototype, Collection.prototype, {
         _doReset : function _doReset(collection, options) {
-            this.reset(collection.filter(this.predicate), options);
+            var col = collection.filter(this.predicate);
+            this.reset(col, options);
         },
 
         _doAdd : function _doAdd(model, collection, options) {
@@ -81,13 +81,13 @@
             //  left of 'at', and adjusting the 'at' option passed thru to compensate.
             //  Of course, this will only be necessary if tracksort=true is used.
             if (this.predicate(model)) {
-                this.add(model, options);
+                this.add(model, {});
             }
         },
 
         _doRemove : function _doRemove(model, collection, options) {
             if (this.predicate(model)) {
-                this.remove(model, _.omit(options, 'index'));
+                this.remove(model, {});
             }
         },
 

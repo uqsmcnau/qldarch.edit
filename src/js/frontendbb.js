@@ -48,6 +48,7 @@ var frontend = (function() {
     var JSON_ROOT = "/ws/rest/";
     var QA_DISPLAY = "http://qldarch.net/ns/rdf/2012-06/terms#display";
     var QA_LABEL = "http://qldarch.net/ns/rdf/2012-06/terms#label";
+    var QA_SINGULAR = "http://qldarch.net/ns/rdf/2012-06/terms#singular";
     var QA_EDITABLE = "http://qldarch.net/ns/rdf/2012-06/terms#editable";
     var QA_SYSTEM_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#systemLocation";
     var QA_EXTERNAL_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#externalLocation";
@@ -62,13 +63,33 @@ var frontend = (function() {
     var QA_DEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#definiteMapIcon";
     var QA_INDEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#indefiniteMapIcon";
 
+    var QA_REFERENCES = "http://qldarch.net/ns/rdf/2012-06/terms#references";
+    var QA_REGION_START = "http://qldarch.net/ns/rdf/2012-06/terms#regionStart";
+    var QA_REGION_END = "http://qldarch.net/ns/rdf/2012-06/terms#regionEnd";
+    var QA_SUBJECT = "http://qldarch.net/ns/rdf/2012-06/terms#subject";
+    var QA_PREDICATE = "http://qldarch.net/ns/rdf/2012-06/terms#predicate";
+    var QA_OBJECT = "http://qldarch.net/ns/rdf/2012-06/terms#object";
+    var QA_IMPLIES_RELATIONSHIP = "http://qldarch.net/ns/rdf/2012-06/terms#impliesRelationship";
+    var QA_START_DATE = "http://qldarch.net/ns/rdf/2012-06/terms#startDate";
+    var QA_END_DATE = "http://qldarch.net/ns/rdf/2012-06/terms#endDate";
+    var QA_EVIDENCE = "http://qldarch.net/ns/rdf/2012-06/terms#evidence";
+    var QA_EVIDENCE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Evidence";
+    var QA_TIME_FROM = "http://qldarch.net/ns/rdf/2012-06/terms#timeFrom";
+    var QA_TIME_TO = "http://qldarch.net/ns/rdf/2012-06/terms#timeTo";
+    var QA_DOCUMENTED_BY = "http://qldarch.net/ns/rdf/2012-06/terms#documentedBy";
 
     var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
     var OWL_OBJECT_PROPERTY = "http://www.w3.org/2002/07/owl#ObjectProperty";
     var RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
+    var RDF_SUBJECT = "http://www.w3.org/1999/02/22-rdf-syntax-ns#subject";
+    var RDF_PREDICATE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate";
+    var RDF_OBJECT = "http://www.w3.org/1999/02/22-rdf-syntax-ns#object";
     var RDFS_SUBCLASS_OF = "http://www.w3.org/2000/01/rdf-schema#subClassOf";
+    var RDFS_DOMAIN = "http://www.w3.org/2000/01/rdf-schema#domain";
+    var RDFS_RANGE = "http://www.w3.org/2000/01/rdf-schema#range";
     var RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
 
+    var QA_REFERENCE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#ReferenceRelation";
     var QA_INTERVIEW_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Interview";
     var QA_TRANSCRIPT_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Transcript";
     var QA_ARTICLE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Article";
@@ -85,6 +106,11 @@ var frontend = (function() {
 
     var GEO_LAT = "http://www.w3.org/2003/01/geo/wgs84_pos#lat";
     var GEO_LONG = "http://www.w3.org/2003/01/geo/wgs84_pos#long";
+
+    var WORD_SEPARATORS = /[\s\u3031-\u3035\u309b\u309c\u30a0\u30fc\uff70]+/g;
+    var PUNCTUATION = /[!"&()*+,-\.\/:;<=>?\[\\\]^`\{|\}~–’]+/g;
+    // NOTE: ' is stripped out by PUNCTUATION before comparison against STOP_WORDS
+    var STOP_WORDS = /^(jm|dm|aw|jg|dv|bw|yeah|yes|nw|oh|okay|well|quite|let|just|still|bit|lot|got|get|ive|im|id|i|me|my|myself|we|us|our|ours|ourselves|you|your|yours|yourself|yourselves|he|him|his|himself|she|her|hers|herself|it|its|itself|they|them|their|theirs|themselves|what|which|who|whom|whose|this|that|these|those|am|is|are|was|were|be|been|being|have|has|had|having|do|does|did|doing|will|would|should|can|could|ought|im|youre|hes|shes|its|were|theyre|ive|youve|weve|theyve|id|youd|hed|shed|wed|theyd|ill|youll|hell|shell|well|theyll|isnt|arent|wasnt|werent|hasnt|havent|hadnt|doesnt|dont|didnt|wont|wouldnt|shant|shouldnt|cant|cannot|couldnt|mustnt|lets|thats|whos|whats|heres|theres|whens|wheres|whys|hows|a|an|the|and|but|if|or|because|as|until|while|of|at|by|for|with|about|against|between|into|through|during|before|after|above|below|to|from|up|upon|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|say|says|said|shall|think|i|know|thanks|one)$/;
 
     var SPINNER_GIF = "img/spinner.gif";
     var MAX_PRECEDENCE = 1000000;
@@ -1803,7 +1829,7 @@ var frontend = (function() {
         template: "#contentpanetabsTemplate",
 
         triggers: {
-            "click " : "display:toggle",
+            "click" : "display:toggle",
         },
 
         serializeData: function() {
@@ -1879,6 +1905,7 @@ var frontend = (function() {
         },
 
         onRender: function() {
+            // FIXME: Call this.bindUIElements() and this.delegateEvents() here.
             this.listenTo(this.model, "change:state", this.setTab);
             this.summaryView = new EntitySummaryView({
                     entitySearchModel: this.entitySearchModel,
@@ -2141,6 +2168,7 @@ var frontend = (function() {
         },
     });
 
+
     var TranscriptGraphView = Backbone.Marionette.CompositeView.extend({
         className: "transcriptgraph",
         template: "#transcriptgraphTemplate",
@@ -2151,7 +2179,7 @@ var frontend = (function() {
         
         onShow: function() {
         	this.parseText($(".transcript").text());
-            var words = this.tags.slice(0, Math.min(this.tags.length, 50))
+            var words = this.tags.slice(0, Math.min(this.tags.length, 50));
             
         	var margin = {top: 20, right: 20, bottom: 60, left: 40},
 	            width = 500 - margin.left - margin.right,
@@ -2229,17 +2257,13 @@ var frontend = (function() {
         			speakers.push(speaker);
         		}
         	});
-        	
-            var wordSeparators = /[\s\u3031-\u3035\u309b\u309c\u30a0\u30fc\uff70]+/g;
-            var punctuation = /[!"&()*+,-\.\/:;<=>?\[\\\]^`\{|\}~]+/g;
-            var stopWords = /^(jm|dm|aw|jg|dv|bw|yeah|yes|nw|oh|okay|well|quite|let|just|still|bit|lot|got|get|ive|im|id|i|me|my|myself|we|us|our|ours|ourselves|you|your|yours|yourself|yourselves|he|him|his|himself|she|her|hers|herself|it|its|itself|they|them|their|theirs|themselves|what|which|who|whom|whose|this|that|these|those|am|is|are|was|were|be|been|being|have|has|had|having|do|does|did|doing|will|would|should|can|could|ought|i'm|you're|he's|she's|it's|we're|they're|i've|you've|we've|they've|i'd|you'd|he'd|she'd|we'd|they'd|i'll|you'll|he'll|she'll|we'll|they'll|isn't|aren't|wasn't|weren't|hasn't|haven't|hadn't|doesn't|don't|didn't|won't|wouldn't|shan't|shouldn't|can't|cannot|couldn't|mustn't|let's|that's|who's|what's|here's|there's|when's|where's|why's|how's|a|an|the|and|but|if|or|because|as|until|while|of|at|by|for|with|about|against|between|into|through|during|before|after|above|below|to|from|up|upon|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|say|says|said|shall)$/;
         	            	
             var tags = {};
         	var cases = {};
-        	text.split(wordSeparators).forEach(function(word) {
-        		word = word.replace(punctuation, "");
+        	text.split(WORD_SEPARATORS).forEach(function(word) {
+        		word = word.replace(PUNCTUATION, "");
         		word = word.replace(" ", "");
-        		if (stopWords.test(word.toLowerCase())) return;
+        		if (STOP_WORDS.test(word.toLowerCase())) return;
         		if (speakers.indexOf(word.toLowerCase()) != -1) return;
         		if (word == "") return;
         		word = word.substr(0, 40);
@@ -2326,16 +2350,12 @@ var frontend = (function() {
         		}
         	});
         	
-            var wordSeparators = /[\s\u3031-\u3035\u309b\u309c\u30a0\u30fc\uff70]+/g;
-            var punctuation = /[!"&()*+,-\.\/:;<=>?\[\\\]^`\{|\}~]+/g;
-            var stopWords = /^(jm|dm|aw|jg|dv|bw|yeah|yes|nw|oh|okay|well|quite|let|just|still|bit|lot|got|get|ive|im|id|i|me|my|myself|we|us|our|ours|ourselves|you|your|yours|yourself|yourselves|he|him|his|himself|she|her|hers|herself|it|its|itself|they|them|their|theirs|themselves|what|which|who|whom|whose|this|that|these|those|am|is|are|was|were|be|been|being|have|has|had|having|do|does|did|doing|will|would|should|can|could|ought|i'm|you're|he's|she's|it's|we're|they're|i've|you've|we've|they've|i'd|you'd|he'd|she'd|we'd|they'd|i'll|you'll|he'll|she'll|we'll|they'll|isn't|aren't|wasn't|weren't|hasn't|haven't|hadn't|doesn't|don't|didn't|won't|wouldn't|shan't|shouldn't|can't|cannot|couldn't|mustn't|let's|that's|who's|what's|here's|there's|when's|where's|why's|how's|a|an|the|and|but|if|or|because|as|until|while|of|at|by|for|with|about|against|between|into|through|during|before|after|above|below|to|from|up|upon|down|in|out|on|off|over|under|again|further|then|once|here|there|when|where|why|how|all|any|both|each|few|more|most|other|some|such|no|nor|not|only|own|same|so|than|too|very|say|says|said|shall)$/;
-        	            	
             var tags = {};
         	var cases = {};
-        	text.split(wordSeparators).forEach(function(word) {
-        		word = word.replace(punctuation, "");
+        	text.split(WORD_SEPARATORS).forEach(function(word) {
+        		word = word.replace(PUNCTUATION, "");
         		word = word.replace(" ", "");
-        		if (stopWords.test(word.toLowerCase())) return;
+        		if (STOP_WORDS.test(word.toLowerCase())) return;
         		if (speakers.indexOf(word.toLowerCase()) != -1) return;
         		if (word == "") return;
         		word = word.substr(0, 40);
@@ -2495,13 +2515,14 @@ var frontend = (function() {
                 var curr = transcript.exchanges[i];
                 var next = transcript.exchanges[i+1];
 
-                var start = Math.max(0.5, Popcorn.util.toSeconds(curr.time)) - 0.5;
-                var end = next ? Popcorn.util.toSeconds(next.time) - 0.5 : NaN;
+                var start = Popcorn.util.toSeconds(curr.time);
+                var end = next ? Popcorn.util.toSeconds(next.time) : NaN;
 
                 exchanges.push({
                     speaker: curr.speaker,
                     transcript: curr.transcript,
                     time: curr.time,
+                    next: next ? next.time : NaN,
                     start: start,
                     end: end,
                 });
@@ -2603,9 +2624,12 @@ var frontend = (function() {
             var popcorn = this.popcornModel.get('popcorn');
             if (!popcorn) return;
 
+            var start = Math.max(0.5, this.model.get('start')) - 0.5;
+            var end = this.model.get('end') ? this.model.get('end') - 0.5 : popcorn.duration();
+
             this.popcornInterval = {
-                start: this.model.get('start'),
-                end: this.model.get('end') || popcorn.duration(),
+                start: start,
+                end: end,
                 onStart: _.bind(this.showSubtitle, this),
                 onEnd: _.bind(this.hideSubtitle, this),
             };
@@ -2623,6 +2647,8 @@ var frontend = (function() {
             container.scrollTo(this.$el, "fast", {
                 offset: { top: -10 },
             });
+
+            this.triggerMethod("utterance:active", this.model);
         },
 
         hideSubtitle: function() {
@@ -2646,7 +2672,6 @@ var frontend = (function() {
                 }
             }
         },
-
     });
 
     var TranscriptPaneTabs = Backbone.Marionette.ItemView.extend({
@@ -2780,6 +2805,12 @@ var frontend = (function() {
         },
 
         onDomRefresh: function() {
+            var old = this.popcornModel.get('popcorn');
+            if (old) {
+                old.destroy();
+                this.popcornModel.set('popcorn', undefined);
+            }
+
             var popcorn = Popcorn("#" + this.model.get('audiocontrolid'));
             this.popcornModel.set('popcorn', popcorn);
 
@@ -2789,6 +2820,704 @@ var frontend = (function() {
                 var start = Math.max(0.5, Popcorn.util.toSeconds(this.offset)) - 0.5;
                 _.delay(function() { popcorn.currentTime(start); }, 2000);
             }
+        },
+
+        onClose: function() {
+            var old = this.popcornModel.get('popcorn');
+            if (old) {
+                old.destroy();
+                this.popcornModel.set('popcorn', undefined);
+            }
+        },
+
+        doPause: function() {
+            var popcorn = this.popcornModel.get('popcorn');
+            if (popcorn) {
+                popcorn.pause();
+            }
+        },
+
+        doPlay: function() {
+            var popcorn = this.popcornModel.get('popcorn');
+            if (popcorn) {
+                popcorn.play();
+            }
+        },
+
+        onItemviewUtteranceActive: function(childView, model) {
+            this.triggerMethod("utterance:active", model);
+        },
+
+        getDuration: function() {
+            var popcorn = this.popcornModel.get('popcorn');
+            if (popcorn) {
+                return popcorn.duration();
+            }
+        },
+    });
+
+    var UnimplementedTranscriptTabView = Backbone.Marionette.ItemView.extend({
+        className: "unimplemented",
+        template: "#infopanelTemplate",
+
+        serializeData: function() {
+            return {
+                message: this.state + " Tab unimplemented",
+            };
+        },
+
+        initialize: function(options) {
+            this.state = _.checkarg(options.state).throwNoArg("options.state");
+        },
+    });
+
+    // FIXME: Unify with EntityContentPaneTabs as there are only two lines difference
+    var TranscriptTabsView = Backbone.Marionette.ItemView.extend({
+        className: "transcripttabs",
+        template: "#transcripttabsTemplate",
+
+        serializeData: function() {
+            return {};
+        },
+
+        events: {
+            "click span"   : "_selecttab"
+        },
+
+        _selecttab: function(event) {
+            var newState = $(event.target).attr("type");
+            this.triggerMethod("select:tab", newState);
+            this.$(".tab.selected").removeClass("selected");
+            $(event.target).addClass("selected");
+        },
+    });
+
+    var EntitySelectionModel = Backbone.Model.extend({
+        defaults: {
+            enabled: false,
+            selection: undefined,
+        },
+    });
+
+    var EntitySelectionView = Backbone.Marionette.ItemView.extend({
+        tagName: "span",
+        className: "entityselection",
+        template: "#entityselectionTemplate",
+
+        ui: {
+            typeselect: "select[name='entitytype']",
+            entityselect: "select[name='entity']",
+            addentity: "button",
+        },
+
+        triggers: {
+            "click .addentity" : "add:entity",
+            "change select[name='entitytype']" : "select:type",
+            "change select[name='entity']" : "select:entity",
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        initialize: function(options) {
+            this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.optionTemplate = _.checkarg(_.template($("#optionTemplate").html()))
+                .throwNoArg("optionTemplate");
+
+            this.model = new EntitySelectionModel();
+
+            this.editableNouns = new SubCollection(this.proper, {
+                name: "Editable entity types",
+                tracksort: false,
+                predicate: function(model) {
+                        return _(model.geta(QA_EDITABLE)).contains(true);
+                    },
+                comparator: QA_DISPLAY_PRECEDENCE,
+            });
+
+            this.entityLists = this.editableNouns.reduce(function(memo, type) {
+                memo[type.id] = new SubCollection(this.entities, {
+                    name: "EntityList: " + type.id,
+                    tracksort: false,
+                    predicate: function(model) {
+                            return _(model.geta(RDF_TYPE)).contains(type.id);
+                        },
+                    comparator: QA_LABEL,
+                });
+
+                return memo;
+            }, {}, this);
+        },
+
+        onRender: function() {
+            this.displayTypeOptions();
+            this.displayEntityOptions();
+            this.displayAddEntityEnabled();
+            this.listenTo(this.model, "change:enabled", this.displayAddEntityEnabled);
+            this.listenTo(this.editableNouns, "all", this.displayTypeOptions);
+        },
+
+        onSelectType: function() {
+            this.displayEntityOptions();
+        },
+
+        displayTypeOptions: function() {
+            this.ui.typeselect.empty();
+            this.editableNouns.each(function(p) {
+                var label = p.get1(QA_SINGULAR) || p.get1(QA_LABEL) || "No label provided";
+                this.ui.typeselect.append(this.optionTemplate({
+                    value: p.id,
+                    label: label,
+                }));
+            }, this);
+        },
+
+        displayEntityOptions: function() {
+            this.ui.entityselect.empty();
+            var selection = this.ui.typeselect.val();
+            if (this.entityLists[selection]) {
+                this.entityLists[selection].each(function(p) {
+                    var label = p.get1(QA_SINGULAR) || p.get1(QA_LABEL) || "No label provided";
+                    this.ui.entityselect.append(this.optionTemplate({
+                        value: p.id,
+                        label: label,
+                    }));
+                }, this);
+                this.onSelectEntity();
+            } else {
+                console.log("Error: Cannot find entities matching: " + selection);
+            }
+        },
+
+        displayAddEntityEnabled: function() {
+            this.ui.addentity.prop('disabled', !this.model.get('enabled'));
+        },
+
+        onAddEntity: function() {
+        },
+
+        onSelectEntity: function() {
+            var selection = this.ui.entityselect.val();
+            var type = this.ui.typeselect.val();
+            this.model.set('selection', selection);
+            this.triggerMethod("selection:changed", selection, type);
+        },
+
+        getCurrentSelection: function() {
+            return this.model.get('selection');
+        }
+    });
+
+    var SimpleAnnotationView = Backbone.Marionette.Layout.extend({
+        className: "simpleannotationpane",
+        template: "#simpleannotationTemplate",
+
+        regions: {
+            entityselection: ".entityselection",
+        },
+
+        triggers: {
+            "click .addrefersto" : "add:refersTo",
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        initialize: function(options) {
+            this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+        },
+
+        onRender: function() {
+            this.entityView = new EntitySelectionView({
+                proper: this.proper,
+                entities: this.entities,
+            });
+            this.listenTo(this.entityView, "selection:changed", this.setSelection);
+            this.entityselection.show(this.entityView);
+        },
+
+        setSelection: function(selection) {
+            this.selectionURI = selection;
+        },
+
+        onAddRefersTo: function() {
+            if (this.selectionURI) {
+                var entity = this.entities.get(this.selectionURI);
+                this.triggerMethod("simple:add", entity);
+            } else {
+                console.log("No entity selected");
+            }
+        },
+    });
+
+    var FullAnnotationView = Backbone.Marionette.Layout.extend({
+        className: "fullannotationpane",
+        template: "#fullannotationTemplate",
+
+        regions: {
+            subject: ".subjectselection",
+            object: ".objectselection",
+        },
+
+        ui: {
+            relselect: "select[name='relationship']",
+            fromdate: "input[name='fromdate']",
+            todate: "input[name='todate']",
+        },
+
+        triggers: {
+            "click .addrefersto" : "add:refersTo",
+            "change select[name='relationship']" : "select:rel",
+        },
+
+        events: {
+            "keyup input.date"   : "onSetDate",
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        initialize: function(options) {
+            this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.relationships = _.checkarg(options.relationships)
+                .throwNoArg("options.relationships");
+            this.displayedEntities = _.checkarg(options.displayedEntities)
+                .throwNoArg("options.displayedEntities");
+
+            this.optionTemplate = _.checkarg(_.template($("#optionTemplate").html()))
+                .throwNoArg("optionTemplate");
+
+            this.datePattern = /^\d\d\d\d(-\d\d){0,2}$/;
+            this.dates = {
+                fromdate: undefined,
+                todate: undefined,
+            };
+        },
+        
+        onRender: function() {
+            this.subjectView = new EntitySelectionView({
+                proper: this.proper,
+                entities: this.entities,
+            });
+            this.listenTo(this.subjectView, "selection:changed", this.setSubject);
+            this.subject.show(this.subjectView);
+
+            this.objectView = new EntitySelectionView({
+                proper: this.proper,
+                entities: this.entities,
+            });
+            this.listenTo(this.objectView, "selection:changed", this.setObject);
+            this.object.show(this.objectView);
+
+            _.defer(_.bind(this.displayRelationships, this));
+        },
+
+        displayRelationships: function() {
+            this.ui.relselect.empty();
+            this.relationships.each(function(rel) {
+                var pURI = rel.get1(QA_IMPLIES_RELATIONSHIP);
+                if (!pURI) {
+                    console.log("no pURI");
+                    console.log(rel);
+                    return;
+                }
+                var p = this.properties.get(pURI);
+                if (!p) {
+                    console.log("no p");
+                    console.log(pURI);
+                    return;
+                }
+                var domain = p.geta(RDFS_DOMAIN);
+                if (!domain) {
+                    console.log("no domain");
+                    console.log(p);
+                    return;
+                }
+                var range = p.geta(RDFS_RANGE);
+                if (!range) {
+                    console.log("no range");
+                    console.log(p);
+                    return;
+                }
+                var sEntity = this.displayedEntities.get(this.subjectType);
+                if (!sEntity) {
+                    console.log("no sEntity");
+                    console.log(this.subjectType);
+                    return;
+                }
+                var sTypes = sEntity.geta(RDFS_SUBCLASS_OF);
+                var oEntity = this.displayedEntities.get(this.objectType);
+                if (!oEntity) {
+                    console.log("no oEntity");
+                    console.log(this.objectType);
+                    return;
+                }
+                var oTypes = oEntity.geta(RDFS_SUBCLASS_OF);
+
+                if (_.isEmpty(_.intersection(domain, sTypes))) return;
+                if (_.isEmpty(_.intersection(range, oTypes))) return;
+
+                var label = p.get1(QA_SINGULAR) || p.get1(QA_LABEL) || 
+                    rel.get1(QA_SINGULAR) || rel.get1(QA_LABEL) || "No label provided";
+
+                this.ui.relselect.append(this.optionTemplate({
+                    value: rel.id,
+                    label: label,
+                }));
+            }, this);
+
+            this.onSelectRel();
+        },
+
+        setSubject: function(selection, type) {
+            this.subjectURI = selection;
+            this.subjectType = type;
+            this.displayRelationships();
+        },
+
+        setObject: function(selection, type) {
+            this.objectURI = selection;
+            this.objectType = type;
+            this.displayRelationships();
+        },
+
+        onSetDate: function(event) {
+            var dateName = $(event.target).attr("name");
+            var dateStr = $(event.target).val().trim();
+
+            if (dateStr.length == 0) {
+                this.dates[dateName] = undefined;
+            } else if (this.datePattern.test(dateStr)) {
+                this.dates[dateName] = dateStr;
+            } else {
+                this.dates[dateName] = null;
+            }
+        },
+
+        onSelectRel: function() {
+            this.predicateURI = this.ui.relselect.val();
+        },
+
+        onAddRefersTo: function() {
+            var minimal = true;
+            if (!this.subjectURI) {
+                console.log("No subject specified");
+                minimal = false;
+            }
+            if (!this.predicateURI) {
+                console.log("No predicate specified");
+                minimal = false;
+            }
+            if (!this.objectURI) {
+                console.log("No object specified");
+                minimal = false;
+            }
+            if (minimal) {
+                var valid = true;
+                console.log(this.dates.fromdate);
+                if (_.isNull(this.dates.fromdate)) {
+                    console.log("From date invalid");
+                    valid = false;
+                }
+                console.log(this.dates.todate);
+                if (_.isNull(this.dates.todate)) {
+                    console.log("To date invalid");
+                    valid = false;
+                }
+                if (!valid) return;
+
+                var rel = {
+                    subjectURI: this.subjectURI,
+                    predicateURI: this.predicateURI,
+                    objectURI: this.objectURI,
+                    fromDate: this.dates.fromdate,
+                    toDate: this.dates.todate,
+                };
+
+                console.log("Valid relationship identified");
+                console.log(rel);
+                this.triggerMethod("full:add", rel);
+            }
+        },
+    });
+
+    var AnnotationRowView = Backbone.Marionette.ItemView.extend({
+        tagName: "tr",
+        template: "#annotationrowTemplate",
+
+        serializeData: function() {
+            var subject = this.model.get1(QA_SUBJECT);
+            var predicate = this.model.get1(QA_PREDICATE);
+            var object = this.model.get1(QA_OBJECT);
+
+            var contentDescription = this.contentDescriptionSource.get('contentDescription');
+
+            var subjectEntity = this.entities.get(subject);
+            var subjectLabel = "Unrecognised subject";
+            if (subjectEntity) {
+                subjectLabel = subjectEntity.get(QA_LABEL) || "Unnamed subject";
+            } else if (contentDescription && subject.lastIndexOf(contentDescription.id, 0) === 0) {
+                // Note: lastIndexOf(str, 0) is javascript for startsWith(str)
+                subjectLabel = "This point in the interview";
+            }
+
+            var predicateEntity = this.properties.get(predicate);
+            var predicateLabel = "Has unrecognised relationship to";
+            if (predicateEntity) {
+                predicateLabel = predicateEntity.get(QA_LABEL) || "Unnamed relationship to";
+            }
+
+            var objectEntity = this.entities.get(object);
+            var objectLabel = "Unrecognised object";
+            if (objectEntity) {
+                objectLabel = objectEntity.get(QA_LABEL) || "Unnamed object";
+            }
+
+            return {
+                subject: subjectLabel,
+                relationship: predicateLabel,
+                object: objectLabel,
+            };
+        },
+
+        initialize: function(options) {
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
+        },
+    });
+
+    var AnnotationCollectionModel = Backbone.Model.extend({
+        defaults: {
+            url: undefined,
+        },
+
+        initialize: function(attrs, options) {
+            this.utteranceEventSrc = _.checkarg(options.utteranceEventSrc)
+                .throwNoArg("options.utteranceEventSrc");
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
+
+            this.listenTo(this.utteranceEventSrc, "utterance:active", this.handleUtterance);
+            this.listenTo(this.contentDescriptionSource, "change", this.handleContent);
+
+            this.start = 0;
+            this.end = 30;
+
+            this.handleContent();
+        },
+
+        handleUtterance: function(utterance) {
+            this.start = utterance.get('start');
+            this.end = utterance.get('end');
+            this._setURL();
+        },
+
+        handleContent: function() {
+            this.contentDescription = this.contentDescriptionSource.get('contentDescription');
+            this._setURL();
+        },
+
+        _setURL: function() {
+            var url = (this.start && this.end && this.contentDescription) ?
+                JSON_ROOT + 'annotation?' + $.param({
+                    RESOURCE: this.contentDescription.id,
+                    TIME: this.start + 0.01,
+                    DURATION: this.end - this.start - 0.02,
+                }) : undefined;
+
+            this.set('url', url);
+        },
+    });
+
+    var AnnotationCollection = Backbone.RDFGraph.extend({
+        initialize: function(attributes, options) {
+            this.utteranceEventSrc = _.checkarg(options.utteranceEventSrc)
+                .throwNoArg("options.utteranceEventSrc");
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
+
+            var _setURL = _.throttle(_.bind(this.__setURL, this), 3000);
+
+            this.internalModel = new AnnotationCollectionModel({}, {
+                utteranceEventSrc: this.utteranceEventSrc,
+                contentDescriptionSource: this.contentDescriptionSource,
+            });
+
+            this.listenTo(this.internalModel, "change:url", _setURL);
+            this.listenTo(this.utteranceEventSrc, "utterance:refresh", this.fetch)
+        },
+
+        __setURL: function() {
+            this.url = this.internalModel.get('url');
+            this.fetch();
+        },
+        
+        fetch: function(options) {
+            if (_.isUndefined(this.url)) {
+                this.reset({});
+            } else {
+                Backbone.Collection.prototype.fetch.apply(this, arguments);
+            }
+        }
+    });
+
+    var AnnotationsTableView = Backbone.Marionette.CompositeView.extend({
+        className: "annotations",
+        template: "#annotationstableTemplate",
+
+        itemViewContainer: "tbody",
+        itemView: AnnotationRowView,
+        itemViewOptions: function() {
+            return {
+                properties: this.properties,
+                entities: this.entities,
+                contentDescriptionSource: this.contentDescriptionSource,
+            };
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        initialize: function(options) {
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
+            this.utteranceEventSrc = _.checkarg(options.utteranceEventSrc).throwNoArg("options.utteranceEventSrc");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            var relationships = this.relationships = _.checkarg(options.relationships)
+                .throwNoArg("options.relationships");
+
+            this.annotations = new AnnotationCollection([], {
+                contentDescriptionSource: this.contentDescriptionSource,
+                utteranceEventSrc: this.utteranceEventSrc,
+                properties: this.properties,
+            });
+
+            this.collection = new SubCollection(this.annotations, {
+                name: "Relationships",
+                tracksort: false,
+                predicate: function(model) {
+                        console.log("In predicate");
+                        console.log(relationships);
+                        console.log(model);
+                        var result = relationships.any(function(rel) {
+//                            console.log("In any");
+//                            console.log(rel);
+//                            console.log(model);
+//                            console.log(RDF_TYPE);
+                            var result = !_.isEmpty(_.intersection(
+                                    rel.geta(RDFS_SUBCLASS_OF), model.geta(RDF_TYPE)));
+//                            console.log(result);
+                            return result;
+                        });
+
+                        console.log("Predicate returns: " + result);
+                        return result;
+                    },
+                comparator: QA_PREDICATE,
+            });
+            window.atvcol = this.collection;
+        },
+    });
+
+    var AnnotateView = Backbone.Marionette.Layout.extend({
+        className: "annotationpane",
+        template: "#annotateTemplate",
+
+        regions: {
+            simple: ".simple",
+            full: ".full",
+            annotations: ".annotations",
+        },
+
+        ui: {
+            pauseBtn : ".pause",
+        },
+
+        triggers: {
+            "click .pause" : "do:pause",
+        },
+
+        serializeData: function() {
+            return {};
+        },
+
+        initialize: function(options) {
+            this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
+                .throwNoArg("options.contentDescriptionSource");
+            this.utteranceEventSrc = _.checkarg(options.utteranceEventSrc)
+                .throwNoArg("options.utteranceEventSrc");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.relationships = _.checkarg(options.relationships)
+                .throwNoArg("options.relationships");
+            this.displayedEntities = _.checkarg(options.displayedEntities)
+                .throwNoArg("options.displayedEntities");
+
+            this.paused = false;
+        },
+
+        onRender: function() {
+            // FIXME: This should be a shared model between the player and the controls.
+            //        This is why the player and button status can fall out of sync.
+            this.paused = this.ui.pauseBtn.hasClass('selected');
+
+            this.simpleAnnotationView = new SimpleAnnotationView({
+                proper: this.proper,
+                entities: this.entities,
+            });
+            this.listenTo(this.simpleAnnotationView, "simple:add", this.onChildSimpleAdd);
+            this.simple.show(this.simpleAnnotationView);
+
+            this.fullAnnotationView = new FullAnnotationView({
+                proper: this.proper,
+                entities: this.entities,
+                properties: this.properties,
+                relationships: this.relationships,
+                displayedEntities: this.displayedEntities,
+            });
+            this.listenTo(this.fullAnnotationView, "full:add", this.onChildFullAdd);
+            this.full.show(this.fullAnnotationView);
+
+            this.annotationsView = new AnnotationsTableView({
+                contentDescriptionSource: this.contentDescriptionSource,
+                utteranceEventSrc: this.utteranceEventSrc,
+                entities: this.entities,
+                properties: this.properties,
+                relationships: this.relationships,
+            });
+            this.annotations.show(this.annotationsView);
+        },
+
+        onDoPause: function() {
+            this.paused = !this.paused;
+            if (this.paused) {
+                this.ui.pauseBtn.addClass("selected");
+                this.ui.pauseBtn.text("Play");
+            } else {
+                this.ui.pauseBtn.removeClass("selected");
+                this.ui.pauseBtn.text("Pause");
+            }
+            this.triggerMethod("pause:set", this.paused);
+        },
+
+        onChildSimpleAdd: function(entity) {
+            this.triggerMethod("simple:add", entity);
+        },
+
+        onChildFullAdd: function(entity) {
+            this.triggerMethod("full:add", entity);
         },
     });
 
@@ -2805,15 +3534,14 @@ var frontend = (function() {
             summary: ".header .summary",
             adjunct: ".header .adjunct",
             primary: ".primary",
+            tabs: ".tabs",
             secondary: ".secondary",
-            tabs: ".contentpanetabs",
-            content: ".content",
         },
         
         states: {
             Search: function(view) {
                 return new TranscriptSearchView({
-                	contentDescriptionSource: view.contentDescriptionSource
+                	contentDescriptionSource: view.contentDescriptionSource,
                 });
             },
             Cloud: function(view) {
@@ -2825,6 +3553,21 @@ var frontend = (function() {
             	return new TranscriptGraphView({
                 	
             	});
+            },
+            Annotate: function(view) {
+                var av = new AnnotateView({
+                    utteranceEventSrc: view,
+                	contentDescriptionSource: view.contentDescriptionSource,
+                    proper: view.proper,
+                    entities: view.entities,
+                    displayedEntities: view.displayedEntities,
+                    properties: view.properties,
+                    relationships: view.relationships,
+                });
+                view.listenTo(av, "pause:set", view.pauseSet);
+                view.listenTo(av, "simple:add", view.onSimpleAdd);
+                view.listenTo(av, "full:add", view.onFullAdd);
+                return av;
             },
         },
         
@@ -2840,7 +3583,14 @@ var frontend = (function() {
             this.fulltext = _.checkarg(options.fulltext).throwNoArg("options.fulltext");
             this.transcripts = _.checkarg(options.transcripts).throwNoArg("options.transcripts");
             this.files = _.checkarg(options.files).throwNoArg("options.files");
-            
+            this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
+            this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
+            this.displayedEntities = _.checkarg(options.displayedEntities)
+                .throwNoArg("options.displayedEntities");
+            this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
+            this.relationships = _.checkarg(options.relationships)
+                .throwNoArg("options.relationships");
+
             this.contentDescriptionSource = new ContentDescriptionModel({
                 types: _.keys(this.digitalContent),
                 source_models: _.extend({
@@ -2862,10 +3612,13 @@ var frontend = (function() {
             this.adjunct.show(new ReturnButtonView({
                 router: this.router,
             }));
-            
-            this.primary.show(new TrackingPlayerView({
+
+            this.trackingView = new TrackingPlayerView({
                 contentDescriptionSource: this.contentDescriptionSource,
-            }));
+            });
+            this.primary.show(this.trackingView);
+
+            this.listenTo(this.trackingView, "utterance:active", this.triggerUtteranceActive);
             
             this.listenTo(this.model, "change:state", this.setTab);
             this.tabview = new TranscriptPaneTabs({});
@@ -2874,6 +3627,16 @@ var frontend = (function() {
             this.setTab(this.model, 'Search');
         },
         
+        pauseSet: function(pause) {
+            if (this.trackingView) {
+                if (pause) {
+                    this.trackingView.doPause();
+                } else  {
+                    this.trackingView.doPlay();
+                }
+            }
+        },
+
         onSelectTab: function(newState) {        	
             if (this.states[newState]) {               
             	this.model.set('state', newState);
@@ -2881,41 +3644,100 @@ var frontend = (function() {
         },
 
         setTab: function(model, value) {
-            this.content.show(this.states[value](this));
+            this.secondary.show(this.states[value](this));
+        },
+
+        triggerUtteranceActive: function(model) {
+            this.triggerMethod("utterance:active", model);
+            this.currentUtterance = model;
+        },
+
+        onSimpleAdd: function(entity) {
+            var rdf = {};
+            rdf[RDF_TYPE] = QA_REFERENCE_TYPE;
+            rdf[QA_SUBJECT] = this.contentDescriptionSource.get('contentDescription').id +
+                "#@" + this.currentUtterance.get('start');
+            rdf[QA_PREDICATE] = QA_REFERENCES;
+            rdf[QA_OBJECT] = entity.id;
+
+            var evidence = rdf[QA_EVIDENCE] = {};
+            evidence[RDF_TYPE] = QA_EVIDENCE_TYPE;
+            evidence[QA_DOCUMENTED_BY] =
+                this.contentDescriptionSource.get('contentDescription').id;
+            evidence[QA_TIME_FROM] = this.currentUtterance.get('start');
+            evidence[QA_TIME_TO] = this.currentUtterance.get('end') ?
+                this.currentUtterance.get('end') : this.trackingView.getDuration();
+
+            $.ajax({
+                type: 'POST',
+                url: JSON_ROOT + 'annotation',
+                data: JSON.stringify(rdf),
+                dataType: 'json',
+                contentType: 'application/json',
+            }).done(_.bind(function(data, textStatus, jqXHR) {
+                console.log("success");
+                console.log(rdf);
+                console.log(data);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
+                this.triggerMethod("utterance:refresh");
+            }, this)).fail(function(jqXHR, textStatus, errorThrown) {
+                console.log("failure");
+                console.log(rdf);
+                console.log(errorThrown);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
+            });
+        },
+
+        onFullAdd: function(rel) {
+            var rdf = {};
+            rdf[RDF_TYPE] = rel.predicateURI,
+            rdf[QA_SUBJECT] = rel.subjectURI,
+            rdf[QA_PREDICATE] = this.relationships.get(rel.predicateURI)
+                .get1(QA_IMPLIES_RELATIONSHIP);
+            rdf[QA_OBJECT] = rel.objectURI;
+            if (rel.fromDate) {
+                rdf[QA_START_DATE] = rel.fromDate;
+            }
+            if (rel.toDate) {
+                rdf[QA_END_DATE] = rel.toDate;
+            }
+
+            var evidence = rdf[QA_EVIDENCE] = {};
+            evidence[RDF_TYPE] = QA_EVIDENCE_TYPE;
+            evidence[QA_DOCUMENTED_BY] =
+                this.contentDescriptionSource.get('contentDescription').id,
+            evidence[QA_TIME_FROM] = this.currentUtterance.get('start');
+            evidence[QA_TIME_TO] = this.currentUtterance.get('end') ?
+                this.currentUtterance.get('end') : this.trackingView.getDuration();
+
+            $.ajax({
+                type: 'POST',
+                url: JSON_ROOT + 'annotation',
+                data: JSON.stringify(rdf),
+                dataType: 'json',
+                contentType: 'application/json',
+            }).done(_.bind(function(data, textStatus, jqXHR) {
+                console.log("success");
+                console.log(rdf);
+                console.log(data);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
+                this.triggerMethod("utterance:refresh");
+            }, this)).fail(function(jqXHR, textStatus, errorThrown) {
+                console.log("failure");
+                console.log(rdf);
+                console.log(errorThrown);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
+            });
         },
     });
-
-
-// Old code to search transcript.
-//      searchTranscript: function(event) {
-//          var val = this.$("input").val();
-//          var results = [];
-//          if (!this.transcript) {
-//              this.$(".resultlist").html(this.infoTemplate({
-//                  message: "No transcript loaded",
-//              }));
-//          } else {
-//              if (event.keyCode == 13 || val.length > 3) {
-//                  this.transcript.exchanges.forEach(function(exchange) {
-//                      if (exchange.transcript.indexOf(val) != -1) {
-//                          results.push(exchange);
-//                      }
-//                  });
-//              }
-//              this.$(".resultlist").empty();
-//              _.each(results, function(result) {
-//                  var obj = $(this.transcriptResultTemplate({
-//                      speaker: result.speaker,
-//                      time: result.time,
-//                      transcript: _.escape(result.transcript),
-//                  }).replace(/^\s*/, ''));
-//                  obj.appendTo(this.$(".resultlist")).click(function() {
-//                          $('.subtitle[data-time="' + result.time + '"]').click();
-//                      });
-//              }, this);
-//          }
-//      },
-//  });
 
     var FulltextResult = Backbone.Model.extend({
         initialize: function() { },
@@ -4092,7 +4914,12 @@ var frontend = (function() {
                         model.set(model.parse(data));
                     }).
                     fail(function(jqXHR, textStatus, errorThrown) {
-                        var data = JSON.parse(jqXHR.responseText);
+                        var data = undefined;
+                        if (jqXHR.status == 404) {
+                            console.log("Login service unavailable");
+                        } else {
+                            data = JSON.parse(jqXHR.responseText);
+                        }
                         model.set(model.parse(data || { user: "", auth: false })); 
                     });
             } else {
@@ -4279,6 +5106,11 @@ var frontend = (function() {
 
         var entities = new RDFGraph([], {
             url: function() { return JSON_ROOT + "entities" },
+            comparator: QA_LABEL,
+        });
+
+        var relationships = new RDFGraph([], {
+            url: function() { return JSON_ROOT + "ontology/Relationships" },
             comparator: QA_LABEL,
         });
 
@@ -4497,6 +5329,11 @@ var frontend = (function() {
             fulltext: fulltextTranscriptModel,
             transcripts: transcripts,
             files: files,
+            proper: proper,
+            entities: entities,
+            properties: properties,
+            relationships: relationships,
+            displayedEntities: displayedEntities,
         });
 
         var pdfContentView = new PdfContentView({
@@ -4715,6 +5552,7 @@ var frontend = (function() {
             transcripts.fetch({ reset: true });
             linedrawings.fetch({ reset: true });
             articles.fetch({ reset: true });
+            relationships.fetch({ reset: true });
         });
     }
 
