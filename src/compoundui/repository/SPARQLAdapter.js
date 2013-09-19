@@ -304,6 +304,7 @@ lore.ore.repos.SPARQLAdapter = Ext.extend(lore.ore.repos.RepositoryAdapter,{
                xhr.overrideMimeType('text/xml');
                var oThis = this;
                xhr.open("GET", queryURL);
+   	           xhr.setRequestHeader("Accept","application/sparql-results+xml");   
                xhr.onreadystatechange= function(){
                    if (xhr.readyState == 4) {
 	                   	var rdfDoc = xhr.responseXML;
