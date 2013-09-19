@@ -619,3 +619,18 @@ div.mapcontainer>div {
 .x.axis path {
   display: none;
 }
+
+.controls {
+    position:relative;
+}
+
+.popover {
+    position: absolute;
+    background-color: white;
+    overflow-y: hidden;
+    left: 10px;
+    top: 10px;
+    z-index: 1;
+    border: 1px solid #CCCCCC;
+}
+
