@@ -12,7 +12,7 @@ lore.constants = {
      // The url to the folder this file is located in
 	 baseUrl: window.location.href.substring(0, window.location.href.lastIndexOf("/") + 1),
 	 // The url of the SPARQL repository
-	 repositoryBaseURL: "http://localhost/op",
+	 repositoryBaseURL: "/openrdf-sesame",
 	 // The suffix for the graphstore endpoint on the SPARQL repository
 	 repositoryGraphStoreEndPoint: "/data",
 	 // The url prefix for triples in the repository
