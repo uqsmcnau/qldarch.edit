@@ -356,21 +356,18 @@
         </script>
         <script type="text/template" id="entityselectionTemplate">
             <select name="entitytype">
-                <option value="Architect">Architect</option>
-                <option value="Structure">Structure</option>
-                <option value="Firm">Firm</option>
             </select>
             <select name="entity">
-                <option value="Birrell">James Birrell</option>
-                <option value="Bligh">Graham Bligh</option>
-                <option value="Mills">Helen Mills</option>
-                <option value="Riddell">Rob Riddell</option>
             </select>
             <button class="addentity">+</button>
         </script>
         <script type="text/template" id="addentityTemplate">
             <h3>Add new <%- typelabel %>:</h3>
             <div class="attributes"></div>
+            <div class="dialogbuttons">
+                <button name="add">Add Entity</button>
+                <button name="cancel">Cancel</button>
+            </div>
         </script>
         <script type="text/template" id="addentityattributeTemplate">
             <label><%- attributelabel %></label>

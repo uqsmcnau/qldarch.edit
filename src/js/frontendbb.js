@@ -62,6 +62,7 @@ var frontend = (function() {
     var QA_BASIC_MIME_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#basicMimeType";
     var QA_DEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#definiteMapIcon";
     var QA_INDEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#indefiniteMapIcon";
+    var QA_REQUIRED_TO_CREATE = "http://qldarch.net/ns/rdf/2012-06/terms#requiredToCreate";
 
     var QA_REFERENCES = "http://qldarch.net/ns/rdf/2012-06/terms#references";
     var QA_REGION_START = "http://qldarch.net/ns/rdf/2012-06/terms#regionStart";
@@ -2620,7 +2621,18 @@ var frontend = (function() {
         },
 
         onAddEntity: function() {
-            console.log("on Add Entity");
+            // FIXME: This may need to expand the typeselection
+            var typeselection = this.ui.typeselect.val();
+            if (typeselection) {
+                var type = this.editableNouns.get(typeselection);
+                if (type) {
+                    this.triggerMethod("entity:add", type);
+                } else {
+                    console.log("Editable type not found: " + typeselection);
+                }
+            } else {
+                console.log("No type selected");
+            }
         },
 
         onSelectEntity: function() {
@@ -2662,11 +2674,16 @@ var frontend = (function() {
                 entities: this.entities,
             });
             this.listenTo(this.entityView, "selection:changed", this.setSelection);
+            this.listenTo(this.entityView, "entity:add", this.onAddEntity);
             this.entityselection.show(this.entityView);
         },
 
         setSelection: function(selection) {
             this.selectionURI = selection;
+        },
+
+        onAddEnitty: function(entity) {
+            this.triggerMethod("entity:add", entity);
         },
 
         onAddRefersTo: function() {
@@ -2732,6 +2749,7 @@ var frontend = (function() {
                 entities: this.entities,
             });
             this.listenTo(this.subjectView, "selection:changed", this.setSubject);
+            this.listenTo(this.subjectView, "entity:add", this.onAddEntity);
             this.subject.show(this.subjectView);
 
             this.objectView = new EntitySelectionView({
@@ -2739,6 +2757,7 @@ var frontend = (function() {
                 entities: this.entities,
             });
             this.listenTo(this.objectView, "selection:changed", this.setObject);
+            this.listenTo(this.objectView, "entity:add", this.onAddEntity);
             this.object.show(this.objectView);
 
             _.defer(_.bind(this.displayRelationships, this));
@@ -2828,6 +2847,10 @@ var frontend = (function() {
 
         onSelectRel: function() {
             this.predicateURI = this.ui.relselect.val();
+        },
+
+        onAddEnitty: function(entity) {
+            this.triggerMethod("entity:add", entity);
         },
 
         onAddRefersTo: function() {
@@ -3050,6 +3073,92 @@ var frontend = (function() {
         },
     });
 
+    var AddEntityAttributeView = Backbone.Marionette.ItemView.extend({
+        className: "entityattribute",
+        template: "#addentityattributeTemplate",
+
+        ui: {
+            input: "input",
+        },
+
+        events: {
+            "keyup input"   : "_keyup",
+        },
+
+        serializeData: function() {
+            return {
+                attributelabel: this.model.get1(QA_LABEL),
+                required: _.contains(this.requiredAttrs, this.model.id) ? "*" : "",
+            };
+        },
+
+        initialize: function(options) {
+            this.requiredAttrs = _
+            this.target = _.checkarg(options.target).throwNoArg("options.target");
+        },
+
+        _keyup: function(event) {
+            this.target[this.property.id] = this.ui.input.val();
+        },
+    });
+
+    var CreateEntityView = Backbone.Marionette.CompositeView.extend({
+        className: "createentity",
+        template: "#addentityTemplate",
+
+        itemViewContainer: ".attributes",
+        itemView: AddEntityAttributeView,
+        itemViewOptions: function() {
+            return {
+                target: this.target,
+                requiredAttrs: this.requiredAttrs,
+            };
+        },
+
+        events: {
+            "click button[name=add]"   : "doAdd",
+            "click button[name=cancel]"   : "doCancel",
+        },
+
+        serializeData: function() {
+            return {
+                typelabel: this.entity.get1(QA_LABEL),
+            };
+        },
+
+        initialize: function(options) {
+            this.entity = _.checkarg(options.entity).throwNoArg("options.entity");
+            this.requiredAttrs = this.entity.geta(QA_REQUIRED_TO_CREATE);
+            this.properties = _.checkarg(options.properties)
+                .throwNoArg("options.properties");
+            this.target = {};
+
+            this.collection = new SubCollection(this.properties, {
+                name: "entity-attributes",
+                tracksort: false,
+                predicate: function(model) {
+                    // Property is editable AND
+                    // Property is a datatype property AND
+                    // Domain of property intersects entity's type.
+                    return model.get1(QA_EDITABLE) &&
+                        _(model.geta(RDF_TYPE)).contains(OWL_DATATYPE_PROPERTY) &&
+                        !_.isEmpty(_.intersection(model.geta(RDFS_DOMAIN),
+                            this.entity.geta(RDFS_SUBCLASS_OF)));
+                    },
+
+                comparator: QA_DISPLAY_PRECEDENCE,
+            });
+        },
+
+        doAdd: function() {
+            this.triggerMethod("perform:add", this.target);
+        },
+
+        doCancel: function() {
+            this.triggerMethod("perform:cancel");
+        },
+    });
+
     var AnnotateView = Backbone.Marionette.Layout.extend({
         className: "annotationpane",
         template: "#annotateTemplate",
@@ -3058,10 +3167,12 @@ var frontend = (function() {
             simple: ".simple",
             full: ".full",
             annotations: ".annotations",
+            popover: ".popover",
         },
 
         ui: {
-            pauseBtn : ".pause",
+            pauseBtn: ".pause",
+            popover: ".popover",
         },
 
         triggers: {
@@ -3097,7 +3208,10 @@ var frontend = (function() {
                 proper: this.proper,
                 entities: this.entities,
             });
-            this.listenTo(this.simpleAnnotationView, "simple:add", this.onChildSimpleAdd);
+            this.listenTo(this.simpleAnnotationView,
+                "simple:add", this.onChildSimpleAdd);
+            this.listenTo(this.simpleAnnotationView,
+                "entity:add", this.onAddEntity);
             this.simple.show(this.simpleAnnotationView);
 
             this.fullAnnotationView = new FullAnnotationView({
@@ -3108,6 +3222,7 @@ var frontend = (function() {
                 displayedEntities: this.displayedEntities,
             });
             this.listenTo(this.fullAnnotationView, "full:add", this.onChildFullAdd);
+            this.listenTo(this.fullAnnotationView, "entity:add", this.onAddEntity);
             this.full.show(this.fullAnnotationView);
 
             this.annotationsView = new AnnotationsTableView({
@@ -3138,6 +3253,25 @@ var frontend = (function() {
 
         onChildFullAdd: function(entity) {
             this.triggerMethod("full:add", entity);
+        },
+
+        onAddEntity: function(entity) {
+            this.createEntityView = new CreateEntityView({
+                entity: entity,
+            });
+            this.popover.show(createEntityView);
+            this.listenTo(createEntityView, "perform:add", this.onPerformAdd);
+            this.listenTo(createEntityView, "perform:cancel", this.onPerformAdd);
+            $(this.ui.popover).show();
+        },
+
+        onPerformAdd: function(entityGraph) {
+            this.triggerMethod("perform:addEntity", entityGraph);
+            $(this.ui.popover).hide();
+        },
+
+        onPerformCancel: function() {
+            $(this.ui.popover).hide();
         },
     });
 
@@ -3948,7 +4082,7 @@ var frontend = (function() {
                 },
             }))(this.geoentities, {
                 name: "entitiesInList",
-                tracsort: true,
+                tracksort: true,
                 entitySearch: this.entitySearch,
                 entitiesOnMap: this.entitiesOnMap,
                 predicate: function(entity) {
