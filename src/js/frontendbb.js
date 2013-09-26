@@ -3321,6 +3321,7 @@ var frontend = (function() {
                 view.listenTo(av, "pause:set", view.pauseSet);
                 view.listenTo(av, "simple:add", view.onSimpleAdd);
                 view.listenTo(av, "full:add", view.onFullAdd);
+                view.listenTo(av, "perform:addEntity", view.onAddEntity);
                 return av;
             },
         },
@@ -3482,6 +3483,40 @@ var frontend = (function() {
                 console.log(jqXHR);
                 console.log(jqXHR.status);
                 this.triggerMethod("utterance:refresh");
+            }, this)).fail(function(jqXHR, textStatus, errorThrown) {
+                console.log("failure");
+                console.log(rdf);
+                console.log(errorThrown);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
+            });
+        },
+
+        onAddEntity: function(target) {
+            var rdf = target;
+            var evidence = rdf[QA_EVIDENCE] = {};
+            evidence[RDF_TYPE] = QA_EVIDENCE_TYPE;
+            evidence[QA_DOCUMENTED_BY] =
+                this.contentDescriptionSource.get('contentDescription').id,
+            evidence[QA_TIME_FROM] = this.currentUtterance.get('start');
+            evidence[QA_TIME_TO] = this.currentUtterance.get('end') ?
+                this.currentUtterance.get('end') : this.trackingView.getDuration();
+
+            $.ajax({
+                type: 'POST',
+                url: JSON_ROOT + 'entity',
+                data: JSON.stringify(rdf),
+                dataType: 'json',
+                contentType: 'application/json',
+            }).done(_.bind(function(data, textStatus, jqXHR) {
+                console.log("success");
+                console.log(rdf);
+                console.log(data);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
+                this.entities.add(data, { parse: true });
             }, this)).fail(function(jqXHR, textStatus, errorThrown) {
                 console.log("failure");
                 console.log(rdf);
