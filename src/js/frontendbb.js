@@ -2518,7 +2518,7 @@ var frontend = (function() {
 
     var EntitySelectionModel = Backbone.Model.extend({
         defaults: {
-            enabled: false,
+            enabled: true,
             selection: undefined,
         },
     });
@@ -2620,6 +2620,7 @@ var frontend = (function() {
         },
 
         onAddEntity: function() {
+            console.log("on Add Entity");
         },
 
         onSelectEntity: function() {
@@ -3035,13 +3036,8 @@ var frontend = (function() {
                         console.log(relationships);
                         console.log(model);
                         var result = relationships.any(function(rel) {
-//                            console.log("In any");
-//                            console.log(rel);
-//                            console.log(model);
-//                            console.log(RDF_TYPE);
                             var result = !_.isEmpty(_.intersection(
                                     rel.geta(RDFS_SUBCLASS_OF), model.geta(RDF_TYPE)));
-//                            console.log(result);
                             return result;
                         });
 

@@ -366,7 +366,16 @@
                 <option value="Mills">Helen Mills</option>
                 <option value="Riddell">Rob Riddell</option>
             </select>
-            <button class="addentity" disabled>+</button>
+            <button class="addentity">+</button>
+        </script>
+        <script type="text/template" id="addentityTemplate">
+            <h3>Add new <%- typelabel %>:</h3>
+            <div class="attributes"></div>
+        </script>
+        <script type="text/template" id="addentityattributeTemplate">
+            <label><%- attributelabel %></label>
+            <input type="text"></input>
+            <span><%- required %></span>
         </script>
         <script type="text/javascript">
             $(function() {
