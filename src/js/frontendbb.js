@@ -50,6 +50,7 @@ var frontend = (function() {
     var QA_LABEL = "http://qldarch.net/ns/rdf/2012-06/terms#label";
     var QA_SINGULAR = "http://qldarch.net/ns/rdf/2012-06/terms#singular";
     var QA_EDITABLE = "http://qldarch.net/ns/rdf/2012-06/terms#editable";
+    var QA_SUPPRESS_EDITABLE = "http://qldarch.net/ns/rdf/2012-06/terms#suppressEditable";
     var QA_SYSTEM_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#systemLocation";
     var QA_EXTERNAL_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#externalLocation";
     var QA_HAS_TRANSCRIPT = "http://qldarch.net/ns/rdf/2012-06/terms#hasTranscript";
@@ -2682,7 +2683,7 @@ var frontend = (function() {
             this.selectionURI = selection;
         },
 
-        onAddEnitty: function(entity) {
+        onAddEntity: function(entity) {
             this.triggerMethod("entity:add", entity);
         },
 
@@ -2741,6 +2742,8 @@ var frontend = (function() {
                 fromdate: undefined,
                 todate: undefined,
             };
+            this.subjectURI = undefined;
+            this.objectURI = undefined;
         },
         
         onRender: function() {
@@ -2759,11 +2762,14 @@ var frontend = (function() {
             this.listenTo(this.objectView, "selection:changed", this.setObject);
             this.listenTo(this.objectView, "entity:add", this.onAddEntity);
             this.object.show(this.objectView);
-
-            _.defer(_.bind(this.displayRelationships, this));
         },
 
         displayRelationships: function() {
+            if (_.isUndefined(this.subjectURI) ||
+                _.isUndefined(this.objectURI)) {
+                    return;
+            }
+
             this.ui.relselect.empty();
             this.relationships.each(function(rel) {
                 var pURI = rel.get1(QA_IMPLIES_RELATIONSHIP);
@@ -2849,7 +2855,9 @@ var frontend = (function() {
             this.predicateURI = this.ui.relselect.val();
         },
 
-        onAddEnitty: function(entity) {
+        onAddEntity: function(entity) {
+            console.log("FA::onAddEntity");
+            console.log(entity);
             this.triggerMethod("entity:add", entity);
         },
 
@@ -3055,16 +3063,12 @@ var frontend = (function() {
                 name: "Relationships",
                 tracksort: false,
                 predicate: function(model) {
-                        console.log("In predicate");
-                        console.log(relationships);
-                        console.log(model);
                         var result = relationships.any(function(rel) {
                             var result = !_.isEmpty(_.intersection(
                                     rel.geta(RDFS_SUBCLASS_OF), model.geta(RDF_TYPE)));
                             return result;
                         });
 
-                        console.log("Predicate returns: " + result);
                         return result;
                     },
                 comparator: QA_PREDICATE,
@@ -3093,12 +3097,13 @@ var frontend = (function() {
         },
 
         initialize: function(options) {
-            this.requiredAttrs = _
+            this.requiredAttrs = _.checkarg(options.requiredAttrs)
+                .throwNoArg("options.requiredAttrs");
             this.target = _.checkarg(options.target).throwNoArg("options.target");
         },
 
         _keyup: function(event) {
-            this.target[this.property.id] = this.ui.input.val();
+            this.target[this.model.id] = this.ui.input.val();
         },
     });
 
@@ -3122,12 +3127,12 @@ var frontend = (function() {
 
         serializeData: function() {
             return {
-                typelabel: this.entity.get1(QA_LABEL),
+                typelabel: this.entity.get1(QA_SINGULAR) || this.entity.get1(QA_LABEL),
             };
         },
 
         initialize: function(options) {
-            this.entity = _.checkarg(options.entity).throwNoArg("options.entity");
+            var entity = this.entity = _.checkarg(options.entity).throwNoArg("options.entity");
             this.requiredAttrs = this.entity.geta(QA_REQUIRED_TO_CREATE);
             this.properties = _.checkarg(options.properties)
                 .throwNoArg("options.properties");
@@ -3136,16 +3141,16 @@ var frontend = (function() {
             this.collection = new SubCollection(this.properties, {
                 name: "entity-attributes",
                 tracksort: false,
-                predicate: function(model) {
+                predicate: function(property) {
                     // Property is editable AND
                     // Property is a datatype property AND
                     // Domain of property intersects entity's type.
-                    return model.get1(QA_EDITABLE) &&
-                        _(model.geta(RDF_TYPE)).contains(OWL_DATATYPE_PROPERTY) &&
-                        !_.isEmpty(_.intersection(model.geta(RDFS_DOMAIN),
-                            this.entity.geta(RDFS_SUBCLASS_OF)));
+                    return !!property.get1(QA_EDITABLE) &&
+                        !_.contains(entity.geta(QA_SUPPRESS_EDITABLE), property.id) &&
+                        !!_.contains(property.geta(RDF_TYPE), OWL_DATATYPE_PROPERTY) &&
+                        !_.isEmpty(_.intersection(property.geta(RDFS_DOMAIN),
+                            entity.geta(RDFS_SUBCLASS_OF)));
                     },
-
                 comparator: QA_DISPLAY_PRECEDENCE,
             });
         },
@@ -3258,10 +3263,11 @@ var frontend = (function() {
         onAddEntity: function(entity) {
             this.createEntityView = new CreateEntityView({
                 entity: entity,
+                properties: this.properties,
             });
-            this.popover.show(createEntityView);
-            this.listenTo(createEntityView, "perform:add", this.onPerformAdd);
-            this.listenTo(createEntityView, "perform:cancel", this.onPerformAdd);
+            this.popover.show(this.createEntityView);
+            this.listenTo(this.createEntityView, "perform:add", this.onPerformAdd);
+            this.listenTo(this.createEntityView, "perform:cancel", this.onPerformCancel);
             $(this.ui.popover).show();
         },
 
