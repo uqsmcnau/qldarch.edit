@@ -56,7 +56,7 @@
     var SubCollection = function(baseCollection, options) {
         options || (options = {})
         this.name = options.name;
-        if (options.predicate) this.predicate = options.predicate;
+        if (options.predicate) this.predicate = _.bind(options.predicate, this);
         this.baseCollection = baseCollection ? baseCollection : new Collection([], options);
 
         Collection.apply(this, [this.baseCollection.filter(this.predicate), options]);
@@ -108,7 +108,7 @@
         predicate: function () { return true; },
 
         setPredicate: function setPredicate(predicate) {
-            this.predicate = predicate;
+            this.predicate = _.bind(predicate, this);
             this._doReset(this.baseCollection, {});
         }
     });
