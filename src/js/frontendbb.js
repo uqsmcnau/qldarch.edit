@@ -3137,6 +3137,7 @@ var frontend = (function() {
             this.properties = _.checkarg(options.properties)
                 .throwNoArg("options.properties");
             this.target = {};
+            this.target[RDF_TYPE] = entity.id;
 
             this.collection = new SubCollection(this.properties, {
                 name: "entity-attributes",
@@ -3511,7 +3512,7 @@ var frontend = (function() {
 
             $.ajax({
                 type: 'POST',
-                url: JSON_ROOT + 'entity',
+                url: JSON_ROOT + 'entity/description',
                 data: JSON.stringify(rdf),
                 dataType: 'json',
                 contentType: 'application/json',
