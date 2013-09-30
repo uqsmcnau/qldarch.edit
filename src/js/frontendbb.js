@@ -99,6 +99,14 @@ var frontend = (function() {
     var QA_LINEDRAWING_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing";
     var QA_DIGITAL_THING = "http://qldarch.net/ns/rdf/2012-06/terms#DigitalThing";
 
+    var QA_ARCHITECT_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Architect";
+    var QA_FIRM_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Firm";
+    var FOAF_PERSON_TYPE = "http://xmlns.com/foaf/0.1/Person";
+
+    var FOAF_FIRST_NAME = "http://xmlns.com/foaf/0.1/firstName";
+    var FOAF_LAST_NAME = "http://xmlns.com/foaf/0.1/lastName";
+    var QA_FIRM_NAME = "http://qldarch.net/ns/rdf/2012-06/terms#firmName";
+
     var QA_BUILDING_TYPOLOGY = "http://qldarch.net/ns/rdf/2012-06/terms#BuildingTypology";
     var QA_BUILDING_TYPOLOGY_P = "http://qldarch.net/ns/rdf/2012-06/terms#buildingTypology";
 
@@ -899,6 +907,11 @@ var frontend = (function() {
             this.content = options.content;
             this.itemviews = {};
 
+            console.log("ETV::init");
+            console.log(this.type.id);
+            console.log(this.model);
+            console.log(this.type);
+
             this.model.on("reset", this.render);
             this.search.on("change", this._setinput);
 
@@ -919,6 +932,7 @@ var frontend = (function() {
                     router: this.router,
                     model: entityItem,
                     content: this.content,
+                    type: this.type,
                 });
                 this.itemviews[entityItem.id] = itemView;
                 this.$('.contentlist').append(itemView.render().el);
@@ -984,6 +998,7 @@ var frontend = (function() {
             this.router = options.router;
 
             this.content = options.content;
+            this.type = options.type;
 
             _.bindAll(this);
             if (options.initialize) { options.initialize.call(this); }
@@ -999,12 +1014,37 @@ var frontend = (function() {
         },
 
         render: function() {
-            this.$el.text(this.model.get1(QA_LABEL, true));
+            this.$el.text(this.getLabel());
 
             this.rendered = true;
             this.visible = true;
 
             return this;
+        },
+
+        getLabel: function() {
+            var qlabel = this.model.get1(QA_LABEL, true);
+            if (qlabel && !_.isEmpty(qlabel.trim())) {
+                return qlabel.trim();
+            }
+
+            if (!_.isEmpty(_.intersection(this.model.geta(RDF_TYPE),
+                            [QA_ARCHITECT_TYPE, FOAF_PERSON_TYPE]))) {
+                var pname = (this.model.get1(FOAF_FIRST_NAME) || "") + " " +
+                    (this.model.get1(FOAF_LAST_NAME) || "");
+                if (!_.isEmpty(pname.trim())) {
+                    return pname.trim();
+                }
+            }
+
+            if (_.contains(this.model.geta(RDF_TYPE), QA_FIRM_TYPE)) {
+                var fname = this.model.get1(QA_FIRM_NAME);
+                if (fname && !_.isEmpty(fname.trim())) {
+                    return fname.trim();
+                }
+            }
+
+            return "Unidentified " + (this.type.get1(QA_SINGULAR) || this.type.get1(QA_LABEL));
         },
 
         _update: function() {
@@ -4853,7 +4893,8 @@ var frontend = (function() {
         });
 
         var entities = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "entities" },
+//            url: function() { return JSON_ROOT + "entities" },
+            url: function() { return JSON_ROOT + "entity/summary/qldarch:NonDigitalThing" },
             comparator: QA_LABEL,
         });
 
