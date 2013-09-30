@@ -134,6 +134,41 @@ var frontend = (function() {
     var entities = { };
     var resourcesByRdfType = { };
 
+    var getLabel = function(thing, defaultLabel) {
+        var qlabel = thing.get1(QA_LABEL, true);
+        if (qlabel && !_.isEmpty(qlabel.trim())) {
+            return qlabel.trim();
+        }
+
+        if (!_.isEmpty(_.intersection(thing.geta(RDF_TYPE),
+                        [QA_ARCHITECT_TYPE, FOAF_PERSON_TYPE]))) {
+            var pname = (thing.get1(FOAF_FIRST_NAME) || "") + " " +
+                (thing.get1(FOAF_LAST_NAME) || "");
+            if (!_.isEmpty(pname.trim())) {
+                return pname.trim();
+            }
+        }
+
+        if (_.contains(thing.geta(RDF_TYPE), QA_FIRM_TYPE)) {
+            var fname = thing.get1(QA_FIRM_NAME);
+            if (fname && !_.isEmpty(fname.trim())) {
+                return fname.trim();
+            }
+        }
+
+        if (!_.isEmpty(_.intersection(thing.geta(RDF_TYPE),
+                [QA_DIGITAL_THING, QA_LINEDRAWING_TYPE,
+                 QA_PHOTOGRAPH_TYPE, QA_ARTICLE_TYPE,
+                 QA_TRANSCRIPT_TYPE, QA_INTERVIEW_TYPE]))) {
+            var tname = thing.get1(DCT_TITLE);
+            if (tname && !_.isEmpty(tname.trim())) {
+                return tname.trim();
+            }
+        }
+
+        return _.result({ d: defaultLabel }, 'd');
+    };
+
     var SearchModel = Backbone.Model.extend({
         defaults: {
             'searchstring': "",
@@ -1014,7 +1049,9 @@ var frontend = (function() {
         },
 
         render: function() {
-            this.$el.text(this.getLabel());
+            var defaultLabel = "Unidentified " +
+                    (this.type.get1(QA_SINGULAR) || this.type.get1(QA_LABEL));
+            this.$el.text(getLabel(this.model, defaultLabel));
 
             this.rendered = true;
             this.visible = true;
@@ -1022,7 +1059,7 @@ var frontend = (function() {
             return this;
         },
 
-        getLabel: function() {
+        getLabel: function(thing) {
             var qlabel = this.model.get1(QA_LABEL, true);
             if (qlabel && !_.isEmpty(qlabel.trim())) {
                 return qlabel.trim();
@@ -2632,10 +2669,10 @@ var frontend = (function() {
         displayTypeOptions: function() {
             this.ui.typeselect.empty();
             this.editableNouns.each(function(p) {
-                var label = p.get1(QA_SINGULAR) || p.get1(QA_LABEL) || "No label provided";
+                var defLabel = p.get1(QA_SINGULAR) || p.get1(QA_LABEL) || "No label provided";
                 this.ui.typeselect.append(this.optionTemplate({
                     value: p.id,
-                    label: label,
+                    label: getLabel(p, defLabel),
                 }));
             }, this);
         },
@@ -2644,11 +2681,11 @@ var frontend = (function() {
             this.ui.entityselect.empty();
             var selection = this.ui.typeselect.val();
             if (this.entityLists[selection]) {
-                this.entityLists[selection].each(function(p) {
-                    var label = p.get1(QA_SINGULAR) || p.get1(QA_LABEL) || "No label provided";
+                this.entityLists[selection].each(function(e) {
+                    var defLabel = e.get1(QA_SINGULAR) || e.get1(QA_LABEL) || "No label provided";
                     this.ui.entityselect.append(this.optionTemplate({
-                        value: p.id,
-                        label: label,
+                        value: e.id,
+                        label: getLabel(e, defLabel),
                     }));
                 }, this);
                 this.onSelectEntity();
@@ -4893,8 +4930,8 @@ var frontend = (function() {
         });
 
         var entities = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "entities" },
-//            url: function() { return JSON_ROOT + "entity/summary/qldarch:NonDigitalThing" },
+//            url: function() { return JSON_ROOT + "entities" },
+            url: function() { return JSON_ROOT + "entity/detail/qldarch:NonDigitalThing" },
             comparator: QA_LABEL,
         });
 
