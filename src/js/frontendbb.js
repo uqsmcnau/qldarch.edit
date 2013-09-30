@@ -4893,8 +4893,8 @@ var frontend = (function() {
         });
 
         var entities = new RDFGraph([], {
-//            url: function() { return JSON_ROOT + "entities" },
-            url: function() { return JSON_ROOT + "entity/summary/qldarch:NonDigitalThing" },
+            url: function() { return JSON_ROOT + "entities" },
+//            url: function() { return JSON_ROOT + "entity/summary/qldarch:NonDigitalThing" },
             comparator: QA_LABEL,
         });
 
