@@ -217,6 +217,10 @@ audio {
     border-top: 1px solid lightgrey;
 }
 
+.audiodiv {
+    overflow-x:hidden;
+}
+
 .returnbutton {
     background: #e5e5e5;
     color: #333333;
