@@ -46,76 +46,90 @@ var frontend = (function() {
     }
 
     var JSON_ROOT = "/ws/rest/";
-    var QA_DISPLAY = "http://qldarch.net/ns/rdf/2012-06/terms#display";
-    var QA_LABEL = "http://qldarch.net/ns/rdf/2012-06/terms#label";
-    var QA_SINGULAR = "http://qldarch.net/ns/rdf/2012-06/terms#singular";
-    var QA_EDITABLE = "http://qldarch.net/ns/rdf/2012-06/terms#editable";
-    var QA_SUPPRESS_EDITABLE = "http://qldarch.net/ns/rdf/2012-06/terms#suppressEditable";
-    var QA_SYSTEM_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#systemLocation";
-    var QA_EXTERNAL_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#externalLocation";
-    var QA_HAS_TRANSCRIPT = "http://qldarch.net/ns/rdf/2012-06/terms#hasTranscript";
-    var QA_TRANSCRIPT_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#transcriptLocation";
-    var QA_DISPLAY_PRECEDENCE = "http://qldarch.net/ns/rdf/2012-06/terms#displayPrecedence";
-    var QA_PREFERRED_IMAGE = "http://qldarch.net/ns/rdf/2012-06/terms#preferredImage";
-    var QA_SUMMARY = "http://qldarch.net/ns/rdf/2012-06/terms#summary";
-    var QA_RELATED_TO = "http://qldarch.net/ns/rdf/2012-06/terms#relatedTo";
-    var QA_HAS_FILE = "http://qldarch.net/ns/rdf/2012-06/terms#hasFile";
-    var QA_BASIC_MIME_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#basicMimeType";
-    var QA_DEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#definiteMapIcon";
-    var QA_INDEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#indefiniteMapIcon";
-    var QA_REQUIRED_TO_CREATE = "http://qldarch.net/ns/rdf/2012-06/terms#requiredToCreate";
+    var QA_NS = "http://qldarch.net/ns/rdf/2012-06/terms#";
+    var OWL_NS = "http://www.w3.org/2002/07/owl#";
+    var RDF_NS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+    var RDFS_NS = "http://www.w3.org/2000/01/rdf-schema#";
+    var FOAF_NS = "http://xmlns.com/foaf/0.1/";
+    var DCT_NS = "http://purl.org/dc/terms/";
+    var GEO_NS = "http://www.w3.org/2003/01/geo/wgs84_pos#"
 
-    var QA_REFERENCES = "http://qldarch.net/ns/rdf/2012-06/terms#references";
-    var QA_REGION_START = "http://qldarch.net/ns/rdf/2012-06/terms#regionStart";
-    var QA_REGION_END = "http://qldarch.net/ns/rdf/2012-06/terms#regionEnd";
-    var QA_SUBJECT = "http://qldarch.net/ns/rdf/2012-06/terms#subject";
-    var QA_PREDICATE = "http://qldarch.net/ns/rdf/2012-06/terms#predicate";
-    var QA_OBJECT = "http://qldarch.net/ns/rdf/2012-06/terms#object";
-    var QA_IMPLIES_RELATIONSHIP = "http://qldarch.net/ns/rdf/2012-06/terms#impliesRelationship";
-    var QA_START_DATE = "http://qldarch.net/ns/rdf/2012-06/terms#startDate";
-    var QA_END_DATE = "http://qldarch.net/ns/rdf/2012-06/terms#endDate";
-    var QA_EVIDENCE = "http://qldarch.net/ns/rdf/2012-06/terms#evidence";
-    var QA_EVIDENCE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Evidence";
-    var QA_TIME_FROM = "http://qldarch.net/ns/rdf/2012-06/terms#timeFrom";
-    var QA_TIME_TO = "http://qldarch.net/ns/rdf/2012-06/terms#timeTo";
-    var QA_DOCUMENTED_BY = "http://qldarch.net/ns/rdf/2012-06/terms#documentedBy";
+    var QA_DISPLAY = QA_NS + "display";
+    var QA_TOPLEVEL = QA_NS + "toplevel";
+    var QA_LABEL = QA_NS + "label";
+    var QA_PLURAL = QA_NS + "plural";
+    var QA_SINGULAR = QA_NS + "singular";
+    var QA_EDITABLE = QA_NS + "editable";
+    var QA_SUPPRESS_EDITABLE = QA_NS + "suppressEditable";
+    var QA_SYSTEM_LOCATION = QA_NS + "systemLocation";
+    var QA_EXTERNAL_LOCATION = QA_NS + "externalLocation";
+    var QA_HAS_TRANSCRIPT = QA_NS + "hasTranscript";
+    var QA_TRANSCRIPT_LOCATION = QA_NS + "transcriptLocation";
+    var QA_DISPLAY_PRECEDENCE = QA_NS + "displayPrecedence";
+    var QA_PREFERRED_IMAGE = QA_NS + "preferredImage";
+    var QA_SUMMARY = QA_NS + "summary";
+    var QA_RELATED_TO = QA_NS + "relatedTo";
+    var QA_HAS_FILE = QA_NS + "hasFile";
+    var QA_BASIC_MIME_TYPE = QA_NS + "basicMimeType";
+    var QA_DEFINITE_MAP_ICON = QA_NS + "definiteMapIcon";
+    var QA_INDEFINITE_MAP_ICON = QA_NS + "indefiniteMapIcon";
+    var QA_REQUIRED_TO_CREATE = QA_NS + "requiredToCreate";
 
-    var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
-    var OWL_OBJECT_PROPERTY = "http://www.w3.org/2002/07/owl#ObjectProperty";
-    var RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
-    var RDF_SUBJECT = "http://www.w3.org/1999/02/22-rdf-syntax-ns#subject";
-    var RDF_PREDICATE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate";
-    var RDF_OBJECT = "http://www.w3.org/1999/02/22-rdf-syntax-ns#object";
-    var RDFS_SUBCLASS_OF = "http://www.w3.org/2000/01/rdf-schema#subClassOf";
-    var RDFS_DOMAIN = "http://www.w3.org/2000/01/rdf-schema#domain";
-    var RDFS_RANGE = "http://www.w3.org/2000/01/rdf-schema#range";
-    var RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
+    var QA_REFERENCES = QA_NS + "references";
+    var QA_REGION_START = QA_NS + "regionStart";
+    var QA_REGION_END = QA_NS + "regionEnd";
+    var QA_SUBJECT = QA_NS + "subject";
+    var QA_PREDICATE = QA_NS + "predicate";
+    var QA_OBJECT = QA_NS + "object";
+    var QA_IMPLIES_RELATIONSHIP = QA_NS + "impliesRelationship";
+    var QA_START_DATE = QA_NS + "startDate";
+    var QA_END_DATE = QA_NS + "endDate";
+    var QA_EVIDENCE = QA_NS + "evidence";
+    var QA_EVIDENCE_TYPE = QA_NS + "Evidence";
+    var QA_TIME_FROM = QA_NS + "timeFrom";
+    var QA_TIME_TO = QA_NS + "timeTo";
+    var QA_DOCUMENTED_BY = QA_NS + "documentedBy";
 
-    var QA_REFERENCE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#ReferenceRelation";
-    var QA_INTERVIEW_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Interview";
-    var QA_TRANSCRIPT_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Transcript";
-    var QA_ARTICLE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Article";
-    var QA_PHOTOGRAPH_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Photograph";
-    var QA_LINEDRAWING_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing";
-    var QA_DIGITAL_THING = "http://qldarch.net/ns/rdf/2012-06/terms#DigitalThing";
+    var OWL_DATATYPE_PROPERTY = OWL_NS + "DatatypeProperty";
+    var OWL_OBJECT_PROPERTY = OWL_NS + "ObjectProperty";
+    var RDF_TYPE = RDF_NS + "type";
+    var RDF_SUBJECT = RDF_NS + "subject";
+    var RDF_PREDICATE = RDF_NS + "predicate";
+    var RDF_OBJECT = RDF_NS + "object";
+    var RDFS_SUBCLASS_OF = RDFS_NS + "subClassOf";
+    var RDFS_DOMAIN = RDFS_NS + "domain";
+    var RDFS_RANGE = RDFS_NS + "range";
+    var RDFS_LABEL = RDFS_NS + "label";
 
-    var QA_ARCHITECT_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Architect";
-    var QA_FIRM_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Firm";
-    var FOAF_PERSON_TYPE = "http://xmlns.com/foaf/0.1/Person";
+    var QA_REFERENCE_TYPE = QA_NS + "ReferenceRelation";
+    var QA_INTERVIEW_TYPE = QA_NS + "Interview";
+    var QA_TRANSCRIPT_TYPE = QA_NS + "Transcript";
+    var QA_ARTICLE_TYPE = QA_NS + "Article";
+    var QA_PHOTOGRAPH_TYPE = QA_NS + "Photograph";
+    var QA_LINEDRAWING_TYPE = QA_NS + "LineDrawing";
+    var QA_DIGITAL_THING = QA_NS + "DigitalThing";
 
-    var FOAF_FIRST_NAME = "http://xmlns.com/foaf/0.1/firstName";
-    var FOAF_LAST_NAME = "http://xmlns.com/foaf/0.1/lastName";
-    var QA_FIRM_NAME = "http://qldarch.net/ns/rdf/2012-06/terms#firmName";
+    var QA_EDUCATIONAL_INSTITUTION = QA_NS + "EducationalInstitution";
 
-    var QA_BUILDING_TYPOLOGY = "http://qldarch.net/ns/rdf/2012-06/terms#BuildingTypology";
-    var QA_BUILDING_TYPOLOGY_P = "http://qldarch.net/ns/rdf/2012-06/terms#buildingTypology";
+    var QA_ARCHITECT_TYPE = QA_NS + "Architect";
+    var QA_FIRM_TYPE = QA_NS + "Firm";
+    var FOAF_AGENT_TYPE = FOAF_NS + "Agent";
+    var FOAF_PERSON_TYPE = FOAF_NS + "Person";
 
-    var DCT_TITLE = "http://purl.org/dc/terms/title";
-    var DCT_CREATED = "http://purl.org/dc/terms/created";
-    var DCT_FORMAT = "http://purl.org/dc/terms/format";
+    var FOAF_FIRST_NAME = FOAF_NS + "firstName";
+    var FOAF_LAST_NAME = FOAF_NS + "lastName";
+    var FOAF_NAME = FOAF_NS + "name";
+    var QA_FIRM_NAME = QA_NS + "firmName";
 
-    var GEO_LAT = "http://www.w3.org/2003/01/geo/wgs84_pos#lat";
-    var GEO_LONG = "http://www.w3.org/2003/01/geo/wgs84_pos#long";
+    var QA_BUILDING_TYPOLOGY = QA_NS + "BuildingTypology";
+    var QA_BUILDING_TYPOLOGY_P = QA_NS + "buildingTypology";
+
+    var DCT_TITLE = DCT_NS + "title";
+    var DCT_CREATED = DCT_NS + "created";
+    var DCT_FORMAT = DCT_NS + "format";
+
+    var GEO_LAT = GEO_NS + "lat";
+    var GEO_LONG = GEO_NS + "long";
 
     var WORD_SEPARATORS = /[\s\u3031-\u3035\u309b\u309c\u30a0\u30fc\uff70]+/g;
     var PUNCTUATION = /[!"&()*+,-\.\/:;<=>?\[\\\]^`\{|\}~–’]+/g;
@@ -134,8 +148,9 @@ var frontend = (function() {
     var entities = { };
     var resourcesByRdfType = { };
 
-    var getLabel = function(thing, defaultLabel) {
-        var qlabel = thing.get1(QA_LABEL, true);
+    var getLabel = function(thing, defaultLabel, plural) {
+        var qlabel = thing.get1(plural ? QA_PLURAL : QA_SINGULAR, true) ||
+            thing.get1(QA_LABEL, true);
         if (qlabel && !_.isEmpty(qlabel.trim())) {
             return qlabel.trim();
         }
@@ -153,6 +168,16 @@ var frontend = (function() {
             var fname = thing.get1(QA_FIRM_NAME);
             if (fname && !_.isEmpty(fname.trim())) {
                 return fname.trim();
+            }
+        }
+
+        console.log(thing);
+
+        if (!_.isEmpty(_.intersection(thing.geta(RDF_TYPE),
+                [FOAF_AGENT_TYPE, QA_EDUCATIONAL_INSTITUTION]))) {
+            var aname = thing.get1(FOAF_NAME);
+            if (aname && !_.isEmpty(aname.trim())) {
+                return aname.trim();
             }
         }
 
@@ -451,12 +476,20 @@ var frontend = (function() {
         },
     });
 
-    var MapSearchButtonView = Backbone.Marionette.ItemView.extend({
-        className: "mapsearchbutton",
-        template: "#mapsearchbuttonTemplate",
+    var NavButtonView = Backbone.Marionette.ItemView.extend({
+        className: "navbutton",
+        template: "#navbuttonTemplate",
+
+        serializeData: function() {
+            return {
+                label : this.label,
+            };
+        },
 
         initialize: function(options) {
             this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.label = _.checkarg(options.label).throwNoArg("options.label");
+            this.target = _.checkarg(options.target).throwNoArg("options.target");
         },
         
         onRender: function() {
@@ -469,7 +502,7 @@ var frontend = (function() {
         },
         
         _click: function _click() {
-            this.router.navigate("mapsearch", { trigger: true, replace: false });
+            this.router.navigate(this.target, { trigger: true, replace: false });
         },
     });
 
@@ -942,11 +975,6 @@ var frontend = (function() {
             this.content = options.content;
             this.itemviews = {};
 
-            console.log("ETV::init");
-            console.log(this.type.id);
-            console.log(this.model);
-            console.log(this.type);
-
             this.model.on("reset", this.render);
             this.search.on("change", this._setinput);
 
@@ -1057,31 +1085,6 @@ var frontend = (function() {
             this.visible = true;
 
             return this;
-        },
-
-        getLabel: function(thing) {
-            var qlabel = this.model.get1(QA_LABEL, true);
-            if (qlabel && !_.isEmpty(qlabel.trim())) {
-                return qlabel.trim();
-            }
-
-            if (!_.isEmpty(_.intersection(this.model.geta(RDF_TYPE),
-                            [QA_ARCHITECT_TYPE, FOAF_PERSON_TYPE]))) {
-                var pname = (this.model.get1(FOAF_FIRST_NAME) || "") + " " +
-                    (this.model.get1(FOAF_LAST_NAME) || "");
-                if (!_.isEmpty(pname.trim())) {
-                    return pname.trim();
-                }
-            }
-
-            if (_.contains(this.model.geta(RDF_TYPE), QA_FIRM_TYPE)) {
-                var fname = this.model.get1(QA_FIRM_NAME);
-                if (fname && !_.isEmpty(fname.trim())) {
-                    return fname.trim();
-                }
-            }
-
-            return "Unidentified " + (this.type.get1(QA_SINGULAR) || this.type.get1(QA_LABEL));
         },
 
         _update: function() {
@@ -2808,8 +2811,8 @@ var frontend = (function() {
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.relationships = _.checkarg(options.relationships)
                 .throwNoArg("options.relationships");
-            this.displayedEntities = _.checkarg(options.displayedEntities)
-                .throwNoArg("options.displayedEntities");
+            this.ontologyEntities = _.checkarg(options.ontologyEntities)
+                .throwNoArg("options.ontologyEntities");
 
             this.optionTemplate = _.checkarg(_.template($("#optionTemplate").html()))
                 .throwNoArg("optionTemplate");
@@ -2873,14 +2876,14 @@ var frontend = (function() {
                     console.log(p);
                     return;
                 }
-                var sEntity = this.displayedEntities.get(this.subjectType);
+                var sEntity = this.ontologyEntities.get(this.subjectType);
                 if (!sEntity) {
                     console.log("no sEntity");
                     console.log(this.subjectType);
                     return;
                 }
                 var sTypes = sEntity.geta(RDFS_SUBCLASS_OF);
-                var oEntity = this.displayedEntities.get(this.objectType);
+                var oEntity = this.ontologyEntities.get(this.objectType);
                 if (!oEntity) {
                     console.log("no oEntity");
                     console.log(this.objectType);
@@ -2995,7 +2998,7 @@ var frontend = (function() {
             var subjectEntity = this.entities.get(subject);
             var subjectLabel = "Unrecognised subject";
             if (subjectEntity) {
-                subjectLabel = subjectEntity.get(QA_LABEL) || "Unnamed subject";
+                subjectLabel = getLabel(subjectEntity, "Unnamed subject");
             } else if (contentDescription && subject.lastIndexOf(contentDescription.id, 0) === 0) {
                 // Note: lastIndexOf(str, 0) is javascript for startsWith(str)
                 subjectLabel = "This point in the interview";
@@ -3004,13 +3007,13 @@ var frontend = (function() {
             var predicateEntity = this.properties.get(predicate);
             var predicateLabel = "Has unrecognised relationship to";
             if (predicateEntity) {
-                predicateLabel = predicateEntity.get(QA_LABEL) || "Unnamed relationship to";
+                predicateLabel = getLabel(predicateEntity, "Unnamed relationship to");
             }
 
             var objectEntity = this.entities.get(object);
             var objectLabel = "Unrecognised object";
             if (objectEntity) {
-                objectLabel = objectEntity.get(QA_LABEL) || "Unnamed object";
+                objectLabel = getLabel(objectEntity, "Unnamed object");
             }
 
             return {
@@ -3276,8 +3279,8 @@ var frontend = (function() {
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.relationships = _.checkarg(options.relationships)
                 .throwNoArg("options.relationships");
-            this.displayedEntities = _.checkarg(options.displayedEntities)
-                .throwNoArg("options.displayedEntities");
+            this.ontologyEntities = _.checkarg(options.ontologyEntities)
+                .throwNoArg("options.ontologyEntities");
 
             this.paused = false;
         },
@@ -3302,7 +3305,7 @@ var frontend = (function() {
                 entities: this.entities,
                 properties: this.properties,
                 relationships: this.relationships,
-                displayedEntities: this.displayedEntities,
+                ontologyEntities: this.ontologyEntities,
             });
             this.listenTo(this.fullAnnotationView, "full:add", this.onChildFullAdd);
             this.listenTo(this.fullAnnotationView, "entity:add", this.onAddEntity);
@@ -3398,7 +3401,7 @@ var frontend = (function() {
                 	contentDescriptionSource: view.contentDescriptionSource,
                     proper: view.proper,
                     entities: view.entities,
-                    displayedEntities: view.displayedEntities,
+                    ontologyEntities: view.ontologyEntities,
                     properties: view.properties,
                     relationships: view.relationships,
                 });
@@ -3424,8 +3427,8 @@ var frontend = (function() {
             this.files = _.checkarg(options.files).throwNoArg("options.files");
             this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
-            this.displayedEntities = _.checkarg(options.displayedEntities)
-                .throwNoArg("options.displayedEntities");
+            this.ontologyEntities = _.checkarg(options.ontologyEntities)
+                .throwNoArg("options.ontologyEntities");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.relationships = _.checkarg(options.relationships)
                 .throwNoArg("options.relationships");
@@ -3601,6 +3604,7 @@ var frontend = (function() {
                 console.log(jqXHR);
                 console.log(jqXHR.status);
                 this.entities.add(data, { parse: true });
+                console.log(this.entities);
             }, this)).fail(function(jqXHR, textStatus, errorThrown) {
                 console.log("failure");
                 console.log(rdf);
@@ -4897,46 +4901,45 @@ var frontend = (function() {
         });
 
         var properties = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "properties" },
+            url: function() { return JSON_ROOT + "ontology/properties" },
         });
 
-        var displayedEntities = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "displayedEntities" },
+        var ontologyEntities = new RDFGraph([], {
+            url: function() { return JSON_ROOT + "ontology/entities/qldarch:Entity?INCSUBCLASS=true" },
         });
 
         var photographs = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "photographSummary" },
+            url: function() { return JSON_ROOT + "expression/detail/qldarch:Photograph" },
             comparator: DCT_TITLE,
         });
 
         var linedrawings = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "lineDrawingSummary" },
+            url: function() { return JSON_ROOT + "expression/detail/qldarch:LineDrawing" },
             comparator: DCT_TITLE,
         });
 
         var interviews = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "interviewSummary" },
+            url: function() { return JSON_ROOT + "expression/detail/qldarch:Interview" },
             comparator: DCT_TITLE,
         });
 
         var transcripts = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "transcriptSummary" },
+            url: function() { return JSON_ROOT + "expression/detail/qldarch:Transcript" },
             comparator: DCT_TITLE,
         });
 
         var articles = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "articleSummary" },
+            url: function() { return JSON_ROOT + "expression/detail/qldarch:Article" },
             comparator: DCT_TITLE,
         });
 
         var entities = new RDFGraph([], {
-//            url: function() { return JSON_ROOT + "entities" },
             url: function() { return JSON_ROOT + "entity/detail/qldarch:NonDigitalThing" },
             comparator: QA_LABEL,
         });
 
         var relationships = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "ontology/Relationships" },
+            url: function() { return JSON_ROOT + "ontology/relationships" },
             comparator: QA_LABEL,
         });
 
@@ -4946,7 +4949,6 @@ var frontend = (function() {
                     return JSON_ROOT + "fileSummary?ID=" + encodeURIComponent(ids[0]);
                 } else {
                     var rawids = _.reduce(ids, function(memo, id) {
-//                        match = id.match(/http:\/\/qldarch.net\/omeka\/files\/show\/([0-9]*)/);
                         var match = /http:\/\/qldarch.net\/omeka\/files\/show\/([0-9]*)/.exec(id);
                         if (match) {
                             memo.idlist.push(match[1]);
@@ -4964,7 +4966,17 @@ var frontend = (function() {
             },
         });
 
-        var artifacts = new SubCollection(displayedEntities, {
+        var displayedEntities = new SubCollection(ontologyEntities, {
+            name: "displayedEntities",
+            tracksort: false,
+            predicate: function(model) {
+                    return model.get1(QA_TOPLEVEL);
+                },
+
+            comparator: QA_DISPLAY_PRECEDENCE,
+        });
+
+        var artifacts = new SubCollection(ontologyEntities, {
             name: "artifacts",
             tracksort: false,
             predicate: function(model) {
@@ -4974,8 +4986,18 @@ var frontend = (function() {
             comparator: QA_DISPLAY_PRECEDENCE,
         });
 
-        var proper = new SubCollection(displayedEntities, {
+        var proper = new SubCollection(ontologyEntities, {
             name: "proper",
+            tracksort: false,
+            predicate: function(model) {
+                    return !_(model.geta(RDFS_SUBCLASS_OF)).contains(QA_DIGITAL_THING);
+                },
+
+            comparator: QA_DISPLAY_PRECEDENCE,
+        });
+
+        var displayedProper = new SubCollection(displayedEntities, {
+            name: "displayedProper",
             tracksort: false,
             predicate: function(model) {
                     return !_(model.geta(RDFS_SUBCLASS_OF)).contains(QA_DIGITAL_THING);
@@ -5038,12 +5060,20 @@ var frontend = (function() {
         var searchView = new GeneralSearchView({
             id: "mainsearch",
             model: searchModel,
-            proper: proper,
+            proper: displayedProper,
             router: router
         });
 
-        var mapButtonView = new MapSearchButtonView({
+        var mapButtonView = new NavButtonView({
             router: router,
+            label: "Map Search...",
+            target: "mapsearch",
+        });
+
+        var contributeButtonView = new NavButtonView({
+            router: router,
+            label: "Contribute...",
+            target: "contribute",
         });
 
         var contentView = new DigitalContentView({
@@ -5067,12 +5097,12 @@ var frontend = (function() {
         var entityView = new EntityContentView({
             router: router,
             id: "mainentities",
-            model: proper,
+            model: displayedProper,
             entities: entities,
             content: allcontent,
             search: searchModel,
             initialize: function() {
-                proper.on("reset", this.render, this);
+                displayedProper.on("reset", this.render, this);
             }
         });
 
@@ -5123,7 +5153,7 @@ var frontend = (function() {
             entities: entities,
             properties: properties,
             relationships: relationships,
-            displayedEntities: displayedEntities,
+            ontologyEntities: ontologyEntities,
         });
 
         var pdfContentView = new PdfContentView({
@@ -5171,6 +5201,7 @@ var frontend = (function() {
             mapSearchView.close();
             $("#column1").empty().append(searchView.render().$el);
             $("#column1").append(mapButtonView.render().$el);
+            $("#column1").append(contributeButtonView.render().$el);
             fulltextView.append("#column1");
             $("#column2").empty().append(contentView.render().$el);
             entityView.append("#column3");
@@ -5184,6 +5215,7 @@ var frontend = (function() {
             $("#column123,#column1,#column2,#column23").hide();
             searchView.close();
             mapButtonView.close();
+            contributeButtonView.close();
             fulltextView.detach();
             entityView.detach();
             imageContentView.close();
@@ -5201,6 +5233,7 @@ var frontend = (function() {
             $("#column123,#column2,#column3").hide();
             searchView.close();
             mapButtonView.close();
+            contributeButtonView.close();
             fulltextView.detach();
             entityView.detach();
             entitycontentpaneView.close();
@@ -5218,6 +5251,7 @@ var frontend = (function() {
             $("#column123,#column2,#column3").hide();
             searchView.close();
             mapButtonView.close();
+            contributeButtonView.close();
             fulltextView.detach();
             entityView.detach();
             entitycontentpaneView.close();
@@ -5235,6 +5269,7 @@ var frontend = (function() {
             $("#column12,#column1,#column2,#column3, #column23").hide();
             searchView.close();
             mapButtonView.close();
+            contributeButtonView.close();
             fulltextView.detach();
             entityView.detach();
             entitycontentpaneView.close();
@@ -5252,6 +5287,7 @@ var frontend = (function() {
             $("#column123,#column1,#column2,#column23").hide();
             searchView.close();
             mapButtonView.close();
+            contributeButtonView.close();
             fulltextView.detach();
             entityView.detach();
             entitycontentpaneView.close();
@@ -5277,7 +5313,7 @@ var frontend = (function() {
         _.defer(function() {
             usermodel.fetch();
             properties.fetch({ reset: true });
-            displayedEntities.fetch({ reset: true });
+            ontologyEntities.fetch({ reset: true });
             entities.fetch({ reset: true });
             photographs.fetch({ reset: true });
             interviews.fetch({ reset: true });
