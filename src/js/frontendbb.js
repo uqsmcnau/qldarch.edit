@@ -4946,7 +4946,7 @@ var frontend = (function() {
         var files = new CachedRDFGraph([], {
             constructURL: function(ids) {
                 if (ids.length == 1) {
-                    return JSON_ROOT + "fileSummary?ID=" + encodeURIComponent(ids[0]);
+                    return JSON_ROOT + "file/summary?ID=" + encodeURIComponent(ids[0]);
                 } else {
                     var rawids = _.reduce(ids, function(memo, id) {
                         var match = /http:\/\/qldarch.net\/omeka\/files\/show\/([0-9]*)/.exec(id);
