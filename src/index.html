@@ -151,6 +151,18 @@
         <script type="text/template" id="infopanelTemplate">
             <div class="info"><%= message %></div>
         </script>
+        <script type="text/template" id="compoundTabsTemplate">
+            <h2 class="columntitle span-16">Compound Object</h2>
+            <div class="primary span-16">
+            	<iframe id="compoundcontainer" 
+                	style="height: 668px; width: 630px;" 
+                	class="compoundcontainer" 
+                	src="/explore/compoundui/compound.html"></iframe>
+			</div>
+            <input style="margin-top: 0px" class="span-8" type="text" value="" placeHolder="Search..."/>
+            <div class="tabs span-8 last"></div>
+            <div class="secondary span-8 last"></div>
+        </script>
         <script type="text/template" id="interviewTemplate">
             <div class="header span24">
                 <div class="summary span-18"></div>
@@ -174,6 +186,10 @@
                 </audio>
                 <div class="transcript"></div>
             </div>
+        </script>
+        <script type="text/template" id="compoundtabsTemplate">
+            <span type="Content" class="button tab">Digital Content</span>
+            <span type="Entity" class="button tab">People and Things</span>
         </script>
         <script type="text/template" id="transcripttabsTemplate">
             <span type="Search" class="button tab">Search Transcript</span>
@@ -246,13 +262,6 @@
                 <div class="contentlisttitle">Image Preview</div>
                 <div class="multiimagepreview"></div>
             </div>
-        </script>
-        <script type="text/template" id="compoundTemplate">
-            <h2 class="columntitle">Compound Object</h2>
-            <iframe id="compoundcontainer" 
-                style="height: 628px; width: 630px;" 
-                class="compoundcontainer" 
-                src="/explore/compoundui/compound.html"></iframe>
         </script>
         <script type="text/template" id="relatedcontentTemplate">
             <div class="relatedcontentbox">

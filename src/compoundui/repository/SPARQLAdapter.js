@@ -16,7 +16,10 @@ lore.ore.repos.SPARQLAdapter = Ext.extend(lore.ore.repos.RepositoryAdapter,{
         this.idPrefix = this.reposURL;
         this.unsavedSuffix = "#unsaved";
         this.graphStoreEndPoint = graphStoreEndPoint;
-        this.graphNamePrefix = graphNamePrefix;
+        
+        var a = document.createElement('a');
+        a.href = graphNamePrefix;        
+        this.graphNamePrefix = a.href;
     },
     /**
      * Retrieve a set of compound objects from the SPARQL repository,
