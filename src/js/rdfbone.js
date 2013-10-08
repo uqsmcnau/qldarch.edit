@@ -56,7 +56,7 @@
     var SubCollection = function(baseCollection, options) {
         options || (options = {})
         this.name = options.name;
-        if (options.predicate) this.predicate = options.predicate;
+        if (options.predicate) this.predicate = _.bind(options.predicate, this);
         this.baseCollection = baseCollection ? baseCollection : new Collection([], options);
 
         Collection.apply(this, [this.baseCollection.filter(this.predicate), options]);
@@ -108,27 +108,24 @@
         predicate: function () { return true; },
 
         setPredicate: function setPredicate(predicate) {
-            this.predicate = predicate;
+            this.predicate = _.bind(predicate, this);
             this._doReset(this.baseCollection, {});
         }
     });
 
     SubCollection.extend = Collection.extend;
 
-    /*
-     * WARNING: This is not working yet.
-     * */
-    var UnionCollection = function(baseCollections, options) {
-        options || (options = {})
-        if (options.predicate) this.predicate = options.predicate;
-        this.baseCollections = baseCollections;
+    var UnionCollection = Backbone.Collection.extend({
+        constructor: function(baseCollections, options) {
+            options || (options = {})
+            this.predicate = options.predicate;
+            this.baseCollections = baseCollections;
 
-        Collection.apply(this, [[], options]);
-        this._doReset();
-        this.bindToBaseCollections();
-    }
+            Collection.apply(this, [[], options]);
+            this._doReset();
+            this.bindToBaseCollections();
+        },
 
-    _.extend(UnionCollection.prototype, Collection.prototype, {
         _doReset : function(collection, options) {
             this.reset(_.flatten(_.pluck(this.baseCollections, 'models')), options);
         },
@@ -153,8 +150,6 @@
             }, this);
         },
     });
-
-    UnionCollection.extend = UnionCollection.extend;
 
     var CachedRDFGraph = function(initialModels, options) {
         RDFGraph.apply(this, [initialModels, options]);

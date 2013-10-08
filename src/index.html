@@ -84,6 +84,9 @@
         <script type="text/template" id="mapsearchbuttonTemplate">
             <div class="returnbutton span-6 last clear">Map Search...</div>
         </script>
+        <script type="text/template" id="navbuttonTemplate">
+            <div class="returnbutton span-6 last clear"><%- label %></div>
+        </script>
         <script type="text/template" id="compoundbuttonTemplate">
             <div class="returnbutton span-6 last clear">Compound Object View</div>
         </script>
@@ -315,16 +318,19 @@
             <div class="header span-16 last">
                 <h3 style="margin-top:10px">Annotate Current Utterance</h3>
             </div>
-            <div class="controls span-16 last">
-                <span class="returnbutton pause span-6" style="margin-left:10px">Pause</span>
+            <div class="controls">
+                <div class="span-16 last">
+                    <span class="returnbutton pause span-6" style="margin-left:10px">Pause</span>
+                </div>
+                <div class="simple span-16 last">
+                </div>
+                <div class="full span-16 last">
+                </div>
+                <div class="annotations span-16 last">
+                </div>
+                <div class="info span-15 last">Please Note: Only annotation summary available; details stored, but not available yet</div>
+                <div class="popover span-8" style="display:none"></div>
             </div>
-            <div class="simple span-16 last">
-            </div>
-            <div class="full span-16 last">
-            </div>
-            <div class="annotations span-16 last">
-            </div>
-            <div class="info span-15 last">Please Note: Only annotation summary available; details stored, but not available yet</div>
         </script>
         <script type="text/template" id="annotationstableTemplate">
             <table>
@@ -381,17 +387,23 @@
         </script>
         <script type="text/template" id="entityselectionTemplate">
             <select name="entitytype">
-                <option value="Architect">Architect</option>
-                <option value="Structure">Structure</option>
-                <option value="Firm">Firm</option>
             </select>
             <select name="entity">
-                <option value="Birrell">James Birrell</option>
-                <option value="Bligh">Graham Bligh</option>
-                <option value="Mills">Helen Mills</option>
-                <option value="Riddell">Rob Riddell</option>
             </select>
-            <button class="addentity" disabled>+</button>
+            <button class="addentity">+</button>
+        </script>
+        <script type="text/template" id="addentityTemplate">
+            <h3>Add new <%- typelabel %>:</h3>
+            <div class="attributes"></div>
+            <div class="dialogbuttons">
+                <button name="add">Add <%- typelabel %></button>
+                <button name="cancel">Cancel</button>
+            </div>
+        </script>
+        <script type="text/template" id="addentityattributeTemplate">
+            <label><%- attributelabel %></label>
+            <input type="text"></input>
+            <span><%- required %></span>
         </script>
         <script type="text/javascript">
             $(function() {

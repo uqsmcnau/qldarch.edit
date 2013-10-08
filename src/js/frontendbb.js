@@ -46,66 +46,90 @@ var frontend = (function() {
     }
 
     var JSON_ROOT = "/ws/rest/";
-    var QA_DISPLAY = "http://qldarch.net/ns/rdf/2012-06/terms#display";
-    var QA_LABEL = "http://qldarch.net/ns/rdf/2012-06/terms#label";
-    var QA_SINGULAR = "http://qldarch.net/ns/rdf/2012-06/terms#singular";
-    var QA_EDITABLE = "http://qldarch.net/ns/rdf/2012-06/terms#editable";
-    var QA_SYSTEM_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#systemLocation";
-    var QA_EXTERNAL_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#externalLocation";
-    var QA_HAS_TRANSCRIPT = "http://qldarch.net/ns/rdf/2012-06/terms#hasTranscript";
-    var QA_TRANSCRIPT_LOCATION = "http://qldarch.net/ns/rdf/2012-06/terms#transcriptLocation";
-    var QA_DISPLAY_PRECEDENCE = "http://qldarch.net/ns/rdf/2012-06/terms#displayPrecedence";
-    var QA_PREFERRED_IMAGE = "http://qldarch.net/ns/rdf/2012-06/terms#preferredImage";
-    var QA_SUMMARY = "http://qldarch.net/ns/rdf/2012-06/terms#summary";
-    var QA_RELATED_TO = "http://qldarch.net/ns/rdf/2012-06/terms#relatedTo";
-    var QA_HAS_FILE = "http://qldarch.net/ns/rdf/2012-06/terms#hasFile";
-    var QA_BASIC_MIME_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#basicMimeType";
-    var QA_DEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#definiteMapIcon";
-    var QA_INDEFINITE_MAP_ICON = "http://qldarch.net/ns/rdf/2012-06/terms#indefiniteMapIcon";
+    var QA_NS = "http://qldarch.net/ns/rdf/2012-06/terms#";
+    var OWL_NS = "http://www.w3.org/2002/07/owl#";
+    var RDF_NS = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+    var RDFS_NS = "http://www.w3.org/2000/01/rdf-schema#";
+    var FOAF_NS = "http://xmlns.com/foaf/0.1/";
+    var DCT_NS = "http://purl.org/dc/terms/";
+    var GEO_NS = "http://www.w3.org/2003/01/geo/wgs84_pos#"
 
-    var QA_REFERENCES = "http://qldarch.net/ns/rdf/2012-06/terms#references";
-    var QA_REGION_START = "http://qldarch.net/ns/rdf/2012-06/terms#regionStart";
-    var QA_REGION_END = "http://qldarch.net/ns/rdf/2012-06/terms#regionEnd";
-    var QA_SUBJECT = "http://qldarch.net/ns/rdf/2012-06/terms#subject";
-    var QA_PREDICATE = "http://qldarch.net/ns/rdf/2012-06/terms#predicate";
-    var QA_OBJECT = "http://qldarch.net/ns/rdf/2012-06/terms#object";
-    var QA_IMPLIES_RELATIONSHIP = "http://qldarch.net/ns/rdf/2012-06/terms#impliesRelationship";
-    var QA_START_DATE = "http://qldarch.net/ns/rdf/2012-06/terms#startDate";
-    var QA_END_DATE = "http://qldarch.net/ns/rdf/2012-06/terms#endDate";
-    var QA_EVIDENCE = "http://qldarch.net/ns/rdf/2012-06/terms#evidence";
-    var QA_EVIDENCE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Evidence";
-    var QA_TIME_FROM = "http://qldarch.net/ns/rdf/2012-06/terms#timeFrom";
-    var QA_TIME_TO = "http://qldarch.net/ns/rdf/2012-06/terms#timeTo";
-    var QA_DOCUMENTED_BY = "http://qldarch.net/ns/rdf/2012-06/terms#documentedBy";
+    var QA_DISPLAY = QA_NS + "display";
+    var QA_TOPLEVEL = QA_NS + "toplevel";
+    var QA_LABEL = QA_NS + "label";
+    var QA_PLURAL = QA_NS + "plural";
+    var QA_SINGULAR = QA_NS + "singular";
+    var QA_EDITABLE = QA_NS + "editable";
+    var QA_SUPPRESS_EDITABLE = QA_NS + "suppressEditable";
+    var QA_SYSTEM_LOCATION = QA_NS + "systemLocation";
+    var QA_EXTERNAL_LOCATION = QA_NS + "externalLocation";
+    var QA_HAS_TRANSCRIPT = QA_NS + "hasTranscript";
+    var QA_TRANSCRIPT_LOCATION = QA_NS + "transcriptLocation";
+    var QA_DISPLAY_PRECEDENCE = QA_NS + "displayPrecedence";
+    var QA_PREFERRED_IMAGE = QA_NS + "preferredImage";
+    var QA_SUMMARY = QA_NS + "summary";
+    var QA_RELATED_TO = QA_NS + "relatedTo";
+    var QA_HAS_FILE = QA_NS + "hasFile";
+    var QA_BASIC_MIME_TYPE = QA_NS + "basicMimeType";
+    var QA_DEFINITE_MAP_ICON = QA_NS + "definiteMapIcon";
+    var QA_INDEFINITE_MAP_ICON = QA_NS + "indefiniteMapIcon";
+    var QA_REQUIRED_TO_CREATE = QA_NS + "requiredToCreate";
 
-    var OWL_DATATYPE_PROPERTY = "http://www.w3.org/2002/07/owl#DatatypeProperty";
-    var OWL_OBJECT_PROPERTY = "http://www.w3.org/2002/07/owl#ObjectProperty";
-    var RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type";
-    var RDF_SUBJECT = "http://www.w3.org/1999/02/22-rdf-syntax-ns#subject";
-    var RDF_PREDICATE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#predicate";
-    var RDF_OBJECT = "http://www.w3.org/1999/02/22-rdf-syntax-ns#object";
-    var RDFS_SUBCLASS_OF = "http://www.w3.org/2000/01/rdf-schema#subClassOf";
-    var RDFS_DOMAIN = "http://www.w3.org/2000/01/rdf-schema#domain";
-    var RDFS_RANGE = "http://www.w3.org/2000/01/rdf-schema#range";
-    var RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label";
+    var QA_REFERENCES = QA_NS + "references";
+    var QA_REGION_START = QA_NS + "regionStart";
+    var QA_REGION_END = QA_NS + "regionEnd";
+    var QA_SUBJECT = QA_NS + "subject";
+    var QA_PREDICATE = QA_NS + "predicate";
+    var QA_OBJECT = QA_NS + "object";
+    var QA_IMPLIES_RELATIONSHIP = QA_NS + "impliesRelationship";
+    var QA_START_DATE = QA_NS + "startDate";
+    var QA_END_DATE = QA_NS + "endDate";
+    var QA_EVIDENCE = QA_NS + "evidence";
+    var QA_EVIDENCE_TYPE = QA_NS + "Evidence";
+    var QA_TIME_FROM = QA_NS + "timeFrom";
+    var QA_TIME_TO = QA_NS + "timeTo";
+    var QA_DOCUMENTED_BY = QA_NS + "documentedBy";
 
-    var QA_REFERENCE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#ReferenceRelation";
-    var QA_INTERVIEW_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Interview";
-    var QA_TRANSCRIPT_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Transcript";
-    var QA_ARTICLE_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Article";
-    var QA_PHOTOGRAPH_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#Photograph";
-    var QA_LINEDRAWING_TYPE = "http://qldarch.net/ns/rdf/2012-06/terms#LineDrawing";
-    var QA_DIGITAL_THING = "http://qldarch.net/ns/rdf/2012-06/terms#DigitalThing";
+    var OWL_DATATYPE_PROPERTY = OWL_NS + "DatatypeProperty";
+    var OWL_OBJECT_PROPERTY = OWL_NS + "ObjectProperty";
+    var RDF_TYPE = RDF_NS + "type";
+    var RDF_SUBJECT = RDF_NS + "subject";
+    var RDF_PREDICATE = RDF_NS + "predicate";
+    var RDF_OBJECT = RDF_NS + "object";
+    var RDFS_SUBCLASS_OF = RDFS_NS + "subClassOf";
+    var RDFS_DOMAIN = RDFS_NS + "domain";
+    var RDFS_RANGE = RDFS_NS + "range";
+    var RDFS_LABEL = RDFS_NS + "label";
 
-    var QA_BUILDING_TYPOLOGY = "http://qldarch.net/ns/rdf/2012-06/terms#BuildingTypology";
-    var QA_BUILDING_TYPOLOGY_P = "http://qldarch.net/ns/rdf/2012-06/terms#buildingTypology";
+    var QA_REFERENCE_TYPE = QA_NS + "ReferenceRelation";
+    var QA_INTERVIEW_TYPE = QA_NS + "Interview";
+    var QA_TRANSCRIPT_TYPE = QA_NS + "Transcript";
+    var QA_ARTICLE_TYPE = QA_NS + "Article";
+    var QA_PHOTOGRAPH_TYPE = QA_NS + "Photograph";
+    var QA_LINEDRAWING_TYPE = QA_NS + "LineDrawing";
+    var QA_DIGITAL_THING = QA_NS + "DigitalThing";
 
-    var DCT_TITLE = "http://purl.org/dc/terms/title";
-    var DCT_CREATED = "http://purl.org/dc/terms/created";
-    var DCT_FORMAT = "http://purl.org/dc/terms/format";
+    var QA_EDUCATIONAL_INSTITUTION = QA_NS + "EducationalInstitution";
 
-    var GEO_LAT = "http://www.w3.org/2003/01/geo/wgs84_pos#lat";
-    var GEO_LONG = "http://www.w3.org/2003/01/geo/wgs84_pos#long";
+    var QA_ARCHITECT_TYPE = QA_NS + "Architect";
+    var QA_FIRM_TYPE = QA_NS + "Firm";
+    var FOAF_AGENT_TYPE = FOAF_NS + "Agent";
+    var FOAF_PERSON_TYPE = FOAF_NS + "Person";
+
+    var FOAF_FIRST_NAME = FOAF_NS + "firstName";
+    var FOAF_LAST_NAME = FOAF_NS + "lastName";
+    var FOAF_NAME = FOAF_NS + "name";
+    var QA_FIRM_NAME = QA_NS + "firmName";
+
+    var QA_BUILDING_TYPOLOGY = QA_NS + "BuildingTypology";
+    var QA_BUILDING_TYPOLOGY_P = QA_NS + "buildingTypology";
+
+    var DCT_TITLE = DCT_NS + "title";
+    var DCT_CREATED = DCT_NS + "created";
+    var DCT_FORMAT = DCT_NS + "format";
+
+    var GEO_LAT = GEO_NS + "lat";
+    var GEO_LONG = GEO_NS + "long";
 
     var WORD_SEPARATORS = /[\s\u3031-\u3035\u309b\u309c\u30a0\u30fc\uff70]+/g;
     var PUNCTUATION = /[!"&()*+,-\.\/:;<=>?\[\\\]^`\{|\}~–’]+/g;
@@ -123,6 +147,52 @@ var frontend = (function() {
     var contentByURI = { };
     var entities = { };
     var resourcesByRdfType = { };
+
+    var getLabel = function(thing, defaultLabel, plural) {
+        var qlabel = thing.get1(plural ? QA_PLURAL : QA_SINGULAR, true) ||
+            thing.get1(QA_LABEL, true);
+        if (qlabel && !_.isEmpty(qlabel.trim())) {
+            return qlabel.trim();
+        }
+
+        if (!_.isEmpty(_.intersection(thing.geta(RDF_TYPE),
+                        [QA_ARCHITECT_TYPE, FOAF_PERSON_TYPE]))) {
+            var pname = (thing.get1(FOAF_FIRST_NAME) || "") + " " +
+                (thing.get1(FOAF_LAST_NAME) || "");
+            if (!_.isEmpty(pname.trim())) {
+                return pname.trim();
+            }
+        }
+
+        if (_.contains(thing.geta(RDF_TYPE), QA_FIRM_TYPE)) {
+            var fname = thing.get1(QA_FIRM_NAME);
+            if (fname && !_.isEmpty(fname.trim())) {
+                return fname.trim();
+            }
+        }
+
+        console.log(thing);
+
+        if (!_.isEmpty(_.intersection(thing.geta(RDF_TYPE),
+                [FOAF_AGENT_TYPE, QA_EDUCATIONAL_INSTITUTION]))) {
+            var aname = thing.get1(FOAF_NAME);
+            if (aname && !_.isEmpty(aname.trim())) {
+                return aname.trim();
+            }
+        }
+
+        if (!_.isEmpty(_.intersection(thing.geta(RDF_TYPE),
+                [QA_DIGITAL_THING, QA_LINEDRAWING_TYPE,
+                 QA_PHOTOGRAPH_TYPE, QA_ARTICLE_TYPE,
+                 QA_TRANSCRIPT_TYPE, QA_INTERVIEW_TYPE]))) {
+            var tname = thing.get1(DCT_TITLE);
+            if (tname && !_.isEmpty(tname.trim())) {
+                return tname.trim();
+            }
+        }
+
+        return _.result({ d: defaultLabel }, 'd');
+    };
 
     var SearchModel = Backbone.Model.extend({
         defaults: {
@@ -466,12 +536,20 @@ var frontend = (function() {
         },
     });
 
-    var MapSearchButtonView = Backbone.Marionette.ItemView.extend({
-        className: "mapsearchbutton",
-        template: "#mapsearchbuttonTemplate",
+    var NavButtonView = Backbone.Marionette.ItemView.extend({
+        className: "navbutton",
+        template: "#navbuttonTemplate",
+
+        serializeData: function() {
+            return {
+                label : this.label,
+            };
+        },
 
         initialize: function(options) {
             this.router = _.checkarg(options.router).throwNoArg("options.router");
+            this.label = _.checkarg(options.label).throwNoArg("options.label");
+            this.target = _.checkarg(options.target).throwNoArg("options.target");
         },
         
         onRender: function() {
@@ -484,34 +562,7 @@ var frontend = (function() {
         },
         
         _click: function _click() {
-            this.router.navigate("mapsearch", { trigger: true, replace: false });
-        },
-    });
-
-    var CompoundButtonView = Backbone.Marionette.ItemView.extend({
-        className : "compoundbutton",
-        template : "#compoundbuttonTemplate",
-
-        initialize : function(options) {
-            this.router = _.checkarg(options.router).throwNoArg(
-                    "options.router");
-            this.model = new Backbone.Model();
-        },
-
-        onRender : function() {
-            this.bindUIElements();
-            this.delegateEvents();
-        },
-
-        events : {
-            "click" : "_click"
-        },
-
-        _click : function _click() {
-            this.router.navigate("compound", {
-                trigger : true,
-                replace : false
-            });
+            this.router.navigate(this.target, { trigger: true, replace: false });
         },
     });
 
@@ -1436,6 +1487,7 @@ var frontend = (function() {
                     router: this.router,
                     model: entityItem,
                     content: this.content,
+                    type: this.type,
                 });
                 this.itemviews[entityItem.id] = itemView;
                 this.$('.contentlist').append(itemView.render().el);
@@ -1584,6 +1636,7 @@ var frontend = (function() {
             this.router = options.router;
 
             this.content = options.content;
+            this.type = options.type;
 
             _.bindAll(this);
             if (options.initialize) { options.initialize.call(this); }
@@ -1599,7 +1652,9 @@ var frontend = (function() {
         },
 
         render: function() {
-            this.$el.text(this.model.get1(QA_LABEL, true));
+            var defaultLabel = "Unidentified " +
+                    (this.type.get1(QA_SINGULAR) || this.type.get1(QA_LABEL));
+            this.$el.text(getLabel(this.model, defaultLabel));
 
             this.rendered = true;
             this.visible = true;
@@ -3311,7 +3366,7 @@ var frontend = (function() {
 
     var EntitySelectionModel = Backbone.Model.extend({
         defaults: {
-            enabled: false,
+            enabled: true,
             selection: undefined,
         },
     });
@@ -3383,10 +3438,10 @@ var frontend = (function() {
         displayTypeOptions: function() {
             this.ui.typeselect.empty();
             this.editableNouns.each(function(p) {
-                var label = p.get1(QA_SINGULAR) || p.get1(QA_LABEL) || "No label provided";
+                var defLabel = p.get1(QA_SINGULAR) || p.get1(QA_LABEL) || "No label provided";
                 this.ui.typeselect.append(this.optionTemplate({
                     value: p.id,
-                    label: label,
+                    label: getLabel(p, defLabel),
                 }));
             }, this);
         },
@@ -3395,11 +3450,11 @@ var frontend = (function() {
             this.ui.entityselect.empty();
             var selection = this.ui.typeselect.val();
             if (this.entityLists[selection]) {
-                this.entityLists[selection].each(function(p) {
-                    var label = p.get1(QA_SINGULAR) || p.get1(QA_LABEL) || "No label provided";
+                this.entityLists[selection].each(function(e) {
+                    var defLabel = e.get1(QA_SINGULAR) || e.get1(QA_LABEL) || "No label provided";
                     this.ui.entityselect.append(this.optionTemplate({
-                        value: p.id,
-                        label: label,
+                        value: e.id,
+                        label: getLabel(e, defLabel),
                     }));
                 }, this);
                 this.onSelectEntity();
@@ -3413,6 +3468,18 @@ var frontend = (function() {
         },
 
         onAddEntity: function() {
+            // FIXME: This may need to expand the typeselection
+            var typeselection = this.ui.typeselect.val();
+            if (typeselection) {
+                var type = this.editableNouns.get(typeselection);
+                if (type) {
+                    this.triggerMethod("entity:add", type);
+                } else {
+                    console.log("Editable type not found: " + typeselection);
+                }
+            } else {
+                console.log("No type selected");
+            }
         },
 
         onSelectEntity: function() {
@@ -3454,11 +3521,16 @@ var frontend = (function() {
                 entities: this.entities,
             });
             this.listenTo(this.entityView, "selection:changed", this.setSelection);
+            this.listenTo(this.entityView, "entity:add", this.onAddEntity);
             this.entityselection.show(this.entityView);
         },
 
         setSelection: function(selection) {
             this.selectionURI = selection;
+        },
+
+        onAddEntity: function(entity) {
+            this.triggerMethod("entity:add", entity);
         },
 
         onAddRefersTo: function() {
@@ -3505,8 +3577,8 @@ var frontend = (function() {
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.relationships = _.checkarg(options.relationships)
                 .throwNoArg("options.relationships");
-            this.displayedEntities = _.checkarg(options.displayedEntities)
-                .throwNoArg("options.displayedEntities");
+            this.ontologyEntities = _.checkarg(options.ontologyEntities)
+                .throwNoArg("options.ontologyEntities");
 
             this.optionTemplate = _.checkarg(_.template($("#optionTemplate").html()))
                 .throwNoArg("optionTemplate");
@@ -3516,6 +3588,8 @@ var frontend = (function() {
                 fromdate: undefined,
                 todate: undefined,
             };
+            this.subjectURI = undefined;
+            this.objectURI = undefined;
         },
         
         onRender: function() {
@@ -3524,6 +3598,7 @@ var frontend = (function() {
                 entities: this.entities,
             });
             this.listenTo(this.subjectView, "selection:changed", this.setSubject);
+            this.listenTo(this.subjectView, "entity:add", this.onAddEntity);
             this.subject.show(this.subjectView);
 
             this.objectView = new EntitySelectionView({
@@ -3531,12 +3606,16 @@ var frontend = (function() {
                 entities: this.entities,
             });
             this.listenTo(this.objectView, "selection:changed", this.setObject);
+            this.listenTo(this.objectView, "entity:add", this.onAddEntity);
             this.object.show(this.objectView);
-
-            _.defer(_.bind(this.displayRelationships, this));
         },
 
         displayRelationships: function() {
+            if (_.isUndefined(this.subjectURI) ||
+                _.isUndefined(this.objectURI)) {
+                    return;
+            }
+
             this.ui.relselect.empty();
             this.relationships.each(function(rel) {
                 var pURI = rel.get1(QA_IMPLIES_RELATIONSHIP);
@@ -3563,14 +3642,14 @@ var frontend = (function() {
                     console.log(p);
                     return;
                 }
-                var sEntity = this.displayedEntities.get(this.subjectType);
+                var sEntity = this.ontologyEntities.get(this.subjectType);
                 if (!sEntity) {
                     console.log("no sEntity");
                     console.log(this.subjectType);
                     return;
                 }
                 var sTypes = sEntity.geta(RDFS_SUBCLASS_OF);
-                var oEntity = this.displayedEntities.get(this.objectType);
+                var oEntity = this.ontologyEntities.get(this.objectType);
                 if (!oEntity) {
                     console.log("no oEntity");
                     console.log(this.objectType);
@@ -3620,6 +3699,12 @@ var frontend = (function() {
 
         onSelectRel: function() {
             this.predicateURI = this.ui.relselect.val();
+        },
+
+        onAddEntity: function(entity) {
+            console.log("FA::onAddEntity");
+            console.log(entity);
+            this.triggerMethod("entity:add", entity);
         },
 
         onAddRefersTo: function() {
@@ -3679,7 +3764,7 @@ var frontend = (function() {
             var subjectEntity = this.entities.get(subject);
             var subjectLabel = "Unrecognised subject";
             if (subjectEntity) {
-                subjectLabel = subjectEntity.get(QA_LABEL) || "Unnamed subject";
+                subjectLabel = getLabel(subjectEntity, "Unnamed subject");
             } else if (contentDescription && subject.lastIndexOf(contentDescription.id, 0) === 0) {
                 // Note: lastIndexOf(str, 0) is javascript for startsWith(str)
                 subjectLabel = "This point in the interview";
@@ -3688,13 +3773,13 @@ var frontend = (function() {
             var predicateEntity = this.properties.get(predicate);
             var predicateLabel = "Has unrecognised relationship to";
             if (predicateEntity) {
-                predicateLabel = predicateEntity.get(QA_LABEL) || "Unnamed relationship to";
+                predicateLabel = getLabel(predicateEntity, "Unnamed relationship to");
             }
 
             var objectEntity = this.entities.get(object);
             var objectLabel = "Unrecognised object";
             if (objectEntity) {
-                objectLabel = objectEntity.get(QA_LABEL) || "Unnamed object";
+                objectLabel = getLabel(objectEntity, "Unnamed object");
             }
 
             return {
@@ -3824,26 +3909,105 @@ var frontend = (function() {
                 name: "Relationships",
                 tracksort: false,
                 predicate: function(model) {
-                        console.log("In predicate");
-                        console.log(relationships);
-                        console.log(model);
                         var result = relationships.any(function(rel) {
-//                            console.log("In any");
-//                            console.log(rel);
-//                            console.log(model);
-//                            console.log(RDF_TYPE);
                             var result = !_.isEmpty(_.intersection(
                                     rel.geta(RDFS_SUBCLASS_OF), model.geta(RDF_TYPE)));
-//                            console.log(result);
                             return result;
                         });
 
-                        console.log("Predicate returns: " + result);
                         return result;
                     },
                 comparator: QA_PREDICATE,
             });
             window.atvcol = this.collection;
+        },
+    });
+
+    var AddEntityAttributeView = Backbone.Marionette.ItemView.extend({
+        className: "entityattribute",
+        template: "#addentityattributeTemplate",
+
+        ui: {
+            input: "input",
+        },
+
+        events: {
+            "keyup input"   : "_keyup",
+        },
+
+        serializeData: function() {
+            return {
+                attributelabel: this.model.get1(QA_LABEL),
+                required: _.contains(this.requiredAttrs, this.model.id) ? "*" : "",
+            };
+        },
+
+        initialize: function(options) {
+            this.requiredAttrs = _.checkarg(options.requiredAttrs)
+                .throwNoArg("options.requiredAttrs");
+            this.target = _.checkarg(options.target).throwNoArg("options.target");
+        },
+
+        _keyup: function(event) {
+            this.target[this.model.id] = this.ui.input.val();
+        },
+    });
+
+    var CreateEntityView = Backbone.Marionette.CompositeView.extend({
+        className: "createentity",
+        template: "#addentityTemplate",
+
+        itemViewContainer: ".attributes",
+        itemView: AddEntityAttributeView,
+        itemViewOptions: function() {
+            return {
+                target: this.target,
+                requiredAttrs: this.requiredAttrs,
+            };
+        },
+
+        events: {
+            "click button[name=add]"   : "doAdd",
+            "click button[name=cancel]"   : "doCancel",
+        },
+
+        serializeData: function() {
+            return {
+                typelabel: this.entity.get1(QA_SINGULAR) || this.entity.get1(QA_LABEL),
+            };
+        },
+
+        initialize: function(options) {
+            var entity = this.entity = _.checkarg(options.entity).throwNoArg("options.entity");
+            this.requiredAttrs = this.entity.geta(QA_REQUIRED_TO_CREATE);
+            this.properties = _.checkarg(options.properties)
+                .throwNoArg("options.properties");
+            this.target = {};
+            this.target[RDF_TYPE] = entity.id;
+
+            this.collection = new SubCollection(this.properties, {
+                name: "entity-attributes",
+                tracksort: false,
+                predicate: function(property) {
+                    // Property is editable AND
+                    // Property is a datatype property AND
+                    // Domain of property intersects entity's type.
+                    return !!property.get1(QA_EDITABLE) &&
+                        !_.contains(entity.geta(QA_SUPPRESS_EDITABLE), property.id) &&
+                        !!_.contains(property.geta(RDF_TYPE), OWL_DATATYPE_PROPERTY) &&
+                        !_.isEmpty(_.intersection(property.geta(RDFS_DOMAIN),
+                            entity.geta(RDFS_SUBCLASS_OF)));
+                    },
+                comparator: QA_DISPLAY_PRECEDENCE,
+            });
+        },
+
+        doAdd: function() {
+            this.triggerMethod("perform:add", this.target);
+        },
+
+        doCancel: function() {
+            this.triggerMethod("perform:cancel");
         },
     });
 
@@ -3855,10 +4019,12 @@ var frontend = (function() {
             simple: ".simple",
             full: ".full",
             annotations: ".annotations",
+            popover: ".popover",
         },
 
         ui: {
-            pauseBtn : ".pause",
+            pauseBtn: ".pause",
+            popover: ".popover",
         },
 
         triggers: {
@@ -3879,8 +4045,8 @@ var frontend = (function() {
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.relationships = _.checkarg(options.relationships)
                 .throwNoArg("options.relationships");
-            this.displayedEntities = _.checkarg(options.displayedEntities)
-                .throwNoArg("options.displayedEntities");
+            this.ontologyEntities = _.checkarg(options.ontologyEntities)
+                .throwNoArg("options.ontologyEntities");
 
             this.paused = false;
         },
@@ -3894,7 +4060,10 @@ var frontend = (function() {
                 proper: this.proper,
                 entities: this.entities,
             });
-            this.listenTo(this.simpleAnnotationView, "simple:add", this.onChildSimpleAdd);
+            this.listenTo(this.simpleAnnotationView,
+                "simple:add", this.onChildSimpleAdd);
+            this.listenTo(this.simpleAnnotationView,
+                "entity:add", this.onAddEntity);
             this.simple.show(this.simpleAnnotationView);
 
             this.fullAnnotationView = new FullAnnotationView({
@@ -3902,9 +4071,10 @@ var frontend = (function() {
                 entities: this.entities,
                 properties: this.properties,
                 relationships: this.relationships,
-                displayedEntities: this.displayedEntities,
+                ontologyEntities: this.ontologyEntities,
             });
             this.listenTo(this.fullAnnotationView, "full:add", this.onChildFullAdd);
+            this.listenTo(this.fullAnnotationView, "entity:add", this.onAddEntity);
             this.full.show(this.fullAnnotationView);
 
             this.annotationsView = new AnnotationsTableView({
@@ -3935,6 +4105,26 @@ var frontend = (function() {
 
         onChildFullAdd: function(entity) {
             this.triggerMethod("full:add", entity);
+        },
+
+        onAddEntity: function(entity) {
+            this.createEntityView = new CreateEntityView({
+                entity: entity,
+                properties: this.properties,
+            });
+            this.popover.show(this.createEntityView);
+            this.listenTo(this.createEntityView, "perform:add", this.onPerformAdd);
+            this.listenTo(this.createEntityView, "perform:cancel", this.onPerformCancel);
+            $(this.ui.popover).show();
+        },
+
+        onPerformAdd: function(entityGraph) {
+            this.triggerMethod("perform:addEntity", entityGraph);
+            $(this.ui.popover).hide();
+        },
+
+        onPerformCancel: function() {
+            $(this.ui.popover).hide();
         },
     });
 
@@ -3977,13 +4167,14 @@ var frontend = (function() {
                 	contentDescriptionSource: view.contentDescriptionSource,
                     proper: view.proper,
                     entities: view.entities,
-                    displayedEntities: view.displayedEntities,
+                    ontologyEntities: view.ontologyEntities,
                     properties: view.properties,
                     relationships: view.relationships,
                 });
                 view.listenTo(av, "pause:set", view.pauseSet);
                 view.listenTo(av, "simple:add", view.onSimpleAdd);
                 view.listenTo(av, "full:add", view.onFullAdd);
+                view.listenTo(av, "perform:addEntity", view.onAddEntity);
                 return av;
             },
         },
@@ -4002,8 +4193,8 @@ var frontend = (function() {
             this.files = _.checkarg(options.files).throwNoArg("options.files");
             this.proper = _.checkarg(options.proper).throwNoArg("options.proper");
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
-            this.displayedEntities = _.checkarg(options.displayedEntities)
-                .throwNoArg("options.displayedEntities");
+            this.ontologyEntities = _.checkarg(options.ontologyEntities)
+                .throwNoArg("options.ontologyEntities");
             this.properties = _.checkarg(options.properties).throwNoArg("options.properties");
             this.relationships = _.checkarg(options.relationships)
                 .throwNoArg("options.relationships");
@@ -4145,6 +4336,41 @@ var frontend = (function() {
                 console.log(jqXHR);
                 console.log(jqXHR.status);
                 this.triggerMethod("utterance:refresh");
+            }, this)).fail(function(jqXHR, textStatus, errorThrown) {
+                console.log("failure");
+                console.log(rdf);
+                console.log(errorThrown);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
+            });
+        },
+
+        onAddEntity: function(target) {
+            var rdf = target;
+            var evidence = rdf[QA_EVIDENCE] = {};
+            evidence[RDF_TYPE] = QA_EVIDENCE_TYPE;
+            evidence[QA_DOCUMENTED_BY] =
+                this.contentDescriptionSource.get('contentDescription').id,
+            evidence[QA_TIME_FROM] = this.currentUtterance.get('start');
+            evidence[QA_TIME_TO] = this.currentUtterance.get('end') ?
+                this.currentUtterance.get('end') : this.trackingView.getDuration();
+
+            $.ajax({
+                type: 'POST',
+                url: JSON_ROOT + 'entity/description',
+                data: JSON.stringify(rdf),
+                dataType: 'json',
+                contentType: 'application/json',
+            }).done(_.bind(function(data, textStatus, jqXHR) {
+                console.log("success");
+                console.log(rdf);
+                console.log(data);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
+                this.entities.add(data, { parse: true });
+                console.log(this.entities);
             }, this)).fail(function(jqXHR, textStatus, errorThrown) {
                 console.log("failure");
                 console.log(rdf);
@@ -4745,7 +4971,7 @@ var frontend = (function() {
                 },
             }))(this.geoentities, {
                 name: "entitiesInList",
-                tracsort: true,
+                tracksort: true,
                 entitySearch: this.entitySearch,
                 entitiesOnMap: this.entitiesOnMap,
                 predicate: function(entity) {
@@ -5443,55 +5669,54 @@ var frontend = (function() {
         });
 
         var properties = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "properties" },
+            url: function() { return JSON_ROOT + "ontology/properties" },
         });
 
-        var displayedEntities = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "displayedEntities" },
+        var ontologyEntities = new RDFGraph([], {
+            url: function() { return JSON_ROOT + "ontology/entities/qldarch:Entity?INCSUBCLASS=true" },
         });
 
         var photographs = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "photographSummary" },
+            url: function() { return JSON_ROOT + "expression/detail/qldarch:Photograph" },
             comparator: DCT_TITLE,
         });
 
         var linedrawings = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "lineDrawingSummary" },
+            url: function() { return JSON_ROOT + "expression/detail/qldarch:LineDrawing" },
             comparator: DCT_TITLE,
         });
 
         var interviews = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "interviewSummary" },
+            url: function() { return JSON_ROOT + "expression/detail/qldarch:Interview" },
             comparator: DCT_TITLE,
         });
 
         var transcripts = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "transcriptSummary" },
+            url: function() { return JSON_ROOT + "expression/detail/qldarch:Transcript" },
             comparator: DCT_TITLE,
         });
 
         var articles = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "articleSummary" },
+            url: function() { return JSON_ROOT + "expression/detail/qldarch:Article" },
             comparator: DCT_TITLE,
         });
 
         var entities = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "entities" },
+            url: function() { return JSON_ROOT + "entity/detail/qldarch:NonDigitalThing" },
             comparator: QA_LABEL,
         });
 
         var relationships = new RDFGraph([], {
-            url: function() { return JSON_ROOT + "ontology/Relationships" },
+            url: function() { return JSON_ROOT + "ontology/relationships" },
             comparator: QA_LABEL,
         });
 
         var files = new CachedRDFGraph([], {
             constructURL: function(ids) {
                 if (ids.length == 1) {
-                    return JSON_ROOT + "fileSummary?ID=" + encodeURIComponent(ids[0]);
+                    return JSON_ROOT + "file/summary?ID=" + encodeURIComponent(ids[0]);
                 } else {
                     var rawids = _.reduce(ids, function(memo, id) {
-//                        match = id.match(/http:\/\/qldarch.net\/omeka\/files\/show\/([0-9]*)/);
                         var match = /http:\/\/qldarch.net\/omeka\/files\/show\/([0-9]*)/.exec(id);
                         if (match) {
                             memo.idlist.push(match[1]);
@@ -5509,7 +5734,17 @@ var frontend = (function() {
             },
         });
 
-        var artifacts = new SubCollection(displayedEntities, {
+        var displayedEntities = new SubCollection(ontologyEntities, {
+            name: "displayedEntities",
+            tracksort: false,
+            predicate: function(model) {
+                    return model.get1(QA_TOPLEVEL);
+                },
+
+            comparator: QA_DISPLAY_PRECEDENCE,
+        });
+
+        var artifacts = new SubCollection(ontologyEntities, {
             name: "artifacts",
             tracksort: false,
             predicate: function(model) {
@@ -5519,8 +5754,18 @@ var frontend = (function() {
             comparator: QA_DISPLAY_PRECEDENCE,
         });
 
-        var proper = new SubCollection(displayedEntities, {
+        var proper = new SubCollection(ontologyEntities, {
             name: "proper",
+            tracksort: false,
+            predicate: function(model) {
+                    return !_(model.geta(RDFS_SUBCLASS_OF)).contains(QA_DIGITAL_THING);
+                },
+
+            comparator: QA_DISPLAY_PRECEDENCE,
+        });
+
+        var displayedProper = new SubCollection(displayedEntities, {
+            name: "displayedProper",
             tracksort: false,
             predicate: function(model) {
                     return !_(model.geta(RDFS_SUBCLASS_OF)).contains(QA_DIGITAL_THING);
@@ -5583,7 +5828,7 @@ var frontend = (function() {
         var searchView = new GeneralSearchView({
             id: "mainsearch",
             model: searchModel,
-            proper: proper,
+            proper: displayedProper,
             router: router
         });
         
@@ -5594,12 +5839,22 @@ var frontend = (function() {
             router: router
         });
 
-        var mapButtonView = new MapSearchButtonView({
+        var mapButtonView = new NavButtonView({
             router: router,
+            label: "Map Search...",
+            target: "mapsearch",
+        });
+        
+        var compoundButtonView = new NavButtonView({
+            router: router,
+            label: "Compound Object View",
+            target: "compound",
         });
 
-        var compoundButtonView = new CompoundButtonView({
-            router : router,
+        var contributeButtonView = new NavButtonView({
+            router: router,
+            label: "Contribute...",
+            target: "contribute",
         });
 
         var contentView = new DigitalContentView({
@@ -5648,12 +5903,12 @@ var frontend = (function() {
         var entityView = new EntityContentView({
             router: router,
             id: "mainentities",
-            model: proper,
+            model: displayedProper,
             entities: entities,
             content: allcontent,
             search: searchModel,
             initialize: function() {
-                proper.on("reset", this.render, this);
+                displayedProper.on("reset", this.render, this);
             }
         });
 
@@ -5723,7 +5978,7 @@ var frontend = (function() {
             entities: entities,
             properties: properties,
             relationships: relationships,
-            displayedEntities: displayedEntities,
+            ontologyEntities: ontologyEntities,
         });
 
         var pdfContentView = new PdfContentView({
@@ -5781,6 +6036,7 @@ var frontend = (function() {
             $("#column1").empty().append(searchView.render().$el);
             $("#column1").append(mapButtonView.render().$el);
             $("#column1").append(compoundButtonView.render().$el);
+            $("#column1").append(contributeButtonView.render().$el);
             fulltextView.append("#column1");
             $("#column2").empty().append(contentView.render().$el);
             entityView.append("#column3");
@@ -5795,8 +6051,9 @@ var frontend = (function() {
             searchView.close();
             resourceSearchView.close();
             mapButtonView.close();
-            fulltextView.detach();
             compoundButtonView.close();
+            contributeButtonView.close();
+            fulltextView.detach();
             entityView.detach();
             imageContentView.close();
             pdfContentView.close();
@@ -5816,8 +6073,9 @@ var frontend = (function() {
             searchView.close();
             resourceSearchView.close();
             mapButtonView.close();
-            fulltextView.detach();
             compoundButtonView.close();
+            contributeButtonView.close();
+            fulltextView.detach();
             entityView.detach();
             entitycontentpaneView.close();
             transcriptView.close();
@@ -5837,8 +6095,9 @@ var frontend = (function() {
             searchView.close();
             resourceSearchView.close();
             mapButtonView.close();
-            fulltextView.detach();
             compoundButtonView.close();
+            contributeButtonView.close();
+            fulltextView.detach();
             entityView.detach();
             entitycontentpaneView.close();
             transcriptView.close();
@@ -5858,8 +6117,9 @@ var frontend = (function() {
             searchView.close();
             resourceSearchView.close();
             mapButtonView.close();
-            fulltextView.detach();
             compoundButtonView.close();
+            contributeButtonView.close();
+            fulltextView.detach();
             entityView.detach();
             entitycontentpaneView.close();
             contentView.close();
@@ -5879,8 +6139,9 @@ var frontend = (function() {
             searchView.close();
             resourceSearchView.close();
             mapButtonView.close();
-            fulltextView.detach();
             compoundButtonView.close();
+            contributeButtonView.close();
+            fulltextView.detach();
             entityView.detach();
             entitycontentpaneView.close();
             transcriptView.close();
@@ -5904,8 +6165,9 @@ var frontend = (function() {
             searchView.close();
             resourceSearchView.close();
             mapButtonView.close();
-            fulltextView.detach();
             compoundButtonView.close();
+            contributeButtonView.close();
+            fulltextView.detach();
             entityView.detach();
             entitycontentpaneView.close();
             transcriptView.close();
@@ -5931,7 +6193,7 @@ var frontend = (function() {
         _.defer(function() {
             usermodel.fetch();
             properties.fetch({ reset: true });
-            displayedEntities.fetch({ reset: true });
+            ontologyEntities.fetch({ reset: true });
             entities.fetch({ reset: true });
             photographs.fetch({ reset: true });
             interviews.fetch({ reset: true });

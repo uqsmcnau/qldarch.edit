@@ -217,6 +217,10 @@ audio {
     border-top: 1px solid lightgrey;
 }
 
+.audiodiv {
+    overflow-x:hidden;
+}
+
 .returnbutton {
     background: #e5e5e5;
     color: #333333;
@@ -590,7 +594,7 @@ div.compoundcontainer>div {
     overflow: auto;
 }
 
-.compoundbutton {
+.navbutton {
     position: relative;
     clear: both;
     margin-bottom: 15px;
@@ -636,3 +640,18 @@ div.compoundcontainer>div {
 .x.axis path {
   display: none;
 }
+
+.controls {
+    position:relative;
+}
+
+.popover {
+    position: absolute;
+    background-color: white;
+    overflow-y: hidden;
+    left: 10px;
+    top: 10px;
+    z-index: 1;
+    border: 1px solid #CCCCCC;
+}
+
