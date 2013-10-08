@@ -528,7 +528,7 @@ lore.ore.ui.ExplorePanel = Ext.extend(Ext.Panel,{
              });
             this.contextmenu.add({
 	            text : "Center visualisation",
-	            icon: "http://localhost:8080/lore/skin/icons/ore/arrow_move.png",
+	            icon: lore.constants.baseUrl + "skin/icons/ore/arrow_move.png",
 	            scope: this,
 	            handler : function(evt) {	             	            	
 	              var left, right, top, bottom;
