@@ -2258,6 +2258,11 @@ var frontend = (function() {
                 } else {
                     var src = cd.get1(QA_TRANSCRIPT_LOCATION, true, true);
                     var matched = /http:\/\/[^\/]*(\/.*)/.exec(src);
+                    if (!matched) {
+                        this.set('transcript', { title: "Unable to locate transcript: " + src });
+                        return false;
+                    } 
+
                     if (matched.length == 2) {
                         src = matched[1];
                     }
