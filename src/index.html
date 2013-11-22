@@ -354,11 +354,13 @@
         <script type="text/template" id="optionTemplate">
             <option value="<%= value %>"><%= label %></option>
         </script>
+        <script type="text/template" id="entityOptionTemplate">
+            <%= label %>
+        </script>
         <script type="text/template" id="entityselectionTemplate">
             <select name="entitytype">
             </select>
-            <select name="entity">
-            </select>
+            <span class="entity"/>
             <button class="addentity">+</button>
         </script>
         <script type="text/template" id="addentityTemplate">

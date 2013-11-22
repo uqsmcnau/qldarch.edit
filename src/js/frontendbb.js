@@ -2610,21 +2610,56 @@ var frontend = (function() {
         },
     });
 
-    var EntitySelectionView = Backbone.Marionette.ItemView.extend({
+    var EntityOptionView = Backbone.Marionette.ItemView.extend({
+        tagName: "option",
+        template: "#entityOptionTemplate",
+
+        attributes: function() {
+            return {
+                value: this.model.id
+            };
+        },
+
+        serializeData: function() {
+            var defLabel = this.model.get1(QA_SINGULAR) ||
+                           this.model.get1(QA_LABEL) ||
+                           "No label provided";
+            return {
+                label: getLabel(this.model, defLabel),
+            };
+        },
+    });
+
+    var EntityOptionSelectView = Backbone.Marionette.CollectionView.extend({
+        tagName: "select",
+        attributes: {
+            name: "entity",
+        },
+
+        itemView: EntityOptionView,
+
+        triggers: {
+            "change": "select:entity",
+        },
+    });
+
+    var EntitySelectionView = Backbone.Marionette.Layout.extend({
         tagName: "span",
         className: "entityselection",
         template: "#entityselectionTemplate",
 
         ui: {
             typeselect: "select[name='entitytype']",
-            entityselect: "select[name='entity']",
             addentity: "button",
+        },
+
+        regions: {
+            entityselect: "span.entity",
         },
 
         triggers: {
             "click .addentity" : "add:entity",
             "change select[name='entitytype']" : "select:type",
-            "change select[name='entity']" : "select:entity",
         },
 
         serializeData: function() {
@@ -2686,19 +2721,15 @@ var frontend = (function() {
         },
 
         displayEntityOptions: function() {
-            this.ui.entityselect.empty();
             var selection = this.ui.typeselect.val();
             if (this.entityLists[selection]) {
-                this.entityLists[selection].each(function(e) {
-                    var defLabel = e.get1(QA_SINGULAR) || e.get1(QA_LABEL) || "No label provided";
-                    this.ui.entityselect.append(this.optionTemplate({
-                        value: e.id,
-                        label: getLabel(e, defLabel),
-                    }));
-                }, this);
-                this.onSelectEntity();
+                this.optionSelect = new EntityOptionSelectView({
+                    collection: this.entityLists[selection]
+                });
+                this.entityselect.show(this.optionSelect);
+                this.listenTo(this.optionSelect, "select:entity", this.onSelectEntity);
             } else {
-                console.log("Error: Cannot find entities matching: " + selection);
+                this.entityselect.close();
             }
         },
 
@@ -2722,7 +2753,7 @@ var frontend = (function() {
         },
 
         onSelectEntity: function() {
-            var selection = this.ui.entityselect.val();
+            var selection = this.optionSelect ? this.optionSelect.$el.val() : undefined;
             var type = this.ui.typeselect.val();
             this.model.set('selection', selection);
             this.triggerMethod("selection:changed", selection, type);
@@ -3608,8 +3639,7 @@ var frontend = (function() {
                 console.log(textStatus);
                 console.log(jqXHR);
                 console.log(jqXHR.status);
-                this.entities.add(data, { parse: true });
-                console.log(this.entities);
+                this.entities.fetch();
             }, this)).fail(function(jqXHR, textStatus, errorThrown) {
                 console.log("failure");
                 console.log(rdf);
@@ -4940,6 +4970,7 @@ var frontend = (function() {
 
         var entities = new RDFGraph([], {
             url: function() { return JSON_ROOT + "entity/detail/qldarch:NonDigitalThing" },
+            queryString: "INCSUBCLASS=true",
             comparator: QA_LABEL,
         });
 
@@ -5031,9 +5062,17 @@ var frontend = (function() {
         photographs.on("reset", function(collection) {
             console.log("\tRESET:PHOTOGRAPHS: " + collection.length);
         });
+        */
         entities.on("reset", function(collection) {
             console.log("\tRESET:ENTITIES: " + collection.length);
         });
+        entities.on("add", function(model) {
+            console.log("\tADD:ENTITIES: " + JSON.stringify(model.toJSON()));
+        });
+        entities.on("change", function(model) {
+            console.log("\tCHANGE:ENTITIES: " + JSON.stringify(model.toJSON()));
+        });
+        /*
         displayedEntities.on("reset", function(collection) {
             console.log("\tRESET:DISPLAYED_ENTITIES: " + collection.length);
             console.log(collection);
