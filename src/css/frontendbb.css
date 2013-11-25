@@ -654,3 +654,15 @@ div.mapcontainer>div {
     display: inline-block;
     width: 100px;
 }
+
+.referral {
+    border: 1px solid #CCC;
+    padding: 10px;
+    box-sizing: border-box;
+    background-color: #EEE;
+    margin-bottom: 10px;
+}
+
+.referral-buttons {
+    text-align: right;
+}

@@ -2755,6 +2755,7 @@ var frontend = (function() {
 
         triggers: {
             "click .addrefersto" : "add:refersTo",
+            "click .cancelrefersto" : "cancel:refersTo",
         },
 
         serializeData: function() {
@@ -2811,6 +2812,7 @@ var frontend = (function() {
 
         triggers: {
             "click .addrefersto" : "add:refersTo",
+            "click .cancelrefersto" : "cancel:refersTo",
             "change select[name='relationship']" : "select:rel",
         },
 
@@ -3317,6 +3319,9 @@ var frontend = (function() {
             });
             this.listenTo(simpleAnnotationView, "simple:add", this.onChildSimpleAdd);
             this.listenTo(simpleAnnotationView, "entity:add", this.onAddEntity);
+            this.listenTo(simpleAnnotationView, "cancel:refersTo", function() {
+                this.create.reset();
+            });
 
             this.create.show(simpleAnnotationView);
             this.triggerMethod("pause:set", true);
@@ -3332,6 +3337,9 @@ var frontend = (function() {
             });
             this.listenTo(fullAnnotationView, "full:add", this.onChildFullAdd);
             this.listenTo(fullAnnotationView, "entity:add", this.onAddEntity);
+            this.listenTo(fullAnnotationView, "cancel:refersTo", function() {
+                this.create.reset();
+            });
 
             this.create.show(fullAnnotationView);
             this.triggerMethod("pause:set", true);

@@ -286,14 +286,13 @@
         <script type="text/template" id="annotateTemplate">
             <div class="header span-16 last">
                 <div style="float:right">
-                    <span class="button fat newdetail">New Details</span>
                     <span class="button fat newrel">New Relationship</span>
+                    <span class="button fat newdetail">New Details</span>
                 </div>
                 <h3 style="margin-top:10px">Annotate Current Utterance</h3>
             </div>
             <div class="controls">
-                <div class="createannotation span-16 last">
-                </div>
+                <div class="createannotation span-16 last"></div>
                 <div class="annotations span-16 last">
                 </div>
                 <div class="info span-15 last">Please Note: Only annotation summary available; details stored, but not available yet</div>
@@ -322,7 +321,10 @@
             <div class="referral">
                 <span>The current speaker mentions the </span>
                 <span class="entityselection">Entity Selection</span>
-                <button class="addrefersto">Add Simple Annotation</button>
+                <div class="referral-buttons">
+                    <button class="cancelrefersto">Cancel</button>
+                    <button class="addrefersto">Add Simple Annotation</button>
+                </div>
             </div>
         </script>
         <script type="text/template" id="fullannotationTemplate">
@@ -347,7 +349,10 @@
                     <span>to: </span>
                     <input name="todate" type="text" pattern="^\\d\\d\\d\\d(-\\d\\d){0,2}" placeholder="yyyy[-mm[-dd]]" class="date"/>
                 </span>
-                <button class="addrefersto">Add Full Annotation</button>
+                <div class="referral-buttons">
+                    <button class="cancelrefersto">Cancel</button>
+                    <button class="addrefersto">Add Full Annotation</button>
+                </div>
             </div>
         </script>
         <script type="text/template" id="optionTemplate">
