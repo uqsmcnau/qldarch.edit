@@ -638,3 +638,11 @@ div.mapcontainer>div {
     border: 1px solid #CCCCCC;
 }
 
+.createentity {
+    padding: 10px;
+}
+
+.createentity label {
+    display: inline-block;
+    width: 100px;
+}

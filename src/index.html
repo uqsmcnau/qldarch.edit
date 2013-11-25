@@ -164,10 +164,10 @@
             </div>
         </script>
         <script type="text/template" id="transcripttabsTemplate">
+            <span type="Annotate" class="button tab">Annotations</span>
             <span type="Search" class="button tab">Search Transcript</span>
             <span type="Cloud" class="button tab">Word Cloud</span>
             <span type="Graph" class="button tab">Word Frequency</span>
-            <span type="Annotate" class="button tab">Annotate Transcript</span>
         </script>
         <script type="text/template" id="transcriptcloudTemplate">
             <div class="content span-16">
@@ -285,15 +285,17 @@
         </script>
         <script type="text/template" id="annotateTemplate">
             <div class="header span-16 last">
+                <div style="float:right">
+                    <span class="returnbutton newannotation span-6" style="margin-left:10px">New</span>
+                </div>
                 <h3 style="margin-top:10px">Annotate Current Utterance</h3>
             </div>
             <div class="controls">
-                <div class="span-16 last">
-                    <span class="returnbutton pause span-6" style="margin-left:10px">Pause</span>
-                </div>
-                <div class="simple span-16 last">
-                </div>
-                <div class="full span-16 last">
+                <div class="createannotation">
+                    <div class="simple span-16 last">
+                    </div>
+                    <div class="full span-16 last">
+                    </div>
                 </div>
                 <div class="annotations span-16 last">
                 </div>
@@ -321,7 +323,7 @@
         </script>
         <script type="text/template" id="simpleannotationTemplate">
             <div class="referral">
-                <span>The current speaker is referencing the </span>
+                <span>The current speaker mentions the </span>
                 <span class="entityselection">Entity Selection</span>
                 <button class="addrefersto">Add Simple Annotation</button>
             </div>

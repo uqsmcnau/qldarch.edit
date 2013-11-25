@@ -171,8 +171,6 @@ var frontend = (function() {
             }
         }
 
-        console.log(thing);
-
         if (!_.isEmpty(_.intersection(thing.geta(RDF_TYPE),
                 [FOAF_AGENT_TYPE, QA_EDUCATIONAL_INSTITUTION]))) {
             var aname = thing.get1(FOAF_NAME);
@@ -695,23 +693,6 @@ var frontend = (function() {
                 'selection': newSelection,
                 'type': newSelection ? this.type.id : undefined,
             });
-            
-            console.log("Yoman");
-            console.log(newSelection);
-            console.log(newSelection ? this.type.id : undefined);
-            console.log(this.router.contentViews[this.type.id] + "/" + this.selection.serialize());
-            
-            /*if (newSelection) {
-                if (this.router.contentViews[this.type.id] &&
-                        (this.router.currentRoute.route !==
-                             this.router.contentViews[this.type.id])) {
-                    this.router.navigate(this.router.contentViews[this.type.id] + "/" +
-                            this.selection.serialize(),
-                            { trigger: true, replace: this.typeview.forgetroute });
-                }
-            } else {
-                this.router.navigate("", { trigger: true, replace: false });
-            }*/
         },
     });
     
@@ -3293,12 +3274,12 @@ var frontend = (function() {
         },
 
         ui: {
-            pauseBtn: ".pause",
             popover: ".popover",
+            creatediv: ".createannotation",
         },
 
         triggers: {
-            "click .pause" : "do:pause",
+            "click .newannotation" : "do:new",
         },
 
         serializeData: function() {
@@ -3317,14 +3298,10 @@ var frontend = (function() {
                 .throwNoArg("options.relationships");
             this.ontologyEntities = _.checkarg(options.ontologyEntities)
                 .throwNoArg("options.ontologyEntities");
-
-            this.paused = false;
         },
 
         onRender: function() {
-            // FIXME: This should be a shared model between the player and the controls.
-            //        This is why the player and button status can fall out of sync.
-            this.paused = this.ui.pauseBtn.hasClass('selected');
+            this.ui.creatediv.hide();
 
             this.simpleAnnotationView = new SimpleAnnotationView({
                 proper: this.proper,
@@ -3357,16 +3334,9 @@ var frontend = (function() {
             this.annotations.show(this.annotationsView);
         },
 
-        onDoPause: function() {
-            this.paused = !this.paused;
-            if (this.paused) {
-                this.ui.pauseBtn.addClass("selected");
-                this.ui.pauseBtn.text("Play");
-            } else {
-                this.ui.pauseBtn.removeClass("selected");
-                this.ui.pauseBtn.text("Pause");
-            }
-            this.triggerMethod("pause:set", this.paused);
+        onDoNew: function() {
+            this.ui.creatediv.show();
+            this.triggerMethod("pause:set", true);
         },
 
         onChildSimpleAdd: function(entity) {
@@ -3395,6 +3365,10 @@ var frontend = (function() {
 
         onPerformCancel: function() {
             $(this.ui.popover).hide();
+        },
+
+        onUtteranceActive: function(model) {
+            this.ui.creatediv.hide();
         },
     });
 
@@ -3475,6 +3449,8 @@ var frontend = (function() {
                     contentSearchModel: this.contentSearchModel,
                 }, this.digitalContent),
             });
+
+            this.currentControlView = undefined;
             
             this.model = new TranscriptPaneModel({});
         },
@@ -3502,7 +3478,7 @@ var frontend = (function() {
             this.tabview = new TranscriptPaneTabs({});
             this.listenTo(this.tabview, "select:tab", this.onSelectTab);
             this.tabs.show(this.tabview);
-            this.setTab(this.model, 'Search');
+            this.setTab(this.model, 'Annotate');
         },
         
         pauseSet: function(pause) {
@@ -3522,12 +3498,16 @@ var frontend = (function() {
         },
 
         setTab: function(model, value) {
-            this.secondary.show(this.states[value](this));
+            this.currentControlView = this.states[value](this);
+            this.secondary.show(this.currentControlView);
         },
 
         triggerUtteranceActive: function(model) {
             this.triggerMethod("utterance:active", model);
             this.currentUtterance = model;
+            if (this.currentControlView && this.currentControlView.onUtteranceActive) {
+                this.currentControlView.onUtteranceActive(model);
+            }
         },
 
         onSimpleAdd: function(entity) {
@@ -5062,7 +5042,6 @@ var frontend = (function() {
         photographs.on("reset", function(collection) {
             console.log("\tRESET:PHOTOGRAPHS: " + collection.length);
         });
-        */
         entities.on("reset", function(collection) {
             console.log("\tRESET:ENTITIES: " + collection.length);
         });
@@ -5072,7 +5051,6 @@ var frontend = (function() {
         entities.on("change", function(model) {
             console.log("\tCHANGE:ENTITIES: " + JSON.stringify(model.toJSON()));
         });
-        /*
         displayedEntities.on("reset", function(collection) {
             console.log("\tRESET:DISPLAYED_ENTITIES: " + collection.length);
             console.log(collection);
