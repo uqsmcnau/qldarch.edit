@@ -294,6 +294,14 @@ span.button.slim {
     padding: 2px 6px;
 }
 
+div.button.fat,
+span.button.fat {
+    border-radius:5px;
+    width: 105px;
+    padding: 6px 8px;
+    background: #CCC;
+}
+
 div.button.tab,
 span.button.tab {
     border-top-left-radius:6px;

@@ -3267,19 +3267,18 @@ var frontend = (function() {
         template: "#annotateTemplate",
 
         regions: {
-            simple: ".simple",
-            full: ".full",
+            create: ".createannotation",
             annotations: ".annotations",
             popover: ".popover",
         },
 
         ui: {
             popover: ".popover",
-            creatediv: ".createannotation",
         },
 
         triggers: {
-            "click .newannotation" : "do:new",
+            "click .newdetail" : "do:new:detail",
+            "click .newrel" : "do:new:rel",
         },
 
         serializeData: function() {
@@ -3301,29 +3300,6 @@ var frontend = (function() {
         },
 
         onRender: function() {
-            this.ui.creatediv.hide();
-
-            this.simpleAnnotationView = new SimpleAnnotationView({
-                proper: this.proper,
-                entities: this.entities,
-            });
-            this.listenTo(this.simpleAnnotationView,
-                "simple:add", this.onChildSimpleAdd);
-            this.listenTo(this.simpleAnnotationView,
-                "entity:add", this.onAddEntity);
-            this.simple.show(this.simpleAnnotationView);
-
-            this.fullAnnotationView = new FullAnnotationView({
-                proper: this.proper,
-                entities: this.entities,
-                properties: this.properties,
-                relationships: this.relationships,
-                ontologyEntities: this.ontologyEntities,
-            });
-            this.listenTo(this.fullAnnotationView, "full:add", this.onChildFullAdd);
-            this.listenTo(this.fullAnnotationView, "entity:add", this.onAddEntity);
-            this.full.show(this.fullAnnotationView);
-
             this.annotationsView = new AnnotationsTableView({
                 contentDescriptionSource: this.contentDescriptionSource,
                 utteranceEventSrc: this.utteranceEventSrc,
@@ -3334,8 +3310,30 @@ var frontend = (function() {
             this.annotations.show(this.annotationsView);
         },
 
-        onDoNew: function() {
-            this.ui.creatediv.show();
+        onDoNewDetail: function() {
+            var simpleAnnotationView = new SimpleAnnotationView({
+                proper: this.proper,
+                entities: this.entities,
+            });
+            this.listenTo(simpleAnnotationView, "simple:add", this.onChildSimpleAdd);
+            this.listenTo(simpleAnnotationView, "entity:add", this.onAddEntity);
+
+            this.create.show(simpleAnnotationView);
+            this.triggerMethod("pause:set", true);
+        },
+
+        onDoNewRel: function() {
+            var fullAnnotationView = new FullAnnotationView({
+                proper: this.proper,
+                entities: this.entities,
+                properties: this.properties,
+                relationships: this.relationships,
+                ontologyEntities: this.ontologyEntities,
+            });
+            this.listenTo(fullAnnotationView, "full:add", this.onChildFullAdd);
+            this.listenTo(fullAnnotationView, "entity:add", this.onAddEntity);
+
+            this.create.show(fullAnnotationView);
             this.triggerMethod("pause:set", true);
         },
 
@@ -3368,7 +3366,7 @@ var frontend = (function() {
         },
 
         onUtteranceActive: function(model) {
-            this.ui.creatediv.hide();
+            this.create.reset();
         },
     });
 
