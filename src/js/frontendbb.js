@@ -2266,11 +2266,9 @@ var frontend = (function() {
 
         errorUpdater: function(oldCD, src, jXHR, textStatus, errorThrown) {
             var currContent = this.get('contentDescriptionSource').get('contentDescription');
-            if (oldContent == currContent) {
-                this.set('transcript', {
-                    title: "Failed to load transcript from " + src + " with error: " + textStatus,
-                });
-            }
+            this.set('transcript', {
+                title: "Failed to load transcript from " + src + " with error: " + textStatus,
+            });
         },
     });
 
