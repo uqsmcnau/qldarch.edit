@@ -2620,6 +2620,10 @@ var frontend = (function() {
         triggers: {
             "change": "select:entity",
         },
+
+        onRender: function() {
+            _.defer(_.bind(function() { this.$el.change(); }, this));
+        },
     });
 
     var EntitySelectionView = Backbone.Marionette.Layout.extend({
@@ -2669,7 +2673,9 @@ var frontend = (function() {
                     predicate: function(model) {
                             return _(model.geta(RDF_TYPE)).contains(type.id);
                         },
-                    comparator: QA_LABEL,
+                    comparator: function(entity) {
+                        return getLabel(entity, "No name available")
+                    },
                 });
 
                 return memo;
@@ -2732,6 +2738,7 @@ var frontend = (function() {
         },
 
         onSelectEntity: function() {
+            console.log("onSelectEntity");
             var selection = this.optionSelect ? this.optionSelect.$el.val() : undefined;
             var type = this.ui.typeselect.val();
             this.model.set('selection', selection);
@@ -2859,6 +2866,8 @@ var frontend = (function() {
             this.listenTo(this.objectView, "selection:changed", this.setObject);
             this.listenTo(this.objectView, "entity:add", this.onAddEntity);
             this.object.show(this.objectView);
+
+            this.displayRelationships();
         },
 
         displayRelationships: function() {
