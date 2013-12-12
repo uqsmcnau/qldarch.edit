@@ -74,6 +74,7 @@ var frontend = (function() {
     var QA_DEFINITE_MAP_ICON = QA_NS + "definiteMapIcon";
     var QA_INDEFINITE_MAP_ICON = QA_NS + "indefiniteMapIcon";
     var QA_REQUIRED_TO_CREATE = QA_NS + "requiredToCreate";
+    var QA_ASSERTION_DATE = QA_NS + "assertionDate";
 
     var QA_REFERENCES = QA_NS + "references";
     var QA_REGION_START = QA_NS + "regionStart";
@@ -3150,6 +3151,10 @@ var frontend = (function() {
             return {};
         },
 
+        appendHtml: function(collectionView, itemView) {
+            collectionView.$("tbody").prepend(itemView.el);
+        },
+
         initialize: function(options) {
             this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
                 .throwNoArg("options.contentDescriptionSource");
@@ -3165,6 +3170,7 @@ var frontend = (function() {
                 properties: this.properties,
             });
 
+            var that = this;
             this.collection = new SubCollection(this.annotations, {
                 name: "Relationships",
                 tracksort: false,
@@ -3177,7 +3183,30 @@ var frontend = (function() {
 
                         return result;
                     },
-                comparator: QA_PREDICATE,
+                comparator: function(relationship) {
+                    var evIds = relationship.geta(QA_EVIDENCE);
+
+                    var evidences = _.compact(_.map(evIds, function(id) {
+                        return that.annotations.get(id);
+                    }));
+
+                    var dates = _.map(evidences, function(e) {
+                        var evDate = e.get1(QA_ASSERTION_DATE);
+                        if (evDate) {
+                            return evDate;
+                        } else {
+                            console.log("No assertion date for evidence");
+                            console.log(e);
+                            return "1970-01-01T00:00:00.000+10:00";
+                        }
+                    });
+                        
+                    if (dates.length > 0) {
+                        return _.max(dates);
+                    } else {
+                        return "1970-01-01T00:00:00.000+10:00";
+                    }
+                },
             });
             window.atvcol = this.collection;
         },
