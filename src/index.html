@@ -195,10 +195,10 @@
             <span type="Entity" class="button tab">People and Things</span>
         </script>
         <script type="text/template" id="transcripttabsTemplate">
+            <span type="Annotate" class="button tab">Annotations</span>
             <span type="Search" class="button tab">Search Transcript</span>
             <span type="Cloud" class="button tab">Word Cloud</span>
             <span type="Graph" class="button tab">Word Frequency</span>
-            <span type="Annotate" class="button tab">Annotate Transcript</span>
         </script>
         <script type="text/template" id="transcriptcloudTemplate">
             <div class="content span-16">
@@ -316,16 +316,14 @@
         </script>
         <script type="text/template" id="annotateTemplate">
             <div class="header span-16 last">
+                <div style="float:right">
+                    <span class="button fat newrel">New Relationship</span>
+                    <span class="button fat newdetail">New Details</span>
+                </div>
                 <h3 style="margin-top:10px">Annotate Current Utterance</h3>
             </div>
             <div class="controls">
-                <div class="span-16 last">
-                    <span class="returnbutton pause span-6" style="margin-left:10px">Pause</span>
-                </div>
-                <div class="simple span-16 last">
-                </div>
-                <div class="full span-16 last">
-                </div>
+                <div class="createannotation span-16 last"></div>
                 <div class="annotations span-16 last">
                 </div>
                 <div class="info span-15 last">Please Note: Only annotation summary available; details stored, but not available yet</div>
@@ -339,6 +337,8 @@
                         <th>Subject</th>
                         <th>Relationship</th>
                         <th>Object</th>
+                        <th>Note</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -349,12 +349,23 @@
             <td><%- subject %></td>
             <td><%- relationship %></td>
             <td><%- object %></td>
+            <td><%- note %></td>
+            <td><button name="delete">&times;</button><td>
         </script>
         <script type="text/template" id="simpleannotationTemplate">
             <div class="referral">
-                <span>The current speaker is referencing the </span>
+                <span>The current speaker mentions the </span>
                 <span class="entityselection">Entity Selection</span>
-                <button class="addrefersto">Add Simple Annotation</button>
+                <div>
+                    <span style="padding-left:153px">
+                        <span>Note: </span>
+                        <textarea name="note" placeholder="Supplementary Note" rows="3" style="height:auto;vertical-align:middle"></textarea>
+                    </span>
+                </div>
+                <div class="referral-buttons">
+                    <button class="cancelrefersto">Cancel</button>
+                    <button class="addrefersto">Add Simple Annotation</button>
+                </div>
             </div>
         </script>
         <script type="text/template" id="fullannotationTemplate">
@@ -364,10 +375,7 @@
                 <br/>
                 <span style="padding-left:173px"> was </span>
                 <select name="relationship">
-                    <option value="EmployedBy">Employed By</option>
-                    <option value="PartnerAt">Partner At</option>
-                    <option value="TaughtBy">Taught By</option>
-                    <option value="DesignedBy">Designed By</option>
+                    <option value="">-</option>
                 </select>
                 <br/>
                 <span style="padding-left:179px"> the </span>
@@ -379,22 +387,47 @@
                     <span>to: </span>
                     <input name="todate" type="text" pattern="^\\d\\d\\d\\d(-\\d\\d){0,2}" placeholder="yyyy[-mm[-dd]]" class="date"/>
                 </span>
-                <button class="addrefersto">Add Full Annotation</button>
+                <div>
+                    <span style="padding-left:153px">
+                        <span>Note: </span>
+                        <textarea name="note" placeholder="Supplementary Note" rows="3" style="height:auto;vertical-align:middle"></textarea>
+                    </span>
+                </div>
+                <div class="referral-buttons">
+                    <button class="cancelrefersto">Cancel</button>
+                    <button class="addrefersto">Add Full Annotation</button>
+                </div>
             </div>
         </script>
         <script type="text/template" id="optionTemplate">
             <option value="<%= value %>"><%= label %></option>
         </script>
+        <script type="text/template" id="entityOptionTemplate">
+            <%= label %>
+        </script>
         <script type="text/template" id="entityselectionTemplate">
             <select name="entitytype">
             </select>
-            <select name="entity">
-            </select>
+            <span class="entity"/>
             <button class="addentity">+</button>
         </script>
         <script type="text/template" id="addentityTemplate">
             <h3>Add new <%- typelabel %>:</h3>
             <div class="attributes"></div>
+            <div class="typologies">
+                <label>Building Typology</label>
+                <select name="typology">
+                    <option value="http://qldarch.net/rdf/2012-12/resources/typologies/1">Commercial Buildings</option>
+                    <option value="http://qldarch.net/rdf/2012-12/resources/typologies/2">Dwellings</option>
+                    <option value="http://qldarch.net/rdf/2012-12/resources/typologies/3">Educational facilities</option>
+                    <option value="http://qldarch.net/rdf/2012-12/resources/typologies/4">Government buildings</option>
+                    <option value="http://qldarch.net/rdf/2012-12/resources/typologies/5">Health care facilities</option>
+                    <option value="http://qldarch.net/rdf/2012-12/resources/typologies/6">Recreation and sports facilities</option>
+                    <option value="http://qldarch.net/rdf/2012-12/resources/typologies/7">Religious buildings</option>
+                    <option value="http://qldarch.net/rdf/2012-12/resources/typologies/8">Transport infrastructure</option>
+                </select>
+                <span>*</span>
+            </div>
             <div class="dialogbuttons">
                 <button name="add">Add <%- typelabel %></button>
                 <button name="cancel">Cancel</button>

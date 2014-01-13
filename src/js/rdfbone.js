@@ -46,10 +46,39 @@
 
         parse: _.values,
 
-        initialize: function(models, options) {
+        initialize: function RDFGraph_initialize(models, options) {
             options || (options = {});
-            if (options.url) this.url = options.url
-        }
+            if (options.url) {
+                console.log("Setting RDFGraph url: " + options.url);
+                this.baseURL = options.url;
+                this.baseQueryString = options.queryString;
+            }
+
+            this.lastUpdated = undefined;
+        },
+
+        fetch: function RDFGraph_fetch(options) {
+            options || (options = {})
+
+            var URL = _.result(this, 'baseURL');
+            var queryString = this.baseQueryString;
+
+            if (this.lastUpdated) {
+                queryString = queryString ?
+                    queryString + "&since=" + this.lastUpdated :
+                    "since=" + this.lastUpdated;
+                options.remove = false;
+            } 
+
+            this.url = queryString ? URL + "?" + queryString : URL;
+
+            console.log("Fetching RDFGraph url: " + this.url);
+            console.log("Fetching RDFGraph options: " + JSON.stringify(options));
+
+            Backbone.Collection.prototype.fetch.call(this, options);
+
+            this.lastUpdated = Date.now();
+        },
     });
 
     var Collection = Backbone.Collection;

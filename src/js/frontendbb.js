@@ -74,6 +74,8 @@ var frontend = (function() {
     var QA_DEFINITE_MAP_ICON = QA_NS + "definiteMapIcon";
     var QA_INDEFINITE_MAP_ICON = QA_NS + "indefiniteMapIcon";
     var QA_REQUIRED_TO_CREATE = QA_NS + "requiredToCreate";
+    var QA_ASSERTION_DATE = QA_NS + "assertionDate";
+    var QA_TEXTUAL_NOTE = QA_NS + "textualNote";
 
     var QA_REFERENCES = QA_NS + "references";
     var QA_REGION_START = QA_NS + "regionStart";
@@ -121,8 +123,21 @@ var frontend = (function() {
     var FOAF_NAME = FOAF_NS + "name";
     var QA_FIRM_NAME = QA_NS + "firmName";
 
+    var QA_STRUCTURE_TYPE = QA_NS + "Structure";
     var QA_BUILDING_TYPOLOGY = QA_NS + "BuildingTypology";
     var QA_BUILDING_TYPOLOGY_P = QA_NS + "buildingTypology";
+
+    var QA_TOPIC_TYPE = QA_NS + "Topic";
+    var QA_TOPIC_HEADING = QA_NS + "topicHeading";
+
+    var QA_PUBLICATION_TYPE = QA_NS + "Publication";
+    var QA_CITATION = QA_NS + "citation";
+
+    var QA_EVENT_TYPE = QA_NS + "Event";
+    var QA_EVENT_TITLE = QA_NS + "eventTitle";
+
+    var QA_AWARD_TYPE = QA_NS + "Award";
+    var QA_AWARD_TITLE = QA_NS + "awardTitle";
 
     var DCT_TITLE = DCT_NS + "title";
     var DCT_CREATED = DCT_NS + "created";
@@ -171,8 +186,6 @@ var frontend = (function() {
             }
         }
 
-        console.log(thing);
-
         if (!_.isEmpty(_.intersection(thing.geta(RDF_TYPE),
                 [FOAF_AGENT_TYPE, QA_EDUCATIONAL_INSTITUTION]))) {
             var aname = thing.get1(FOAF_NAME);
@@ -188,6 +201,34 @@ var frontend = (function() {
             var tname = thing.get1(DCT_TITLE);
             if (tname && !_.isEmpty(tname.trim())) {
                 return tname.trim();
+            }
+        }
+
+        if (_.contains(thing.geta(RDF_TYPE), QA_TOPIC_TYPE)) {
+            var tname = thing.get1(QA_TOPIC_HEADING);
+            if (tname && !_.isEmpty(tname.trim())) {
+                return tname.trim();
+            }
+        }
+
+        if (_.contains(thing.geta(RDF_TYPE), QA_PUBLICATION_TYPE)) {
+            var cname = thing.get1(QA_CITATION);
+            if (cname && !_.isEmpty(cname.trim())) {
+                return cname.trim();
+            }
+        }
+
+        if (_.contains(thing.geta(RDF_TYPE), QA_EVENT_TYPE)) {
+            var ename = thing.get1(QA_EVENT_TITLE);
+            if (ename && !_.isEmpty(ename.trim())) {
+                return ename.trim();
+            }
+        }
+
+        if (_.contains(thing.geta(RDF_TYPE), QA_AWARD_TYPE)) {
+            var awname = thing.get1(QA_AWARD_TITLE);
+            if (awname && !_.isEmpty(awname.trim())) {
+                return awname.trim();
             }
         }
 
@@ -3024,6 +3065,11 @@ var frontend = (function() {
                 } else {
                     var src = cd.get1(QA_TRANSCRIPT_LOCATION, true, true);
                     var matched = /http:\/\/[^\/]*(\/.*)/.exec(src);
+                    if (!matched) {
+                        this.set('transcript', { title: "Unable to locate transcript: " + src });
+                        return false;
+                    } 
+
                     if (matched.length == 2) {
                         src = matched[1];
                     }
@@ -3046,11 +3092,9 @@ var frontend = (function() {
 
         errorUpdater: function(oldCD, src, jXHR, textStatus, errorThrown) {
             var currContent = this.get('contentDescriptionSource').get('contentDescription');
-            if (oldContent == currContent) {
-                this.set('transcript', {
-                    title: "Failed to load transcript from " + src + " with error: " + textStatus,
-                });
-            }
+            this.set('transcript', {
+                title: "Failed to load transcript from " + src + " with error: " + textStatus,
+            });
         },
     });
 
@@ -3371,21 +3415,60 @@ var frontend = (function() {
         },
     });
 
-    var EntitySelectionView = Backbone.Marionette.ItemView.extend({
+    var EntityOptionView = Backbone.Marionette.ItemView.extend({
+        tagName: "option",
+        template: "#entityOptionTemplate",
+
+        attributes: function() {
+            return {
+                value: this.model.id
+            };
+        },
+
+        serializeData: function() {
+            var defLabel = this.model.get1(QA_SINGULAR) ||
+                           this.model.get1(QA_LABEL) ||
+                           "No label provided";
+            return {
+                label: getLabel(this.model, defLabel),
+            };
+        },
+    });
+
+    var EntityOptionSelectView = Backbone.Marionette.CollectionView.extend({
+        tagName: "select",
+        attributes: {
+            name: "entity",
+        },
+
+        itemView: EntityOptionView,
+
+        triggers: {
+            "change": "select:entity",
+        },
+
+        onRender: function() {
+            _.defer(_.bind(function() { this.$el.change(); }, this));
+        },
+    });
+
+    var EntitySelectionView = Backbone.Marionette.Layout.extend({
         tagName: "span",
         className: "entityselection",
         template: "#entityselectionTemplate",
 
         ui: {
             typeselect: "select[name='entitytype']",
-            entityselect: "select[name='entity']",
             addentity: "button",
+        },
+
+        regions: {
+            entityselect: "span.entity",
         },
 
         triggers: {
             "click .addentity" : "add:entity",
             "change select[name='entitytype']" : "select:type",
-            "change select[name='entity']" : "select:entity",
         },
 
         serializeData: function() {
@@ -3416,7 +3499,9 @@ var frontend = (function() {
                     predicate: function(model) {
                             return _(model.geta(RDF_TYPE)).contains(type.id);
                         },
-                    comparator: QA_LABEL,
+                    comparator: function(entity) {
+                        return getLabel(entity, "No name available")
+                    },
                 });
 
                 return memo;
@@ -3447,19 +3532,15 @@ var frontend = (function() {
         },
 
         displayEntityOptions: function() {
-            this.ui.entityselect.empty();
             var selection = this.ui.typeselect.val();
             if (this.entityLists[selection]) {
-                this.entityLists[selection].each(function(e) {
-                    var defLabel = e.get1(QA_SINGULAR) || e.get1(QA_LABEL) || "No label provided";
-                    this.ui.entityselect.append(this.optionTemplate({
-                        value: e.id,
-                        label: getLabel(e, defLabel),
-                    }));
-                }, this);
-                this.onSelectEntity();
+                this.optionSelect = new EntityOptionSelectView({
+                    collection: this.entityLists[selection]
+                });
+                this.entityselect.show(this.optionSelect);
+                this.listenTo(this.optionSelect, "select:entity", this.onSelectEntity);
             } else {
-                console.log("Error: Cannot find entities matching: " + selection);
+                this.entityselect.close();
             }
         },
 
@@ -3483,7 +3564,8 @@ var frontend = (function() {
         },
 
         onSelectEntity: function() {
-            var selection = this.ui.entityselect.val();
+            console.log("onSelectEntity");
+            var selection = this.optionSelect ? this.optionSelect.$el.val() : undefined;
             var type = this.ui.typeselect.val();
             this.model.set('selection', selection);
             this.triggerMethod("selection:changed", selection, type);
@@ -3502,8 +3584,13 @@ var frontend = (function() {
             entityselection: ".entityselection",
         },
 
+        ui: {
+            note: "textarea[name='note']",
+        },
+
         triggers: {
             "click .addrefersto" : "add:refersTo",
+            "click .cancelrefersto" : "cancel:refersTo",
         },
 
         serializeData: function() {
@@ -3536,7 +3623,10 @@ var frontend = (function() {
         onAddRefersTo: function() {
             if (this.selectionURI) {
                 var entity = this.entities.get(this.selectionURI);
-                this.triggerMethod("simple:add", entity);
+                this.triggerMethod("simple:add", {
+                    entity: entity,
+                    note: this.ui.note.val()
+                });
             } else {
                 console.log("No entity selected");
             }
@@ -3556,10 +3646,12 @@ var frontend = (function() {
             relselect: "select[name='relationship']",
             fromdate: "input[name='fromdate']",
             todate: "input[name='todate']",
+            note: "textarea[name='note']",
         },
 
         triggers: {
             "click .addrefersto" : "add:refersTo",
+            "click .cancelrefersto" : "cancel:refersTo",
             "change select[name='relationship']" : "select:rel",
         },
 
@@ -3608,6 +3700,8 @@ var frontend = (function() {
             this.listenTo(this.objectView, "selection:changed", this.setObject);
             this.listenTo(this.objectView, "entity:add", this.onAddEntity);
             this.object.show(this.objectView);
+
+            this.displayRelationships();
         },
 
         displayRelationships: function() {
@@ -3628,6 +3722,11 @@ var frontend = (function() {
                 if (!p) {
                     console.log("no p");
                     console.log(pURI);
+                    return;
+                }
+                console.log("BOO");
+                console.log(p.id);
+                if (p.id == QA_RELATED_TO) {
                     return;
                 }
                 var domain = p.geta(RDFS_DOMAIN);
@@ -3741,6 +3840,7 @@ var frontend = (function() {
                     objectURI: this.objectURI,
                     fromDate: this.dates.fromdate,
                     toDate: this.dates.todate,
+                    note: this.ui.note.val()
                 };
 
                 console.log("Valid relationship identified");
@@ -3754,10 +3854,16 @@ var frontend = (function() {
         tagName: "tr",
         template: "#annotationrowTemplate",
 
+        events: {
+            "click button[name=delete]"   : "onDelete",
+        },
+
         serializeData: function() {
+            console.log(this.model);
             var subject = this.model.get1(QA_SUBJECT);
             var predicate = this.model.get1(QA_PREDICATE);
             var object = this.model.get1(QA_OBJECT);
+            var note = this.model.geta(QA_TEXTUAL_NOTE);
 
             var contentDescription = this.contentDescriptionSource.get('contentDescription');
 
@@ -3786,6 +3892,7 @@ var frontend = (function() {
                 subject: subjectLabel,
                 relationship: predicateLabel,
                 object: objectLabel,
+                note: (note.length > 0) ? note[0] : "",
             };
         },
 
@@ -3794,6 +3901,14 @@ var frontend = (function() {
             this.entities = _.checkarg(options.entities).throwNoArg("options.entities");
             this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
                 .throwNoArg("options.contentDescriptionSource");
+        },
+
+        onDelete: function() {
+            console.log("doing delete...");
+            console.log(this.model.get1(QA_EVIDENCE));
+            this.triggerMethod("perform:delete", {
+                evidence: this.model.get1(QA_EVIDENCE)
+            });
         },
     });
 
@@ -3890,6 +4005,10 @@ var frontend = (function() {
             return {};
         },
 
+        appendHtml: function(collectionView, itemView) {
+            collectionView.$("tbody").prepend(itemView.el);
+        },
+
         initialize: function(options) {
             this.contentDescriptionSource = _.checkarg(options.contentDescriptionSource)
                 .throwNoArg("options.contentDescriptionSource");
@@ -3905,6 +4024,7 @@ var frontend = (function() {
                 properties: this.properties,
             });
 
+            var that = this;
             this.collection = new SubCollection(this.annotations, {
                 name: "Relationships",
                 tracksort: false,
@@ -3917,9 +4037,38 @@ var frontend = (function() {
 
                         return result;
                     },
-                comparator: QA_PREDICATE,
+                comparator: function(relationship) {
+                    var evIds = relationship.geta(QA_EVIDENCE);
+
+                    var evidences = _.compact(_.map(evIds, function(id) {
+                        return that.annotations.get(id);
+                    }));
+
+                    var dates = _.map(evidences, function(e) {
+                        var evDate = e.get1(QA_ASSERTION_DATE);
+                        if (evDate) {
+                            return evDate;
+                        } else {
+                            console.log("No assertion date for evidence");
+                            console.log(e);
+                            return "1970-01-01T00:00:00.000+10:00";
+                        }
+                    });
+                        
+                    if (dates.length > 0) {
+                        return _.max(dates);
+                    } else {
+                        return "1970-01-01T00:00:00.000+10:00";
+                    }
+                },
             });
             window.atvcol = this.collection;
+        },
+
+        onItemviewPerformDelete: function(child, ev) {
+            console.log('parent delete: ' + ev.evidence);
+            console.log(ev);
+            this.triggerMethod("perform:delete", ev);
         },
     });
 
@@ -3966,6 +4115,11 @@ var frontend = (function() {
             };
         },
 
+        ui: {
+            types: "div.typologies",
+            typeselect: "select[name=typology]"
+        },
+
         events: {
             "click button[name=add]"   : "doAdd",
             "click button[name=cancel]"   : "doCancel",
@@ -4001,8 +4155,17 @@ var frontend = (function() {
                 comparator: QA_DISPLAY_PRECEDENCE,
             });
         },
+        
+        onRender: function() {
+            if (this.entity.id != QA_STRUCTURE_TYPE) {
+                this.ui.types.hide();
+            }
+        },
 
         doAdd: function() {
+            if (this.entity.id == QA_STRUCTURE_TYPE) {
+                this.target[QA_BUILDING_TYPOLOGY_P] = this.ui.typeselect.val();
+            }
             this.triggerMethod("perform:add", this.target);
         },
 
@@ -4016,19 +4179,18 @@ var frontend = (function() {
         template: "#annotateTemplate",
 
         regions: {
-            simple: ".simple",
-            full: ".full",
+            create: ".createannotation",
             annotations: ".annotations",
             popover: ".popover",
         },
 
         ui: {
-            pauseBtn: ".pause",
             popover: ".popover",
         },
 
         triggers: {
-            "click .pause" : "do:pause",
+            "click .newdetail" : "do:new:detail",
+            "click .newrel" : "do:new:rel",
         },
 
         serializeData: function() {
@@ -4047,36 +4209,9 @@ var frontend = (function() {
                 .throwNoArg("options.relationships");
             this.ontologyEntities = _.checkarg(options.ontologyEntities)
                 .throwNoArg("options.ontologyEntities");
-
-            this.paused = false;
         },
 
         onRender: function() {
-            // FIXME: This should be a shared model between the player and the controls.
-            //        This is why the player and button status can fall out of sync.
-            this.paused = this.ui.pauseBtn.hasClass('selected');
-
-            this.simpleAnnotationView = new SimpleAnnotationView({
-                proper: this.proper,
-                entities: this.entities,
-            });
-            this.listenTo(this.simpleAnnotationView,
-                "simple:add", this.onChildSimpleAdd);
-            this.listenTo(this.simpleAnnotationView,
-                "entity:add", this.onAddEntity);
-            this.simple.show(this.simpleAnnotationView);
-
-            this.fullAnnotationView = new FullAnnotationView({
-                proper: this.proper,
-                entities: this.entities,
-                properties: this.properties,
-                relationships: this.relationships,
-                ontologyEntities: this.ontologyEntities,
-            });
-            this.listenTo(this.fullAnnotationView, "full:add", this.onChildFullAdd);
-            this.listenTo(this.fullAnnotationView, "entity:add", this.onAddEntity);
-            this.full.show(this.fullAnnotationView);
-
             this.annotationsView = new AnnotationsTableView({
                 contentDescriptionSource: this.contentDescriptionSource,
                 utteranceEventSrc: this.utteranceEventSrc,
@@ -4084,19 +4219,41 @@ var frontend = (function() {
                 properties: this.properties,
                 relationships: this.relationships,
             });
+            this.listenTo(this.annotationsView, "perform:delete", this.onChildPerformDelete);
             this.annotations.show(this.annotationsView);
         },
 
-        onDoPause: function() {
-            this.paused = !this.paused;
-            if (this.paused) {
-                this.ui.pauseBtn.addClass("selected");
-                this.ui.pauseBtn.text("Play");
-            } else {
-                this.ui.pauseBtn.removeClass("selected");
-                this.ui.pauseBtn.text("Pause");
-            }
-            this.triggerMethod("pause:set", this.paused);
+        onDoNewDetail: function() {
+            var simpleAnnotationView = new SimpleAnnotationView({
+                proper: this.proper,
+                entities: this.entities,
+            });
+            this.listenTo(simpleAnnotationView, "simple:add", this.onChildSimpleAdd);
+            this.listenTo(simpleAnnotationView, "entity:add", this.onAddEntity);
+            this.listenTo(simpleAnnotationView, "cancel:refersTo", function() {
+                this.create.reset();
+            });
+
+            this.create.show(simpleAnnotationView);
+            this.triggerMethod("pause:set", true);
+        },
+
+        onDoNewRel: function() {
+            var fullAnnotationView = new FullAnnotationView({
+                proper: this.proper,
+                entities: this.entities,
+                properties: this.properties,
+                relationships: this.relationships,
+                ontologyEntities: this.ontologyEntities,
+            });
+            this.listenTo(fullAnnotationView, "full:add", this.onChildFullAdd);
+            this.listenTo(fullAnnotationView, "entity:add", this.onAddEntity);
+            this.listenTo(fullAnnotationView, "cancel:refersTo", function() {
+                this.create.reset();
+            });
+
+            this.create.show(fullAnnotationView);
+            this.triggerMethod("pause:set", true);
         },
 
         onChildSimpleAdd: function(entity) {
@@ -4105,6 +4262,11 @@ var frontend = (function() {
 
         onChildFullAdd: function(entity) {
             this.triggerMethod("full:add", entity);
+        },
+
+        onChildPerformDelete: function(ev) {
+            console.log('passing delete');
+            this.triggerMethod("perform:delete", ev);
         },
 
         onAddEntity: function(entity) {
@@ -4125,6 +4287,10 @@ var frontend = (function() {
 
         onPerformCancel: function() {
             $(this.ui.popover).hide();
+        },
+
+        onUtteranceActive: function(model) {
+            this.create.reset();
         },
     });
 
@@ -4175,6 +4341,7 @@ var frontend = (function() {
                 view.listenTo(av, "simple:add", view.onSimpleAdd);
                 view.listenTo(av, "full:add", view.onFullAdd);
                 view.listenTo(av, "perform:addEntity", view.onAddEntity);
+                view.listenTo(av, "perform:delete", view.onDeleteAnnotation);
                 return av;
             },
         },
@@ -4205,6 +4372,8 @@ var frontend = (function() {
                     contentSearchModel: this.contentSearchModel,
                 }, this.digitalContent),
             });
+
+            this.currentControlView = undefined;
             
             this.model = new TranscriptPaneModel({});
         },
@@ -4232,7 +4401,7 @@ var frontend = (function() {
             this.tabview = new TranscriptPaneTabs({});
             this.listenTo(this.tabview, "select:tab", this.onSelectTab);
             this.tabs.show(this.tabview);
-            this.setTab(this.model, 'Search');
+            this.setTab(this.model, 'Annotate');
         },
         
         pauseSet: function(pause) {
@@ -4252,21 +4421,29 @@ var frontend = (function() {
         },
 
         setTab: function(model, value) {
-            this.secondary.show(this.states[value](this));
+            this.currentControlView = this.states[value](this);
+            this.secondary.show(this.currentControlView);
         },
 
         triggerUtteranceActive: function(model) {
             this.triggerMethod("utterance:active", model);
             this.currentUtterance = model;
+            if (this.currentControlView && this.currentControlView.onUtteranceActive) {
+                this.currentControlView.onUtteranceActive(model);
+            }
         },
 
-        onSimpleAdd: function(entity) {
+        onSimpleAdd: function(ent) {
+            var entity = ent.entity;
             var rdf = {};
             rdf[RDF_TYPE] = QA_REFERENCE_TYPE;
             rdf[QA_SUBJECT] = this.contentDescriptionSource.get('contentDescription').id +
                 "#@" + this.currentUtterance.get('start');
             rdf[QA_PREDICATE] = QA_REFERENCES;
             rdf[QA_OBJECT] = entity.id;
+            if (ent.note) {
+                rdf[QA_TEXTUAL_NOTE] = ent.note;
+            }
 
             var evidence = rdf[QA_EVIDENCE] = {};
             evidence[RDF_TYPE] = QA_EVIDENCE_TYPE;
@@ -4312,6 +4489,9 @@ var frontend = (function() {
             }
             if (rel.toDate) {
                 rdf[QA_END_DATE] = rel.toDate;
+            }
+            if (rel.note) {
+                rdf[QA_TEXTUAL_NOTE] = rel.note;
             }
 
             var evidence = rdf[QA_EVIDENCE] = {};
@@ -4369,11 +4549,30 @@ var frontend = (function() {
                 console.log(textStatus);
                 console.log(jqXHR);
                 console.log(jqXHR.status);
-                this.entities.add(data, { parse: true });
-                console.log(this.entities);
+                this.entities.fetch();
             }, this)).fail(function(jqXHR, textStatus, errorThrown) {
                 console.log("failure");
                 console.log(rdf);
+                console.log(errorThrown);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
+            });
+        },
+
+        onDeleteAnnotation: function(ev) {
+            $.ajax({
+                type: 'DELETE',
+                url: JSON_ROOT + 'annotation/evidence?ID=' + encodeURIComponent(ev.evidence),
+            }).done(_.bind(function(data, textStatus, jqXHR) {
+                console.log("success");
+                console.log(data);
+                console.log(textStatus);
+                console.log(jqXHR);
+                console.log(jqXHR.status);
+                this.triggerMethod("utterance:refresh");
+            }, this)).fail(function(jqXHR, textStatus, errorThrown) {
+                console.log("failure");
                 console.log(errorThrown);
                 console.log(textStatus);
                 console.log(jqXHR);
@@ -5703,6 +5902,7 @@ var frontend = (function() {
 
         var entities = new RDFGraph([], {
             url: function() { return JSON_ROOT + "entity/detail/qldarch:NonDigitalThing" },
+            queryString: "INCSUBCLASS=true",
             comparator: QA_LABEL,
         });
 
@@ -5796,6 +5996,12 @@ var frontend = (function() {
         });
         entities.on("reset", function(collection) {
             console.log("\tRESET:ENTITIES: " + collection.length);
+        });
+        entities.on("add", function(model) {
+            console.log("\tADD:ENTITIES: " + JSON.stringify(model.toJSON()));
+        });
+        entities.on("change", function(model) {
+            console.log("\tCHANGE:ENTITIES: " + JSON.stringify(model.toJSON()));
         });
         displayedEntities.on("reset", function(collection) {
             console.log("\tRESET:DISPLAYED_ENTITIES: " + collection.length);
