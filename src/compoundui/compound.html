@@ -29,6 +29,7 @@
         <script type="text/javascript" src="./lib/raphael.js"></script>
         <script type="text/javascript" src="./lib/jit.js"></script>
         
+        <script type="text/javascript" src="./repository/AuthManager.js"></script>
         <script type="text/javascript" src="./repository/RepositoryAdapter.js"></script>
         <script type="text/javascript" src="./repository/SPARQLAdapter.js"></script>
         <script type="text/javascript" src="./Controller.js"></script>
@@ -113,12 +114,50 @@
 	            lore.ore.ui.vp = new lore.ore.ui.Viewport();
 	            lore.ore.reposAdapter = new lore.ore.repos.SPARQLAdapter(lore.constants.repositoryBaseURL, 
 	            		lore.constants.repositoryGraphStoreEndPoint , lore.constants.repositoryGraphNamePrefix);
+	            //lore.ore.reposAdapter = new lore.ore.repos.RestAdapter(lore.constants.repositoryBaseURL);
 	            lore.ore.coListManager = new lore.ore.model.CompoundObjectListManager();
 	            lore.ore.historyManager = new lore.ore.model.HistoryManager(lore.ore.coListManager);
 	            lore.ore.cache = new lore.ore.model.CompoundObjectCache();  
 	            	
 	        	lore.ore.reposAdapter.getCompoundObjects(null, null, null, true);
 	        		
+	            function setSignedIn(username) {
+	            	var loginMenu = Ext.getCmp("loginMenu");
+	            	loginMenu.setIcon(lore.constants.baseUrl + 'skin/icons/tick.png');
+
+	            	var menuitems = Ext.getCmp("menu3");
+	            	menuitems.removeAll();
+	            	menuitems.addItem(new Ext.Action({
+						handler: function(){
+				            if (lore.ore.authManager){
+				            	lore.ore.authManager.logout();
+				            }
+					    },
+	                    text: 'Sign out ' + username
+	                }));
+	            }
+	            
+	            function setSignedOut() {
+	            	var loginMenu = Ext.getCmp("loginMenu");
+	            	loginMenu.setIcon(lore.constants.baseUrl + 'skin/icons/user_key.png');
+
+	            	var menuitems = Ext.getCmp("menu3");
+	            	menuitems.removeAll();
+	            	menuitems.addItem(new Ext.Action({
+						handler: function(){
+				            if (lore.ore.authManager){
+				            	lore.ore.authManager.displayLoginWindow();
+				            }
+					    },
+	                    text: 'Sign in'
+	                }));
+	            }
+	            
+	            //lore.ore.authManager = new lore.AuthManager(window);
+	            //lore.ore.authManager.on('signedin', setSignedIn, this);
+	            //lore.ore.authManager.on('signedout', setSignedOut, this);
+	            //lore.ore.authManager.reloadEmmetUrls({url: lore.constants.baseUrl + "lorestore"});
+                
 	            var basicSearchButton = new Ext.Action({
 	                text: '<b>Search</b>',
 	                handler: function(){
@@ -337,7 +376,7 @@
 	        	        },{
 	        		        region: 'west',
 	        		        width: 260,
-	                        split: false,
+	                        split:false,
 	                        collapsible: true,
 	                        startCollapsed: true,
 	        	            id : "westPanel",
@@ -469,7 +508,7 @@
 	        												lore.ore.controller.loadCompoundObjectPromptForURL();
 	        										    },
 	        						                    text: 'Import from RDF/XML URL'
-	        						                }), 
+	        						                })/* , 
 	        						                new Ext.Action({
 	        											handler: function(){
 	        												lore.ore.controller.addFacetSearchRDFWithPrompt();
@@ -487,29 +526,31 @@
 	        												lore.ore.controller.addFromGeonamesURLWithPrompt();
 	        										    },
 	        						                    text: 'Import from Geonames URL'
-	        						                })
+	        						                }) */
 	        						            ]
 	        								})
 	        							},
 	        							'-',
-	        							/*new Ext.Action({
-	        								id: 'searchIcon',
-	        								handler: function(){
-	        									//document.getElementById("http://localhost:8080/gadgets/ifr?url=http://localhost:8080/lore/lore.xml-data").contentWindow.find("",false, false, true, false, true, true);
-	        									window.find("",false, false, true, false, true, true);  
-	        							    },
-	        							    icon: lore.constants.baseUrl + 'skin/icons/ore/page_white_magnify.png'
-	        							}),*/
-	        							/*new Ext.Action({
-	        								handler: function(){
-	        						            //var instantApply = getBoolPref("browser.preferences.instantApply");
-	        									var instantApply = true;
-	        						            var features = "chrome,titlebar,toolbar,centerscreen,resizable=yes" + (instantApply ? ",dialog=no" : ",modal");
-	        						            window.open("./options.xul","", features);
-	        						            
-	        							    },
-	        							    icon: lore.constants.baseUrl + 'skin/icons/cog.png'
-	        							}),*/
+	        							/*{
+	        								id: 'loginMenu',
+	        							    icon: lore.constants.baseUrl + 'skin/icons/user_key.png',
+	        							    menu: new Ext.menu.Menu({
+	        									id: 'menu3',
+	        							        style: {
+	        							            overflow: 'visible'
+	        							        },
+	        									items: [
+	        										new Ext.Action({
+	        											handler: function(){
+	        									            if (lore.ore.authManager){
+	        									            	lore.ore.authManager.displayLoginWindow();
+	        									            }
+	        										    },
+	        						                    text: 'Sign in'
+	        						                })
+	        									]
+	        							    })
+	        							},*/
 	        							new Ext.Action({
 	        								id: 'reportIcon',
 	        								handler: function(){
@@ -646,7 +687,7 @@
 	        	    							    layout: "anchor",
 	        	    							    "id": "searchResultPanel",
 	        	    							    tbarStyle: "height: 27px",
-	        	    							    bodyStyle: "height: 432px;",
+	        	    							    bodyStyle: "height: 432px",
 	        	    							    autoScroll: true, 
 	        	    							    "tbar": {
 	        	    							        "xtype": "pagingToolbar",
@@ -770,6 +811,11 @@
 	        	new Ext.ToolTip({
 	        		target: 'exportMenu',
 	        		html: 'Import/Export Resource Map as file'
+	        	});
+
+	        	new Ext.ToolTip({
+	        		target: 'loginMenu',
+	        		html: 'Sign in to resource map service'
 	        	});
 	        	
 	        	/*new Ext.ToolTip({

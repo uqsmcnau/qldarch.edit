@@ -215,6 +215,10 @@ Ext.apply(lore.ore.Controller.prototype, {
 	        } else if (typeof rdf.responseXML != 'undefined') {
 	            showInHistory = true;
 	            rdfDoc = rdf.responseXML;
+	        } else if (typeof rdf.responseText != 'undefined') {
+	            showInHistory = true;
+	            parser=new DOMParser();
+	            rdfDoc=parser.parseFromString(rdf.responseText,"text/xml");
 	        } else {
 	        	rdfDoc = rdf;
 	        }

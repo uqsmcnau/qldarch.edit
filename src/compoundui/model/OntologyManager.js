@@ -4,8 +4,9 @@ lore.ore.model.OntologyManager = function() {
     /** Default list of properties that can be specified for Resource Maps or resources 
     * @const */
     this.METADATA_PROPS = ["dcterms:abstract", "dcterms:audience", "dc:creator",
-        "dc:contributor", "dc:coverage", "dcterms:created", "dc:description",
-        "dc:identifier", "dc:language", "dcterms:modified", "dc:publisher", 
+        "dc:contributor", "dc:coverage", "dcterms:created", "dc:date-begin", 
+        "dc:date-end", "dc:description", "dc:identifier", "dc:language", 
+        "dc:latitude","dc:longitude", "dcterms:modified", "dc:publisher", 
         "dc:relation", "dc:rights", "dc:source", "dc:subject", "dc:title", 
         "dc:type"];
     /** Properties that are mandatory/cannot be deleted for Resource Maps

@@ -165,6 +165,14 @@ window.addEventListener('message', function(message){
 				
 				if (label == "Title") {
 					props["dc:title_0"] = value;
+				} else if (label == "Latitude") {
+					props["dc:latitude_0"] = value;
+				} else if (label == "Longitude") {
+					props["dc:longitude_0"] = value;
+				} else if (label == "Date Created") {
+					props["dc:date-begin_0"] = value;
+				} else if (label == "Date Ended") {
+					props["dc:date-end_0"] = value;
 				} else {
 					for (var ns in lore.constants.NAMESPACES) {
 	        			if (uri.indexOf(lore.constants.NAMESPACES[ns]) == 0) {
