@@ -542,7 +542,7 @@ Ext.apply(lore.ore.Controller.prototype, {
      */
     newCO : function(dontRaise){
         delete this.loadedCO;
-        //this.setLockCompoundObject(false);
+        this.setLockCompoundObject(false);
         if (lore.ore.ui.topView){
             lore.ore.ui.topView.hideAddIcon(false);
         }
