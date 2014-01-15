@@ -5934,6 +5934,10 @@ var frontend = (function() {
             },
         });
 
+        //if (ontologyEntities.models.length == 0) {
+        //    ontologyEntities.fetch({reset: false, async: false});
+        //}
+        
         var displayedEntities = new SubCollection(ontologyEntities, {
             name: "displayedEntities",
             tracksort: false,
@@ -6121,7 +6125,7 @@ var frontend = (function() {
         var resourceEntityView = new ResourceEntityView({
             router: router,
             id: "mainentities",
-            model: proper,
+            model: displayedProper,
             entities: entities,
             content: allcontent,
             search: resourceSearchModel,
@@ -6252,7 +6256,11 @@ var frontend = (function() {
 
         router.on('route:viewentity', function(id) {
             entitySearchModel.set(entitySearchModel.deserialize(id));
-
+            
+            //if (entities.models.length == 0) {
+            //	entities.fetch({reset: false, async: false});
+            //}
+            
             $("#column123,#column1,#column2,#column23").hide();
             searchView.close();
             resourceSearchView.close();
@@ -6318,7 +6326,11 @@ var frontend = (function() {
 
         router.on('route:interview', function(id) {
             contentSearchModel.set(contentSearchModel.deserialize(id));
-
+        	
+            //if (interviews.models.length == 0) {
+            //  interviews.fetch({ reset: false, async: false });
+            //}
+            
             $("#column12,#column1,#column2,#column3, #column23").hide();
             searchView.close();
             resourceSearchView.close();
